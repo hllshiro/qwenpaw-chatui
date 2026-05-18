@@ -1,56 +1,70 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
-import { useChats } from '../composables/useChats'
-import { useUserSession } from '../composables/useUserSession'
-import { useChatActions } from '../composables/useChatActions'
+import { useSessions } from '../composables/useSessions'
 
 const router = useRouter()
 const route = useRoute()
-const { loggedIn, openInPopup, fetchSession } = useUserSession()
-const { groups, fetchChats } = useChats()
-const { renameChat, deleteChat } = useChatActions()
+const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
 
-await fetchSession()
-await fetchChats()
+await fetchSessions()
 
 const sidebarOpen = ref(false)
-const searchOpen = ref(false)
+const renamingId = ref<string | null>(null)
+const renameInput = ref('')
 
-watch(loggedIn, () => {
-  fetchChats()
-
-  sidebarOpen.value = false
-})
-
-const items = computed(() => groups.value?.flatMap((group) => {
+const items = computed(() => groupedSessions.value?.flatMap((group) => {
   return [{
-    label: group.label,
+    label: group[0],
     type: 'label' as const
-  }, ...group.items.map(item => ({
-    ...item,
-    slot: 'chat' as const,
-    icon: undefined,
-    class: item.label === 'Untitled' ? 'text-muted' : ''
+  }, ...group[1].map(item => ({
+    id: item.id,
+    label: item.title || '新会话',
+    to: `/chat/${item.id}`,
+    icon: 'i-lucide-message-circle',
+    slot: 'chat' as const
   }))]
 }))
 
 function getChatActions(item: { id: string, label: string }): DropdownMenuItem[][] {
   return [[
     {
-      label: 'Rename',
+      label: '重命名',
       icon: 'i-lucide-pencil',
-      onSelect: () => renameChat(item.id, item.label === 'Untitled' ? '' : item.label)
+      onSelect: () => startRename(item.id, item.label)
     }
   ], [
     {
-      label: 'Delete',
+      label: '删除',
       icon: 'i-lucide-trash',
       color: 'error' as const,
-      onSelect: () => deleteChat(item.id)
+      onSelect: () => handleDelete(item.id)
     }
   ]]
+}
+
+function startRename(id: string, currentTitle: string) {
+  renamingId.value = id
+  renameInput.value = currentTitle === '新会话' ? '' : currentTitle
+}
+
+async function confirmRename() {
+  if (!renamingId.value) return
+  const title = renameInput.value.trim() || '新会话'
+  await updateSession(renamingId.value, { title })
+  renamingId.value = null
+}
+
+function cancelRename() {
+  renamingId.value = null
+}
+
+async function handleDelete(id: string) {
+  await deleteSession(id)
+  if ((route.params as { id?: string }).id === id) {
+    router.push('/')
+  }
 }
 
 defineShortcuts({
@@ -77,10 +91,10 @@ defineShortcuts({
           class="flex items-center gap-0.5"
         >
           <UIcon
-            name="i-logos-vue"
-            class="h-5 w-auto shrink-0"
+            name="i-lucide-sparkles"
+            class="h-5 w-auto shrink-0 text-primary"
           />
-          <span class="text-xl font-bold text-highlighted">Chat</span>
+          <span class="text-xl font-bold text-highlighted">QwenPaw</span>
         </ULink>
 
         <UDashboardSidebarCollapse class="ms-auto" />
@@ -89,17 +103,10 @@ defineShortcuts({
       <template #default="{ collapsed }">
         <UNavigationMenu
           :items="[{
-            label: 'New chat',
+            label: '新建会话',
             to: '/',
             kbds: ['meta', 'o'],
             icon: 'i-lucide-circle-plus'
-          }, {
-            label: 'Search',
-            icon: 'i-lucide-search',
-            kbds: ['meta', 'k'],
-            onSelect: () => {
-              searchOpen = true
-            }
           }]"
           :collapsed="collapsed"
           orientation="vertical"
@@ -143,7 +150,7 @@ defineShortcuts({
                 variant="link"
                 size="sm"
                 class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50"
-                aria-label="Chat actions"
+                aria-label="会话操作"
                 tabindex="-1"
                 @click.stop.prevent
               />
@@ -151,39 +158,25 @@ defineShortcuts({
           </template>
         </UNavigationMenu>
       </template>
-
-      <template #footer="{ collapsed }">
-        <UserMenu
-          v-if="loggedIn"
-          :collapsed="collapsed"
-        />
-        <UButton
-          v-else
-          :label="collapsed ? '' : 'Login with GitHub'"
-          icon="i-simple-icons:github"
-          color="neutral"
-          variant="ghost"
-          class="w-full"
-          @click="openInPopup('/auth/github')"
-        />
-      </template>
     </UDashboardSidebar>
-
-    <UDashboardSearch
-      v-model:open="searchOpen"
-      placeholder="Search chats..."
-      :groups="[{
-        id: 'links',
-        items: [{
-          label: 'New chat',
-          to: '/',
-          icon: 'i-lucide-circle-plus'
-        }]
-      }, ...groups]"
-    />
 
     <div class="flex-1 flex m-4 lg:ml-0 rounded-lg ring ring-default bg-default/75 shadow min-w-0 overflow-hidden">
       <RouterView :key="route.path" />
     </div>
   </UDashboardGroup>
+
+  <UModal v-model:open="renamingId" title="重命名会话">
+    <template #body>
+      <UInput
+        v-model="renameInput"
+        placeholder="输入新名称"
+        class="w-full"
+        @keydown.enter="confirmRename"
+      />
+    </template>
+    <template #footer>
+      <UButton label="取消" color="neutral" variant="ghost" @click="cancelRename" />
+      <UButton label="确定" @click="confirmRename" />
+    </template>
+  </UModal>
 </template>

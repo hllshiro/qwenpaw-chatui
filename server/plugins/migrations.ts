@@ -1,17 +1,13 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { definePlugin } from 'nitro'
-import { migrate } from 'drizzle-orm/libsql/migrator'
-import { useDrizzle } from '../utils/drizzle'
 
-export default definePlugin(async () => {
-  if (!import.meta.dev) {
-    return
+export default definePlugin(() => {
+  const dbUrl = process.env.DATABASE_URL || 'file:.data/qwenpaw.db'
+  const filePath = dbUrl.replace('file:', '')
+  try {
+    mkdirSync(dirname(filePath), { recursive: true })
+  } catch {
+    // directory already exists
   }
-
-
-  await mkdir('.data', { recursive: true })
-
-  await migrate(useDrizzle(), {
-    migrationsFolder: 'server/database/migrations'
-  })
 })

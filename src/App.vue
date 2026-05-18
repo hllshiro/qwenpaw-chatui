@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useColorMode } from '@vueuse/core'
+import { useTheme } from './composables/useTheme'
 
 const colorMode = useColorMode()
 const themeColor = computed(() => colorMode.value === 'dark' ? '#09090b' : '#fafafa')
@@ -11,6 +12,8 @@ useHead({
     { name: 'theme-color', content: themeColor }
   ]
 })
+
+useTheme()
 </script>
 
 <template>

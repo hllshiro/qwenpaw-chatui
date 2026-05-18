@@ -1,61 +1,44 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { Chat } from '@ai-sdk/vue'
 import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
-import { useModels } from '../../composables/useModels'
-import { useChats } from '../../composables/useChats'
-import { useCsrf } from '../../composables/useCsrf'
 import { useRoute } from 'vue-router'
+import { useSessions } from '../../composables/useSessions'
 import ChatMessageContent from '../../components/chat/message/MessageContent.vue'
 import ChatMessageActions from '../../components/chat/message/MessageActions.vue'
-import ChatVisibility from '../../components/chat/ChatVisibility.vue'
-import ChatTitle from '../../components/chat/ChatTitle.vue'
 import ChatIndicator from '../../components/chat/Indicator.vue'
 import Navbar from '../../components/Navbar.vue'
-import type { Vote } from '../../../server/utils/drizzle'
 
 const route = useRoute<'/chat/[id]'>()
 const toast = useToast()
-const { model } = useModels()
-const { fetchChats, chats } = useChats()
-const { csrf, headerName } = useCsrf()
+const { updateSession } = useSessions()
 
 const data = await $fetch(`/api/chats/${route.params.id}`).catch(() => null)
 
-const isOwner = computed(() => data?.isOwner ?? false)
-const visibility = ref<'public' | 'private'>(data?.visibility ?? 'private')
-const title = ref<string | null>(data?.title ?? null)
+const title = ref<string>(data?.title || '新会话')
 
-watch(() => chats.value.find(c => c.id === data?.id)?.label, (label) => {
-  if (label && label !== 'Untitled') {
-    title.value = label
-  }
-})
-
-const votes = ref<Vote[]>([])
-if (isOwner.value) {
-  $fetch(`/api/chats/votes/${route.params.id}`).then((v) => {
-    votes.value = v
-  }).catch(() => {})
-}
+const businessKey = ref(
+  new URLSearchParams(window.location.search).get('business_key')
+  || (window as unknown as Record<string, { business_key?: string }>).__QWENPAW_CONFIG__?.business_key
+  || data?.businessKey
+  || 'default'
+)
 
 const input = ref('')
 
 const chat = new Chat({
   id: data?.id,
-  messages: data?.messages,
   transport: new DefaultChatTransport({
     api: `/api/chats/${data?.id}`,
-    headers: { [headerName]: csrf() },
     body: {
-      model: model.value
+      business_key: businessKey.value
     }
   }),
   onData: (dataPart) => {
-    if (dataPart.type === 'data-chat-title') {
-      fetchChats()
+    if (dataPart.type === 'data-sessionId') {
+      // session ID from QwenPaw
     }
   },
   onError(error) {
@@ -64,10 +47,9 @@ const chat = new Chat({
       try {
         message = JSON.parse(message).message || message
       } catch {
-        // keep original message on malformed JSON
+        // keep original message
       }
     }
-
     toast.add({
       description: message,
       icon: 'i-lucide-alert-circle',
@@ -80,10 +62,15 @@ const chat = new Chat({
 function handleSubmit(e: Event) {
   e.preventDefault()
   if (input.value.trim()) {
-    chat.sendMessage({
-      text: input.value
-    })
+    chat.sendMessage({ text: input.value })
+    const sentText = input.value
     input.value = ''
+
+    if (chat.messages.length <= 1) {
+      const newTitle = sentText.slice(0, 50)
+      updateSession(route.params.id, { title: newTitle })
+      title.value = newTitle
+    }
   }
 }
 
@@ -91,7 +78,6 @@ const editingMessageId = ref<string | null>(null)
 
 function startEdit(message: UIMessage) {
   if (editingMessageId.value) return
-
   editingMessageId.value = message.id
 }
 
@@ -99,82 +85,18 @@ function cancelEdit() {
   editingMessageId.value = null
 }
 
-async function saveEdit(message: UIMessage, text: string) {
-  try {
-    await $fetch(`/api/chats/messages/${data!.id}`, {
-      method: 'DELETE',
-      headers: { [headerName]: csrf() },
-      body: { messageId: message.id, type: 'edit' }
-    })
-  } catch {
-    toast.add({
-      description: 'Failed to update message',
-      icon: 'i-lucide-alert-circle',
-      color: 'error'
-    })
-    return
-  }
-
+function saveEdit(message: UIMessage, text: string) {
   editingMessageId.value = null
   chat.sendMessage({ text, messageId: message.id })
 }
 
-async function regenerateMessage(message: UIMessage) {
-  try {
-    await $fetch(`/api/chats/messages/${data!.id}`, {
-      method: 'DELETE',
-      headers: { [headerName]: csrf() },
-      body: { messageId: message.id, type: 'regenerate' }
-    })
-  } catch {
-    toast.add({
-      description: 'Failed to regenerate message',
-      icon: 'i-lucide-alert-circle',
-      color: 'error'
-    })
-    return
-  }
-
+function regenerateMessage(message: UIMessage) {
   chat.regenerate({ messageId: message.id })
 }
 
-function getVote(messageId: string) {
-  const vote = votes.value.find(v => v.messageId === messageId)
-  if (!vote) return null
-  return !!vote.isUpvoted
-}
-
-async function vote(message: UIMessage, isUpvoted: boolean) {
-  const snapshot = votes.value.map(v => ({ ...v }))
-  const toggling = getVote(message.id) === isUpvoted
-  const next = toggling ? null : isUpvoted
-
-  votes.value = next === null
-    ? votes.value.filter(v => v.messageId !== message.id)
-    : [
-        ...votes.value.filter(v => v.messageId !== message.id),
-        { chatId: data!.id, messageId: message.id, isUpvoted: next }
-      ]
-
-  try {
-    await $fetch(`/api/chats/votes/${data!.id}`, {
-      method: 'POST',
-      headers: { [headerName]: csrf() },
-      body: next === null ? { messageId: message.id } : { messageId: message.id, isUpvoted: next }
-    })
-  } catch {
-    votes.value = snapshot
-    toast.add({
-      description: 'Failed to save vote',
-      icon: 'i-lucide-alert-circle',
-      color: 'error'
-    })
-  }
-}
-
 onMounted(() => {
-  if (isOwner.value && data?.messages?.length === 1) {
-    chat.regenerate()
+  if (data?.id && chat.messages.length === 0) {
+    // Fresh session - no messages to load
   }
 })
 </script>
@@ -189,20 +111,10 @@ onMounted(() => {
     <template #header>
       <Navbar>
         <template #title>
-          <ChatTitle
-            :chat-id="data!.id"
-            :title="title"
-            :is-owner="isOwner"
-            @update:title="title = $event"
-          />
+          <span class="text-sm font-medium text-highlighted truncate min-w-0 max-w-3xs">
+            {{ title }}
+          </span>
         </template>
-
-        <ChatVisibility
-          v-if="isOwner"
-          :chat-id="data!.id"
-          :visibility="visibility"
-          @update:visibility="visibility = $event"
-        />
       </Navbar>
     </template>
 
@@ -212,7 +124,6 @@ onMounted(() => {
           should-auto-scroll
           :messages="chat.messages"
           :status="chat.status"
-          :spacing-offset="isOwner ? 160 : 0"
           class="pt-(--ui-header-height) pb-4 sm:pb-6"
         >
           <template #indicator>
@@ -220,7 +131,7 @@ onMounted(() => {
               <ChatIndicator />
 
               <UChatShimmer
-                text="Thinking..."
+                text="思考中..."
                 class="text-sm"
               />
             </div>
@@ -229,30 +140,24 @@ onMounted(() => {
           <template #content="{ message }">
             <ChatMessageContent
               :message="message"
-              :editing="isOwner && editingMessageId === message.id"
+              :editing="editingMessageId === message.id"
               @save="saveEdit"
               @cancel-edit="cancelEdit"
             />
           </template>
 
-          <template
-            v-if="isOwner"
-            #actions="{ message }"
-          >
+          <template #actions="{ message }">
             <ChatMessageActions
               :message="message"
               :streaming="chat.status === 'streaming' && message.id === chat.messages[chat.messages.length - 1]?.id"
               :editing="editingMessageId === message.id"
-              :vote="getVote(message.id)"
               @edit="startEdit"
               @regenerate="regenerateMessage"
-              @vote="vote"
             />
           </template>
         </UChatMessages>
 
         <UChatPrompt
-          v-if="isOwner"
           v-model="input"
           :error="chat.error"
           variant="subtle"
@@ -261,8 +166,6 @@ onMounted(() => {
           @submit="handleSubmit"
         >
           <template #footer>
-            <ModelSelect v-model="model" />
-
             <UChatPromptSubmit
               :status="chat.status"
               color="neutral"
@@ -281,14 +184,14 @@ onMounted(() => {
     class="flex-1 flex flex-col gap-4 sm:gap-6"
   >
     <UError
-      :error="{ statusMessage: 'Chat not found', statusCode: 404 }"
+      :error="{ statusMessage: '会话未找到', statusCode: 404 }"
       class="min-h-full"
     >
       <template #links>
         <UButton
           to="/"
           size="lg"
-          label="Back to home"
+          label="返回首页"
         />
       </template>
     </UError>

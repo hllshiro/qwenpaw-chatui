@@ -1,9 +1,19 @@
 import { defineHandler } from 'nitro'
-import { useUserSession } from '../../utils/session'
-import { useDrizzle, tables, eq } from '../../utils/drizzle'
+import { getQuery } from 'nitro/h3'
+import { useDrizzle, tables, eq, desc } from '../../utils/drizzle'
 
 export default defineHandler(async (event) => {
-  const session = await useUserSession(event)
+  const query = getQuery(event)
+  const businessKey = query.business_key as string | undefined
 
-  return (await useDrizzle().select().from(tables.chats).where(eq(tables.chats.userId, session.data.user?.id || session.id!))).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  const db = useDrizzle()
+
+  if (businessKey) {
+    return await db.select().from(tables.sessions)
+      .where(eq(tables.sessions.businessKey, businessKey))
+      .orderBy(desc(tables.sessions.updatedAt))
+  }
+
+  return await db.select().from(tables.sessions)
+    .orderBy(desc(tables.sessions.updatedAt))
 })

@@ -1,20 +1,22 @@
-import { defineHandler } from 'nitro'
-import { getValidatedRouterParams } from 'nitro/h3'
-import { useUserSession } from '../../../utils/session'
-import { useDrizzle, tables, eq, and } from '../../../utils/drizzle'
-import { z } from 'zod'
-
+import { defineHandler, HTTPError } from 'nitro'
+import { getRouterParam } from 'nitro/h3'
+import { useDrizzle, tables, eq } from '../../../utils/drizzle'
 
 export default defineHandler(async (event) => {
-  const session = await useUserSession(event)
-
-  const { id } = await getValidatedRouterParams(event, z.object({
-    id: z.string()
-  }).parse)
+  const id = getRouterParam(event, 'id')
+  if (!id) {
+    throw new HTTPError({ statusCode: 400, statusMessage: 'Missing session id' })
+  }
 
   const db = useDrizzle()
 
-  return await db.delete(tables.chats)
-    .where(and(eq(tables.chats.id, id as string), eq(tables.chats.userId, session.data.user?.id || session.id!)))
+  const [deleted] = await db.delete(tables.sessions)
+    .where(eq(tables.sessions.id, id))
     .returning()
+
+  if (!deleted) {
+    throw new HTTPError({ statusCode: 404, statusMessage: 'Session not found' })
+  }
+
+  return deleted
 })

@@ -1,77 +1,41 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { $fetch } from 'ofetch'
-import { useChats } from '../composables/useChats'
-import { useCsrf } from '../composables/useCsrf'
-import { useUserSession } from '../composables/useUserSession'
-import Navbar from '../components/Navbar.vue'
+import { useSessions } from '../composables/useSessions'
 
-const { fetchChats } = useChats()
-const { csrf, headerName } = useCsrf()
-const { user } = useUserSession()
+const router = useRouter()
+const { createSession } = useSessions()
+
 const input = ref('')
 const loading = ref(false)
-const router = useRouter()
 
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  let timeGreeting = 'Good evening'
-  if (hour < 12) timeGreeting = 'Good morning'
-  else if (hour < 18) timeGreeting = 'Good afternoon'
+interface QwenPawConfig {
+  business_key?: string
+  theme?: Record<string, unknown>
+}
 
-  const name = user.value?.name?.split(' ')[0] || user.value?.username
+const config = (window as unknown as Record<string, QwenPawConfig>).__QWENPAW_CONFIG__
+const businessKey = ref(
+  new URLSearchParams(window.location.search).get('business_key')
+  || config?.business_key
+  || 'default'
+)
 
-  return name ? `${timeGreeting}, ${name}` : `${timeGreeting}`
-})
-
-async function createChat(prompt: string) {
-  input.value = prompt
+async function onSubmit() {
+  if (!input.value.trim()) return
   loading.value = true
-  const chat = await $fetch('/api/chats', {
-    method: 'POST',
-    headers: { [headerName]: csrf() },
-    body: { input: prompt }
-  })
-
-  await fetchChats()
-  router.push(`/chat/${chat?.id}`)
-}
-
-function onSubmit() {
-  createChat(input.value)
-}
-
-const quickChats = [
-  {
-    label: 'Why use Nuxt UI?',
-    icon: 'i-logos-nuxt-icon'
-  },
-  {
-    label: 'Help me create a Vue composable',
-    icon: 'i-logos-vue'
-  },
-  {
-    label: 'Tell me more about UnJS',
-    icon: 'i-logos-unjs'
-  },
-  {
-    label: 'Why should I consider VueUse?',
-    icon: 'i-logos-vueuse'
-  },
-  {
-    label: 'Tailwind CSS best practices',
-    icon: 'i-logos-tailwindcss-icon'
-  },
-  {
-    label: 'What is the weather in Bordeaux?',
-    icon: 'i-lucide-sun'
-  },
-  {
-    label: 'Show me a chart of sales data',
-    icon: 'i-lucide-line-chart'
+  try {
+    const session = await createSession(businessKey.value)
+    await $fetch(`/api/chats/${session.id}`, {
+      method: 'PUT',
+      body: { title: input.value.slice(0, 50) }
+    })
+    router.push(`/chat/${session.id}`)
+  } finally {
+    loading.value = false
   }
-]
+}
 </script>
 
 <template>
@@ -87,8 +51,12 @@ const quickChats = [
     <template #body>
       <UContainer class="flex-1 flex flex-col justify-center gap-4 sm:gap-6 py-8">
         <h1 class="text-3xl sm:text-4xl text-highlighted font-bold">
-          {{ greeting }}
+          QwenPaw Console
         </h1>
+
+        <p class="text-muted">
+          有什么可以帮你的？
+        </p>
 
         <UChatPrompt
           v-model="input"
@@ -99,28 +67,12 @@ const quickChats = [
           @submit="onSubmit"
         >
           <template #footer>
-            <ModelSelect />
-
             <UChatPromptSubmit
               color="neutral"
               size="sm"
             />
           </template>
         </UChatPrompt>
-
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            v-for="quickChat in quickChats"
-            :key="quickChat.label"
-            :icon="quickChat.icon"
-            :label="quickChat.label"
-            size="sm"
-            color="neutral"
-            variant="outline"
-            class="rounded-full"
-            @click="createChat(quickChat.label)"
-          />
-        </div>
       </UContainer>
     </template>
   </UDashboardPanel>
