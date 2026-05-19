@@ -1,6 +1,6 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam, readBody } from 'nitro/h3'
-import { useDrizzle, tables, eq, and } from '../../../utils/drizzle'
+import { useDrizzle, tables, eq, and } from '../../../../utils/drizzle'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')

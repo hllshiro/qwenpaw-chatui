@@ -165,7 +165,10 @@ defineShortcuts({
     </div>
   </UDashboardGroup>
 
-  <UModal v-model:open="renamingId" title="重命名会话">
+  <UModal
+    v-model:open="renamingId"
+    title="重命名会话"
+  >
     <template #body>
       <UInput
         v-model="renameInput"
@@ -175,8 +178,16 @@ defineShortcuts({
       />
     </template>
     <template #footer>
-      <UButton label="取消" color="neutral" variant="ghost" @click="cancelRename" />
-      <UButton label="确定" @click="confirmRename" />
+      <UButton
+        label="取消"
+        color="neutral"
+        variant="ghost"
+        @click="cancelRename"
+      />
+      <UButton
+        label="确定"
+        @click="confirmRename"
+      />
     </template>
   </UModal>
 </template>

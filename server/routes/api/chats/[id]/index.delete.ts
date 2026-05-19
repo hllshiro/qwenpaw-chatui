@@ -1,6 +1,6 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam } from 'nitro/h3'
-import { useDrizzle, tables, eq } from '../../../utils/drizzle'
+import { useDrizzle, tables, eq } from '../../../../utils/drizzle'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -10,13 +10,13 @@ export default defineHandler(async (event) => {
 
   const db = useDrizzle()
 
-  const session = await db.select().from(tables.sessions)
+  const [deleted] = await db.delete(tables.sessions)
     .where(eq(tables.sessions.id, id))
-    .then(rows => rows[0])
+    .returning()
 
-  if (!session) {
+  if (!deleted) {
     throw new HTTPError({ statusCode: 404, statusMessage: 'Session not found' })
   }
 
-  return session
+  return deleted
 })

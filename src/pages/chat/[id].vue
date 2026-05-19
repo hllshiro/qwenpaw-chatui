@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watchEffect, toRaw } from 'vue'
 import { $fetch } from 'ofetch'
-import { Chat } from '@ai-sdk/vue'
-import { DefaultChatTransport } from 'ai'
 import type { UIMessage } from 'ai'
 import { useRoute } from 'vue-router'
 import { useSessions } from '../../composables/useSessions'
+import { useChatSession } from '../../composables/useChatSession'
 import ChatMessageContent from '../../components/chat/message/MessageContent.vue'
 import ChatMessageActions from '../../components/chat/message/MessageActions.vue'
 import ChatIndicator from '../../components/chat/Indicator.vue'
@@ -14,67 +13,122 @@ import Navbar from '../../components/Navbar.vue'
 const route = useRoute<'/chat/[id]'>()
 const toast = useToast()
 const { updateSession } = useSessions()
+const { getOrCreateChat, sendMessage, stop, regenerate } = useChatSession()
 
-const data = await $fetch(`/api/chats/${route.params.id}`).catch(() => null)
+const data = ref<any>(null)
+const historyMessages = ref<any[]>([])
+const loading = ref(true)
 
-const title = ref<string>(data?.title || '新会话')
+function convertQwenPawMessage(msg: any, index: number): UIMessage {
+  const parts: any[] = []
+  if (Array.isArray(msg.content)) {
+    for (const part of msg.content) {
+      if (part.type === 'text' && part.text) {
+        parts.push({ type: 'text', text: part.text })
+      }
+    }
+  } else if (typeof msg.content === 'string') {
+    parts.push({ type: 'text', text: msg.content })
+  }
+
+  return {
+    id: msg.id || `msg-${index}-${Date.now()}`,
+    role: msg.role || 'user',
+    parts
+  } as UIMessage
+}
+
+onMounted(async () => {
+  try {
+    // Fetch session metadata and history in parallel
+    const [sessionData, historyData] = await Promise.all([
+      $fetch(`/api/chats/${route.params.id}`),
+      $fetch(`/api/chats/${route.params.id}/history`).catch(() => ({ messages: [], status: 'idle' }))
+    ])
+
+    data.value = sessionData
+    historyMessages.value = (historyData?.messages || []).map(convertQwenPawMessage)
+    console.log('[ChatPage] Loaded session:', data.value)
+    console.log('[ChatPage] Loaded history:', historyMessages.value.length, 'messages')
+  } catch (err) {
+    console.error('[ChatPage] Failed to fetch session:', err)
+  } finally {
+    loading.value = false
+  }
+})
+
+const title = ref<string>('新会话')
 
 const businessKey = ref(
   new URLSearchParams(window.location.search).get('business_key')
   || (window as unknown as Record<string, { business_key?: string }>).__QWENPAW_CONFIG__?.business_key
-  || data?.businessKey
   || 'default'
 )
 
-const input = ref('')
+const sessionId = ref<string>(route.params.id as string)
+const chat = ref<any>(null)
+const messages = ref<UIMessage[]>([])
 
-const chat = new Chat({
-  id: data?.id,
-  transport: new DefaultChatTransport({
-    api: `/api/chats/${data?.id}`,
-    body: {
-      business_key: businessKey.value
-    }
-  }),
-  onData: (dataPart) => {
-    if (dataPart.type === 'data-sessionId') {
-      // session ID from QwenPaw
-    }
-  },
-  onError(error) {
-    let message = error.message
-    if (typeof message === 'string' && message[0] === '{') {
-      try {
-        message = JSON.parse(message).message || message
-      } catch {
-        // keep original message
-      }
-    }
-    toast.add({
-      description: message,
-      icon: 'i-lucide-alert-circle',
-      color: 'error',
-      duration: 0
-    })
+const status = computed(() => chat.value?.status || 'ready')
+const chatErrorComputed = computed(() => chat.value?.error)
+
+const input = ref('')
+const editingMessageId = ref<string | null>(null)
+
+watchEffect(() => {
+  if (data.value?.id) {
+    sessionId.value = data.value.id
+    title.value = data.value.title || '新会话'
+    businessKey.value = data.value.businessKey || businessKey.value
+    chat.value = getOrCreateChat(sessionId.value, businessKey.value, historyMessages.value)
+    messages.value = [...historyMessages.value]
   }
 })
 
-function handleSubmit(e: Event) {
-  e.preventDefault()
-  if (input.value.trim()) {
-    chat.sendMessage({ text: input.value })
-    const sentText = input.value
-    input.value = ''
-
-    if (chat.messages.length <= 1) {
-      const newTitle = sentText.slice(0, 50)
-      updateSession(route.params.id, { title: newTitle })
-      title.value = newTitle
+// Sync messages from chat instance periodically
+let syncTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  syncTimer = setInterval(() => {
+    if (chat.value) {
+      const rawChat = toRaw(chat.value)
+      const chatMsgs = rawChat?.messages
+      if (Array.isArray(chatMsgs) && chatMsgs.length !== messages.value.length) {
+        messages.value = [...chatMsgs]
+      }
     }
+  }, 300)
+})
+
+onUnmounted(() => {
+  if (syncTimer) clearInterval(syncTimer)
+})
+
+async function handleSubmit(e?: Event) {
+  e?.preventDefault()
+  console.log('[ChatPage] handleSubmit called!', input.value)
+  if (!input.value.trim()) return
+  if (!chat.value) {
+    console.error('[ChatPage] Chat not initialized')
+    return
+  }
+
+  const sentText = input.value
+  try {
+    console.log('[ChatPage] Calling sendMessage...')
+    await sendMessage(sessionId.value, sentText)
+    console.log('[ChatPage] sendMessage done')
+  } catch (err) {
+    console.error('[ChatPage] Error:', err)
+  }
+
+  input.value = ''
+
+  if (chat.value && chat.value.messages && chat.value.messages.length <= 1) {
+    const newTitle = sentText.slice(0, 50)
+    updateSession(sessionId.value, { title: newTitle })
+    title.value = newTitle
   }
 }
-
-const editingMessageId = ref<string | null>(null)
 
 function startEdit(message: UIMessage) {
   if (editingMessageId.value) return
@@ -87,18 +141,16 @@ function cancelEdit() {
 
 function saveEdit(message: UIMessage, text: string) {
   editingMessageId.value = null
-  chat.sendMessage({ text, messageId: message.id })
+  sendMessage(sessionId.value, text, message.id)
 }
 
 function regenerateMessage(message: UIMessage) {
-  chat.regenerate({ messageId: message.id })
+  regenerate(sessionId.value, message.id)
 }
 
-onMounted(() => {
-  if (data?.id && chat.messages.length === 0) {
-    // Fresh session - no messages to load
-  }
-})
+function handleStop() {
+  stop(sessionId.value)
+}
 </script>
 
 <template>
@@ -122,8 +174,8 @@ onMounted(() => {
       <UContainer class="flex-1 flex flex-col gap-4 sm:gap-6">
         <UChatMessages
           should-auto-scroll
-          :messages="chat.messages"
-          :status="chat.status"
+          :messages="messages"
+          :status="status"
           class="pt-(--ui-header-height) pb-4 sm:pb-6"
         >
           <template #indicator>
@@ -149,7 +201,7 @@ onMounted(() => {
           <template #actions="{ message }">
             <ChatMessageActions
               :message="message"
-              :streaming="chat.status === 'streaming' && message.id === chat.messages[chat.messages.length - 1]?.id"
+              :streaming="status === 'streaming' && message.id === messages[messages.length - 1]?.id"
               :editing="editingMessageId === message.id"
               @edit="startEdit"
               @regenerate="regenerateMessage"
@@ -157,30 +209,35 @@ onMounted(() => {
           </template>
         </UChatMessages>
 
-        <UChatPrompt
-          v-model="input"
-          :error="chat.error"
-          variant="subtle"
-          class="sticky bottom-0 [view-transition-name:chat-prompt] rounded-b-none z-10"
-          :ui="{ base: 'px-1.5' }"
-          @submit="handleSubmit"
-        >
-          <template #footer>
-            <UChatPromptSubmit
-              :status="chat.status"
-              color="neutral"
-              size="sm"
-              @stop="chat.stop()"
-              @reload="chat.regenerate()"
+        <div class="sticky bottom-0 z-10 bg-default/75 backdrop-blur border-t border-default p-4">
+          <div class="flex gap-2 mb-2">
+            <span class="text-xs text-muted">debug: status={{ status }}, chat={{ chat ? 'yes' : 'no' }}</span>
+            <button type="button" @click="console.log('[TEST] click!')" class="text-xs text-primary underline">测试点击</button>
+          </div>
+          <div class="flex gap-2">
+            <input
+              v-model="input"
+              type="text"
+              placeholder="输入消息..."
+              class="flex-1 rounded-lg border border-default bg-default px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              :disabled="status === 'streaming'"
             />
-          </template>
-        </UChatPrompt>
+            <button
+              type="button"
+              class="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50"
+              :disabled="!input.trim() || status === 'streaming'"
+              @click="handleSubmit"
+            >
+              发送
+            </button>
+          </div>
+        </div>
       </UContainer>
     </template>
   </UDashboardPanel>
 
   <UContainer
-    v-else
+    v-else-if="!loading"
     class="flex-1 flex flex-col gap-4 sm:gap-6"
   >
     <UError
@@ -195,5 +252,13 @@ onMounted(() => {
         />
       </template>
     </UError>
+  </UContainer>
+
+  <UContainer
+    v-else
+    class="flex-1 flex flex-col items-center justify-center"
+  >
+    <UIcon name="i-lucide-loader-circle" class="animate-spin size-8 text-primary" />
+    <p class="mt-2 text-muted">加载中...</p>
   </UContainer>
 </template>

@@ -1,8 +1,8 @@
 import { createUIMessageStream, createUIMessageStreamResponse } from 'ai'
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam, readBody } from 'nitro/h3'
-import { callQwenPawChat } from '../../../utils/qwenpaw'
-import { useDrizzle, tables, eq } from '../../../utils/drizzle'
+import { callQwenPawChat } from '../../../../utils/qwenpaw'
+import { useDrizzle, tables, eq } from '../../../../utils/drizzle'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -13,6 +13,9 @@ export default defineHandler(async (event) => {
   const body = await readBody(event)
   const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
 
+  console.log('[Chat] POST /api/chats/' + id)
+  console.log('[Chat] Body messages count:', body?.messages?.length)
+
   const db = useDrizzle()
 
   const session = await db.select().from(tables.sessions)
@@ -20,6 +23,7 @@ export default defineHandler(async (event) => {
     .then(rows => rows[0])
 
   if (!session) {
+    console.log('[Chat] Session not found:', id)
     throw new HTTPError({ statusCode: 404, statusMessage: 'Session not found' })
   }
 
@@ -35,8 +39,7 @@ export default defineHandler(async (event) => {
     content = lastMessage.content
   }
 
-  const abortController = new AbortController()
-  event.runtime?.node?.req?.on('close', () => abortController.abort())
+  console.log('[Chat] Content:', content.substring(0, 100))
 
   const qwenpawResponse = await callQwenPawChat(backendUrl, {
     content,
@@ -44,7 +47,11 @@ export default defineHandler(async (event) => {
     business_key: session.businessKey
   })
 
+  console.log('[Chat] QwenPaw status:', qwenpawResponse.status)
+
   if (!qwenpawResponse.ok) {
+    const errText = await qwenpawResponse.text().catch(() => '')
+    console.log('[Chat] QwenPaw error:', errText.substring(0, 200))
     throw new HTTPError({
       statusCode: qwenpawResponse.status,
       statusMessage: `QwenPaw backend error: ${qwenpawResponse.statusText}`
@@ -54,31 +61,51 @@ export default defineHandler(async (event) => {
   const reader = qwenpawResponse.body?.getReader()
   const decoder = new TextDecoder()
 
+  console.log('[Chat] Reader:', reader ? 'exists' : 'null')
+  console.log('[Chat] Response body:', qwenpawResponse.body ? 'exists' : 'null')
+
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
+      console.log('[Chat] Stream execute started')
       let buffer = ''
+      let chunkCount = 0
       while (reader) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          console.log('[Chat] Reader done')
+          break
+        }
 
-        buffer += decoder.decode(value, { stream: true })
+        chunkCount++
+        const chunk = decoder.decode(value, { stream: true })
+        console.log('[Chat] Chunk', chunkCount, ':', chunk.substring(0, 200))
+        buffer += chunk
         const lines = buffer.split('\n')
         buffer = lines.pop() || ''
 
         for (const line of lines) {
           const trimmed = line.trim()
-          if (!trimmed.startsWith('data: ')) continue
+          if (!trimmed) continue
+          if (!trimmed.startsWith('data: ')) {
+            console.log('[Chat] Non-data line:', trimmed.substring(0, 100))
+            continue
+          }
           const data = trimmed.slice(6)
-          if (data === '[DONE]') continue
+          if (data === '[DONE]') {
+            console.log('[Chat] Received [DONE]')
+            continue
+          }
 
           try {
             const event = JSON.parse(data)
+            console.log('[Chat] Event:', JSON.stringify(event).substring(0, 200))
             handleQwenPawEvent(writer, event)
-          } catch {
-            // ignore parse errors
+          } catch (e) {
+            console.log('[Chat] Parse error:', data.substring(0, 100))
           }
         }
       }
+      console.log('[Chat] Stream ended, chunks:', chunkCount)
 
       if (buffer) {
         const trimmed = buffer.trim()

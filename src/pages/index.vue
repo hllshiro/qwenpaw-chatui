@@ -26,12 +26,18 @@ async function onSubmit() {
   if (!input.value.trim()) return
   loading.value = true
   try {
+    console.log('[Home] Creating session...')
     const session = await createSession(businessKey.value)
+    console.log('[Home] Session created:', session)
+    console.log('[Home] Updating title...')
     await $fetch(`/api/chats/${session.id}`, {
       method: 'PUT',
       body: { title: input.value.slice(0, 50) }
     })
+    console.log('[Home] Redirecting to:', `/chat/${session.id}`)
     router.push(`/chat/${session.id}`)
+  } catch (err) {
+    console.error('[Home] Error:', err)
   } finally {
     loading.value = false
   }
