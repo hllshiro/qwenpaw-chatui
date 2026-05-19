@@ -1,161 +1,131 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watchEffect, toRaw } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { $fetch } from 'ofetch'
-import type { UIMessage } from 'ai'
 import { useRoute } from 'vue-router'
 import { useSessions } from '../../composables/useSessions'
-import { useChatSession } from '../../composables/useChatSession'
-import ChatMessageContent from '../../components/chat/message/MessageContent.vue'
-import ChatMessageActions from '../../components/chat/message/MessageActions.vue'
+import { useChat, type ChatMessage } from '../../composables/useChat'
 import ChatIndicator from '../../components/chat/Indicator.vue'
 import Navbar from '../../components/Navbar.vue'
 
 const route = useRoute<'/chat/[id]'>()
 const toast = useToast()
 const { updateSession } = useSessions()
-const { getOrCreateChat, sendMessage, stop, regenerate } = useChatSession()
 
-const data = ref<any>(null)
-const historyMessages = ref<any[]>([])
+const sessionId = route.params.id as string
+
+const sessionData = ref<any>(null)
 const loading = ref(true)
-
-function convertQwenPawMessage(msg: any, index: number): UIMessage {
-  const parts: any[] = []
-  if (Array.isArray(msg.content)) {
-    for (const part of msg.content) {
-      if (part.type === 'text' && part.text) {
-        parts.push({ type: 'text', text: part.text })
-      }
-    }
-  } else if (typeof msg.content === 'string') {
-    parts.push({ type: 'text', text: msg.content })
-  }
-
-  return {
-    id: msg.id || `msg-${index}-${Date.now()}`,
-    role: msg.role || 'user',
-    parts
-  } as UIMessage
-}
 
 onMounted(async () => {
   try {
-    // Fetch session metadata and history in parallel
-    const [sessionData, historyData] = await Promise.all([
-      $fetch(`/api/chats/${route.params.id}`),
-      $fetch(`/api/chats/${route.params.id}/history`).catch(() => ({ messages: [], status: 'idle' }))
+    const [data, history] = await Promise.all([
+      $fetch(`/api/chats/${sessionId}`),
+      $fetch(`/api/chats/${sessionId}/history`).catch(() => ({ messages: [] }))
     ])
 
-    data.value = sessionData
-    historyMessages.value = (historyData?.messages || []).map(convertQwenPawMessage)
-    console.log('[ChatPage] Loaded session:', data.value)
-    console.log('[ChatPage] Loaded history:', historyMessages.value.length, 'messages')
+    sessionData.value = data
+    title.value = data?.title || '新会话'
+
+    // Load history messages
+    if (history?.messages?.length > 0) {
+      for (const msg of history.messages) {
+        const role = msg.role || 'user'
+        const content = extractContent(msg.content)
+        if (content) {
+          const historyMsg: ChatMessage = {
+            id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            role,
+            content,
+            timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
+          }
+          messages.value.push(historyMsg)
+        }
+      }
+    }
   } catch (err) {
-    console.error('[ChatPage] Failed to fetch session:', err)
+    console.error('[ChatPage] Failed to load:', err)
   } finally {
     loading.value = false
   }
 })
+
+function extractContent(content: any): string {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) {
+    return content
+      .filter((p: any) => p.type === 'text' && p.text)
+      .map((p: any) => p.text)
+      .join('')
+  }
+  return ''
+}
 
 const title = ref<string>('新会话')
 
 const businessKey = ref(
   new URLSearchParams(window.location.search).get('business_key')
   || (window as unknown as Record<string, { business_key?: string }>).__QWENPAW_CONFIG__?.business_key
+  || sessionData.value?.businessKey
   || 'default'
 )
 
-const sessionId = ref<string>(route.params.id as string)
-const chat = ref<any>(null)
-const messages = ref<UIMessage[]>([])
-
-const status = computed(() => chat.value?.status || 'ready')
-const chatErrorComputed = computed(() => chat.value?.error)
+const { messages, status, error, sendMessage, stop } = useChat(sessionId)
 
 const input = ref('')
-const editingMessageId = ref<string | null>(null)
+const editingId = ref<string | null>(null)
+const editingText = ref('')
 
-watchEffect(() => {
-  if (data.value?.id) {
-    sessionId.value = data.value.id
-    title.value = data.value.title || '新会话'
-    businessKey.value = data.value.businessKey || businessKey.value
-    chat.value = getOrCreateChat(sessionId.value, businessKey.value, historyMessages.value)
-    messages.value = [...historyMessages.value]
-  }
-})
-
-// Sync messages from chat instance periodically
-let syncTimer: ReturnType<typeof setInterval> | null = null
-onMounted(() => {
-  syncTimer = setInterval(() => {
-    if (chat.value) {
-      const rawChat = toRaw(chat.value)
-      const chatMsgs = rawChat?.messages
-      if (Array.isArray(chatMsgs) && chatMsgs.length !== messages.value.length) {
-        messages.value = [...chatMsgs]
-      }
-    }
-  }, 300)
-})
-
-onUnmounted(() => {
-  if (syncTimer) clearInterval(syncTimer)
-})
-
-async function handleSubmit(e?: Event) {
-  e?.preventDefault()
-  console.log('[ChatPage] handleSubmit called!', input.value)
+function handleSubmit() {
   if (!input.value.trim()) return
-  if (!chat.value) {
-    console.error('[ChatPage] Chat not initialized')
-    return
-  }
-
-  const sentText = input.value
-  try {
-    console.log('[ChatPage] Calling sendMessage...')
-    await sendMessage(sessionId.value, sentText)
-    console.log('[ChatPage] sendMessage done')
-  } catch (err) {
-    console.error('[ChatPage] Error:', err)
-  }
-
+  const text = input.value
   input.value = ''
+  sendMessage(text)
 
-  if (chat.value && chat.value.messages && chat.value.messages.length <= 1) {
-    const newTitle = sentText.slice(0, 50)
-    updateSession(sessionId.value, { title: newTitle })
+  if (messages.value.length <= 1) {
+    const newTitle = text.slice(0, 50)
+    updateSession(sessionId, { title: newTitle })
     title.value = newTitle
   }
 }
 
-function startEdit(message: UIMessage) {
-  if (editingMessageId.value) return
-  editingMessageId.value = message.id
+function startEdit(msg: ChatMessage) {
+  editingId.value = msg.id
+  editingText.value = msg.content
 }
 
 function cancelEdit() {
-  editingMessageId.value = null
+  editingId.value = null
+  editingText.value = ''
 }
 
-function saveEdit(message: UIMessage, text: string) {
-  editingMessageId.value = null
-  sendMessage(sessionId.value, text, message.id)
+function saveEdit(msg: ChatMessage) {
+  const text = editingText.value
+  editingId.value = null
+  editingText.value = ''
+  // Remove messages after this one and resend
+  const idx = messages.value.findIndex(m => m.id === msg.id)
+  if (idx >= 0) {
+    messages.value.splice(idx + 1)
+  }
+  msg.content = text
+  sendMessage(text)
 }
 
-function regenerateMessage(message: UIMessage) {
-  regenerate(sessionId.value, message.id)
-}
-
-function handleStop() {
-  stop(sessionId.value)
+function regenerate() {
+  if (messages.value.length > 0) {
+    const lastUserMsg = [...messages.value].reverse().find(m => m.role === 'user')
+    if (lastUserMsg) {
+      const idx = messages.value.indexOf(lastUserMsg)
+      messages.value.splice(idx + 1)
+      sendMessage(lastUserMsg.content)
+    }
+  }
 }
 </script>
 
 <template>
   <UDashboardPanel
-    v-if="data?.id"
+    v-if="sessionData?.id"
     id="chat"
     class="relative min-h-0"
     :ui="{ body: 'p-0 sm:p-0 overscroll-none' }"
@@ -172,48 +142,71 @@ function handleStop() {
 
     <template #body>
       <UContainer class="flex-1 flex flex-col gap-4 sm:gap-6">
-        <UChatMessages
-          should-auto-scroll
-          :messages="messages"
-          :status="status"
-          class="pt-(--ui-header-height) pb-4 sm:pb-6"
-        >
-          <template #indicator>
-            <div class="flex items-center gap-1.5">
-              <ChatIndicator />
-
-              <UChatShimmer
-                text="思考中..."
-                class="text-sm"
-              />
-            </div>
-          </template>
-
-          <template #content="{ message }">
-            <ChatMessageContent
-              :message="message"
-              :editing="editingMessageId === message.id"
-              @save="saveEdit"
-              @cancel-edit="cancelEdit"
-            />
-          </template>
-
-          <template #actions="{ message }">
-            <ChatMessageActions
-              :message="message"
-              :streaming="status === 'streaming' && message.id === messages[messages.length - 1]?.id"
-              :editing="editingMessageId === message.id"
-              @edit="startEdit"
-              @regenerate="regenerateMessage"
-            />
-          </template>
-        </UChatMessages>
-
-        <div class="sticky bottom-0 z-10 bg-default/75 backdrop-blur border-t border-default p-4">
-          <div class="flex gap-2 mb-2">
-            <span class="text-xs text-muted">debug: status={{ status }}, chat={{ chat ? 'yes' : 'no' }}</span>
-            <button type="button" @click="console.log('[TEST] click!')" class="text-xs text-primary underline">测试点击</button>
+        <div class="flex-1 overflow-y-auto pt-(--ui-header-height) pb-4 sm:pb-6 space-y-4">
+          <div v-if="messages.length === 0 && status === 'ready'" class="flex items-center justify-center h-full text-muted text-sm">
+            输入消息开始对话
           </div>
+
+          <div v-for="msg in messages" :key="msg.id" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+            <div
+              class="max-w-[80%] rounded-lg px-4 py-2 text-sm"
+              :class="msg.role === 'user'
+                ? 'bg-primary text-white'
+                : 'bg-default ring ring-default'"
+            >
+              <!-- Reasoning -->
+              <div v-if="msg.reasoning" class="mb-2 text-xs text-muted italic border-l-2 border-primary/30 pl-2">
+                <div class="flex items-center gap-1 mb-1">
+                  <UIcon name="i-lucide-brain" class="size-3" />
+                  <span>思考过程</span>
+                </div>
+                <div class="whitespace-pre-wrap">{{ msg.reasoning }}</div>
+              </div>
+
+              <!-- Tool calls -->
+              <div v-if="msg.toolCalls?.length" class="mb-2 space-y-1">
+                <div v-for="tool in msg.toolCalls" :key="tool.id" class="flex items-center gap-2 text-xs bg-muted/50 rounded px-2 py-1">
+                  <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
+                  <span class="font-mono">{{ tool.name }}</span>
+                  <span v-if="tool.result" class="text-muted">✓</span>
+                  <span v-else class="text-muted animate-pulse">...</span>
+                </div>
+              </div>
+
+              <!-- Content -->
+              <template v-if="editingId === msg.id">
+                <textarea
+                  v-model="editingText"
+                  class="w-full bg-transparent border border-default rounded p-1 text-sm resize-none"
+                  rows="3"
+                  @keydown.escape="cancelEdit"
+                />
+                <div class="flex gap-1 mt-1 justify-end">
+                  <UButton size="xs" variant="ghost" @click="cancelEdit">取消</UButton>
+                  <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
+                </div>
+              </template>
+              <div v-else class="whitespace-pre-wrap">{{ msg.content }}</div>
+
+              <!-- Actions -->
+              <div v-if="msg.role === 'user' && editingId !== msg.id" class="flex justify-end mt-1">
+                <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">编辑</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Streaming indicator -->
+          <div v-if="status === 'streaming' && !messages.some(m => m.role === 'assistant' && m.content)" class="flex justify-start">
+            <div class="bg-default ring ring-default rounded-lg px-4 py-2 flex items-center gap-1.5">
+              <ChatIndicator />
+              <span class="text-sm text-muted">思考中...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div class="sticky bottom-0 z-10 bg-default/75 backdrop-blur border-t border-default p-4">
+          <div v-if="error" class="mb-2 text-xs text-error">{{ error.message }}</div>
           <div class="flex gap-2">
             <input
               v-model="input"
@@ -221,11 +214,19 @@ function handleStop() {
               placeholder="输入消息..."
               class="flex-1 rounded-lg border border-default bg-default px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               :disabled="status === 'streaming'"
+              @keydown.enter.exact.prevent="handleSubmit"
             />
             <button
-              type="button"
-              class="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50"
-              :disabled="!input.trim() || status === 'streaming'"
+              v-if="status === 'streaming'"
+              class="px-4 py-2 bg-error text-white rounded-lg text-sm"
+              @click="stop"
+            >
+              停止
+            </button>
+            <button
+              v-else
+              class="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50 text-sm"
+              :disabled="!input.trim()"
               @click="handleSubmit"
             >
               发送
@@ -245,19 +246,12 @@ function handleStop() {
       class="min-h-full"
     >
       <template #links>
-        <UButton
-          to="/"
-          size="lg"
-          label="返回首页"
-        />
+        <UButton to="/" size="lg" label="返回首页" />
       </template>
     </UError>
   </UContainer>
 
-  <UContainer
-    v-else
-    class="flex-1 flex flex-col items-center justify-center"
-  >
+  <UContainer v-else class="flex-1 flex flex-col items-center justify-center">
     <UIcon name="i-lucide-loader-circle" class="animate-spin size-8 text-primary" />
     <p class="mt-2 text-muted">加载中...</p>
   </UContainer>
