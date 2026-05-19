@@ -38,6 +38,9 @@
 - [x] 3.8 实现聊天代理 API (`POST /api/chats/[id]`)
   - 调用 QwenPaw 后端
   - 转换 SSE 格式返回
+- [x] 3.8b 实现历史消息 API (`GET /api/chats/[id]/history`)
+  - 通过 list_chats 查找 chat_id
+  - 从 QwenPaw 获取消息历史
 - [ ] 3.9 使用 Postman/curl 测试所有 API
 
 ### 阶段4：前端页面
@@ -45,6 +48,10 @@
 - [x] 4.1 创建会话管理 Composable (`src/composables/useSessions.ts`)
   - fetchSessions、createSession、updateSession、deleteSession
   - groupedSessions（按日期分组）
+- [x] 4.1b 创建聊天管理 Composable (`src/composables/useChatSession.ts`)
+  - Chat 实例生命周期管理（跨页面保持）
+  - sendMessage、stop、regenerate
+  - 历史消息同步
 - [x] 4.2 修改布局组件 (`src/layouts/default.vue`)
   - 侧边栏显示会话列表
   - 新建会话按钮
@@ -61,11 +68,12 @@
   - 移除 UserMenu 组件（GitHub登录相关）
   - 移除 ChatVisibility 组件（分享功能相关）
   - 保留 ChatMessageContent、ChatMessageActions
-- [ ] 4.6 验证聊天功能
-  - 发送消息
-  - 流式接收回复
-  - 工具调用展示
-  - 推理过程展示
+- [x] 4.6 验证聊天功能
+  - 发送消息 ✅
+  - 流式接收回复 ✅
+  - 历史消息加载 ✅
+  - 工具调用展示（待验证）
+  - 推理过程展示（待验证）
 
 ### 阶段5：主题定制
 
