@@ -4,7 +4,6 @@ import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useSessions } from '../../composables/useSessions'
 import { useChat, type ChatMessage } from '../../composables/useChat'
-import ChatIndicator from '../../components/chat/Indicator.vue'
 import Navbar from '../../components/Navbar.vue'
 
 const route = useRoute<'/chat/[id]'>()
@@ -198,7 +197,11 @@ function regenerate() {
           <!-- Streaming indicator -->
           <div v-if="status === 'streaming' && !messages.some(m => m.role === 'assistant' && m.content)" class="flex justify-start">
             <div class="bg-default ring ring-default rounded-lg px-4 py-2 flex items-center gap-1.5">
-              <ChatIndicator />
+              <div class="flex gap-1">
+                <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0ms" />
+                <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 150ms" />
+                <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 300ms" />
+              </div>
               <span class="text-sm text-muted">思考中...</span>
             </div>
           </div>
