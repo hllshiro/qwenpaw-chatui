@@ -29,73 +29,83 @@ onMounted(async () => {
     // Load history messages
     if (history?.messages?.length > 0) {
       const historyMessages = history.messages
-      // Build a set of reasoning message IDs: when multiple assistant messages share
-      // the same original_id, the first one is the thinking/reasoning content.
-      const reasoningIds = new Set<string>()
-      const assistantByOrigId = new Map<string, any[]>()
+      // Group messages by original_id to reconstruct conversation turns
+      const turnsByOrigId = new Map<string, any[]>()
       for (const msg of historyMessages) {
-        if (msg.role !== 'assistant') continue
         const origId = msg.metadata?.original_id || msg.id
-        if (!assistantByOrigId.has(origId)) assistantByOrigId.set(origId, [])
-        assistantByOrigId.get(origId)!.push(msg)
-      }
-      for (const [, msgs] of assistantByOrigId) {
-        if (msgs.length >= 2) {
-          reasoningIds.add(msgs[0].id)
-        }
+        if (!turnsByOrigId.has(origId)) turnsByOrigId.set(origId, [])
+        turnsByOrigId.get(origId)!.push(msg)
       }
 
-      let lastUserMsg: ChatMessage | null = null
-      for (const msg of historyMessages) {
-        const role = msg.role || 'user'
-        if (role === 'user') {
-          const content = extractContent(msg.content)
+      for (const [, msgs] of turnsByOrigId) {
+        // Find user message in this turn
+        const userMsg = msgs.find((m: any) => m.role === 'user')
+        if (userMsg) {
+          const content = extractContent(userMsg.content)
           if (content) {
-            const historyMsg: ChatMessage = {
-              id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            messages.value.push({
+              id: userMsg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
               role: 'user',
               content,
-              timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
-            }
-            messages.value.push(historyMsg)
-            lastUserMsg = historyMsg
+              timestamp: userMsg.created_at ? new Date(userMsg.created_at).getTime() : Date.now()
+            })
           }
-          continue
         }
 
-        if (role === 'assistant') {
-          const isReasoning = reasoningIds.has(msg.id)
-          if (isReasoning) {
-            // Attach reasoning to the previous assistant message or create one
-            const reasoning = extractContent(msg.content)
-            if (reasoning) {
-              const lastAssistant = [...messages.value].reverse().find(m => m.role === 'assistant')
-              if (lastAssistant && lastAssistant.timestamp > (lastUserMsg?.timestamp || 0)) {
-                lastAssistant.reasoning = reasoning
-              } else {
-                // No assistant message yet, create one with reasoning only
-                const historyMsg: ChatMessage = {
-                  id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                  role: 'assistant',
-                  content: '',
-                  reasoning,
-                  timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
-                }
-                messages.value.push(historyMsg)
-              }
-            }
-          } else {
-            const content = extractContent(msg.content)
-            if (content) {
-              const historyMsg: ChatMessage = {
-                id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                role: 'assistant',
-                content,
-                timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
-              }
-              messages.value.push(historyMsg)
-            }
+        // Find reasoning in this turn
+        const reasoningMsg = msgs.find((m: any) => m.type === 'reasoning')
+        const reasoning = reasoningMsg ? extractContent(reasoningMsg.content) : ''
+
+        // Find tool calls in this turn
+        const pluginCalls = msgs.filter((m: any) => m.type === 'plugin_call')
+        const toolCalls = pluginCalls.map((m: any) => {
+          const dataPart = Array.isArray(m.content) ? m.content.find((p: any) => p.type === 'data') : null
+          const data = dataPart?.data || {}
+          // Find matching output
+          const outputMsg = msgs.find((om: any) => {
+            if (om.type !== 'plugin_call_output') return false
+            const outData = Array.isArray(om.content) ? om.content.find((p: any) => p.type === 'data')?.data : null
+            return outData?.call_id === data.call_id
+          })
+          const outputData = outputMsg && Array.isArray(outputMsg.content)
+            ? outputMsg.content.find((p: any) => p.type === 'data')?.data
+            : null
+          return {
+            id: data.call_id || `call-${Date.now()}`,
+            name: data.name || '',
+            args: data.arguments,
+            result: outputData?.output || null
           }
+        })
+
+        // Find final message content in this turn
+        const assistantMsg = msgs.find((m: any) => m.type === 'message' && m.role === 'assistant')
+        const content = assistantMsg ? extractContent(assistantMsg.content) : ''
+
+        // Find approval request in this turn
+        const approvalMsg = msgs.find((m: any) => m.metadata?.message_type === 'tool_guard_approval')
+        const approvalMeta = approvalMsg?.metadata
+        const approval = approvalMeta?.message_type === 'tool_guard_approval' ? {
+          requestId: approvalMeta.approval_request_id || '',
+          toolName: approvalMeta.tool_name || '',
+          severity: approvalMeta.severity || '',
+          findingsSummary: approvalMeta.findings_summary || '',
+          toolParams: approvalMeta.tool_params
+        } : undefined
+
+        // Create assistant message if there's any content
+        if (content || reasoning || toolCalls.length > 0 || approval) {
+          messages.value.push({
+            id: assistantMsg?.id || reasoningMsg?.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            role: 'assistant',
+            content: content || '',
+            reasoning: reasoning || undefined,
+            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+            approval,
+            timestamp: (assistantMsg || reasoningMsg)?.created_at
+              ? new Date((assistantMsg || reasoningMsg).created_at).getTime()
+              : Date.now()
+          })
         }
       }
     }
@@ -126,7 +136,7 @@ const businessKey = ref(
   || 'default'
 )
 
-const { messages, status, error, streamingPhase, sendMessage, stop } = useChat(sessionId)
+const { messages, status, error, streamingPhase, currentAssistantId, sendMessage, stop } = useChat(sessionId)
 
 const input = ref('')
 const editingId = ref<string | null>(null)
@@ -139,6 +149,10 @@ function toggleReasoning(msgId: string) {
   } else {
     expandedReasoning.value.add(msgId)
   }
+}
+
+function isStreamingMessage(msg: ChatMessage): boolean {
+  return status.value === 'streaming' && msg.role === 'assistant' && msg.id === currentAssistantId.value
 }
 
 function handleSubmit() {
@@ -208,7 +222,7 @@ function regenerate() {
 
     <template #body>
       <UContainer class="flex-1 flex flex-col gap-4 sm:gap-6">
-        <div class="flex-1 overflow-y-auto pt-(--ui-header-height) pb-4 sm:pb-6 space-y-4">
+        <div class="flex-1 overflow-y-auto pt-(--ui-header-height) pb-4 sm:pb-6 space-y-4 px-4">
           <div v-if="messages.length === 0 && status === 'ready'" class="flex items-center justify-center h-full text-muted text-sm">
             输入消息开始对话
           </div>
@@ -221,13 +235,13 @@ function regenerate() {
                 : 'bg-default ring ring-default'"
             >
               <!-- Reasoning -->
-              <div v-if="msg.reasoning || (streamingPhase === 'reasoning' && msg.id === messages[messages.length - 1]?.id)" class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
+              <div v-if="msg.reasoning || isStreamingMessage(msg)" class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
                 <div
                   class="flex items-center gap-1 cursor-pointer select-none hover:text-default transition-colors"
                   @click="toggleReasoning(msg.id)"
                 >
                   <UIcon name="i-lucide-brain" class="size-3" />
-                  <span v-if="streamingPhase === 'reasoning' && !msg.reasoning" class="animate-pulse">思考中...</span>
+                  <span v-if="isStreamingMessage(msg) && !msg.reasoning" class="animate-pulse">思考中...</span>
                   <span v-else>思考过程</span>
                   <UIcon
                     :name="expandedReasoning.has(msg.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
@@ -260,25 +274,13 @@ function regenerate() {
                   <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
                 </div>
               </template>
-              <ChatComark v-else-if="msg.role === 'assistant' && msg.content" :markdown="msg.content" class="prose dark:prose-invert prose-sm max-w-none" />
-              <div v-else class="whitespace-pre-wrap">{{ msg.content }}</div>
+              <ChatComark v-else-if="msg.role === 'assistant' && msg.content" :markdown="msg.content" :streaming="streamingPhase === 'message'" class="prose dark:prose-invert prose-sm max-w-none" />
+              <div v-else-if="msg.content" class="whitespace-pre-wrap">{{ msg.content }}</div>
 
               <!-- Actions -->
               <div v-if="msg.role === 'user' && editingId !== msg.id" class="flex justify-end mt-1">
                 <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">编辑</button>
               </div>
-            </div>
-          </div>
-
-          <!-- Streaming indicator: only show when waiting for first event -->
-          <div v-if="streamingPhase === 'waiting'" class="flex justify-start">
-            <div class="bg-default ring ring-default rounded-lg px-4 py-2 flex items-center gap-1.5">
-              <div class="flex gap-1">
-                <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0ms" />
-                <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 150ms" />
-                <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 300ms" />
-              </div>
-              <span class="text-sm text-muted">思考中...</span>
             </div>
           </div>
         </div>

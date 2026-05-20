@@ -48,6 +48,8 @@ export default defineHandler(async (event) => {
     })
   }
 
+  console.log('[ChatAPI] QwenPaw response status:', qwenpawResponse.status, 'content-type:', qwenpawResponse.headers.get('content-type'))
+
   // Directly pass through the SSE response
   return new Response(qwenpawResponse.body, {
     headers: {
