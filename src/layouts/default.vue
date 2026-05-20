@@ -13,6 +13,7 @@ await fetchSessions()
 const sidebarOpen = ref(false)
 const renamingId = ref<string | null>(null)
 const renameInput = ref('')
+const deletingId = ref<string | null>(null)
 
 const items = computed(() => groupedSessions.value?.flatMap((group) => {
   return [{
@@ -61,10 +62,21 @@ function cancelRename() {
 }
 
 async function handleDelete(id: string) {
+  deletingId.value = id
+}
+
+async function confirmDelete() {
+  if (!deletingId.value) return
+  const id = deletingId.value
+  deletingId.value = null
   await deleteSession(id)
   if ((route.params as { id?: string }).id === id) {
     router.push('/')
   }
+}
+
+function cancelDelete() {
+  deletingId.value = null
 }
 
 defineShortcuts({
@@ -187,6 +199,28 @@ defineShortcuts({
       <UButton
         label="确定"
         @click="confirmRename"
+      />
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="deletingId"
+    title="删除会话"
+  >
+    <template #body>
+      <p class="text-sm text-muted">确定要删除该会话吗？此操作不可撤销。</p>
+    </template>
+    <template #footer>
+      <UButton
+        label="取消"
+        color="neutral"
+        variant="ghost"
+        @click="cancelDelete"
+      />
+      <UButton
+        label="删除"
+        color="error"
+        @click="confirmDelete"
       />
     </template>
   </UModal>

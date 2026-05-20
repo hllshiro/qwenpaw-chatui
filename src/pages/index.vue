@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { $fetch } from 'ofetch'
 import { useSessions } from '../composables/useSessions'
 
 const router = useRouter()
@@ -29,13 +28,10 @@ async function onSubmit() {
     console.log('[Home] Creating session...')
     const session = await createSession(businessKey.value)
     console.log('[Home] Session created:', session)
-    console.log('[Home] Updating title...')
-    await $fetch(`/api/chats/${session.id}`, {
-      method: 'PUT',
-      body: { title: input.value.slice(0, 50) }
-    })
+    const msg = input.value
+    input.value = ''
     console.log('[Home] Redirecting to:', `/chat/${session.id}`)
-    router.push(`/chat/${session.id}`)
+    router.push({ path: `/chat/${session.id}`, query: { msg } })
   } catch (err) {
     console.error('[Home] Error:', err)
   } finally {

@@ -10,6 +10,29 @@ export default defineHandler(async (event) => {
 
   const db = useDrizzle()
 
+  // Delete from QwenPaw backend
+  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  try {
+    const listResponse = await fetch(`${backendUrl}/api/chats`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    if (listResponse.ok) {
+      const chats = await listResponse.json()
+      const chat = chats.find((c: any) => c.session_id === id)
+      if (chat) {
+        await fetch(`${backendUrl}/api/chats/${chat.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        console.log('[Delete] Deleted backend chat:', chat.id)
+      }
+    }
+  } catch (err) {
+    console.error('[Delete] Failed to delete backend chat:', err)
+  }
+
+  // Delete from local DB
   const [deleted] = await db.delete(tables.sessions)
     .where(eq(tables.sessions.id, id))
     .returning()

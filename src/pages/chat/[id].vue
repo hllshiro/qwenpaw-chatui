@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useSessions } from '../../composables/useSessions'
@@ -9,7 +9,7 @@ import ChatComark from '../../components/chat/Comark'
 
 const route = useRoute<'/chat/[id]'>()
 const toast = useToast()
-const { updateSession } = useSessions()
+const { updateSession, sessions } = useSessions()
 
 const sessionId = route.params.id as string
 
@@ -24,7 +24,23 @@ onMounted(async () => {
     ])
 
     sessionData.value = data
-    title.value = data?.title || '新会话'
+    const sessionTitle = data?.title || '新会话'
+    if (sessionTitle !== title.value) {
+      updateSession(sessionId, { title: sessionTitle })
+    }
+
+    // Skip history load if messages already cached in memory
+    if (messages.value.length > 0) {
+      const initialMsg = route.query.msg as string | undefined
+      if (initialMsg?.trim()) {
+        if (window.history.replaceState) {
+          window.history.replaceState({}, '', `/chat/${sessionId}`)
+        }
+        await sendMessage(initialMsg.trim())
+        syncBackendTitle()
+      }
+      return
+    }
 
     // Load history messages
     if (history?.messages?.length > 0) {
@@ -109,6 +125,17 @@ onMounted(async () => {
         }
       }
     }
+
+    // Send initial message if passed from home page
+    const initialMsg = route.query.msg as string | undefined
+    if (initialMsg?.trim()) {
+      // Clean up URL query parameter
+      if (window.history.replaceState) {
+        window.history.replaceState({}, '', `/chat/${sessionId}`)
+      }
+      await sendMessage(initialMsg.trim())
+      syncBackendTitle()
+    }
   } catch (err) {
     console.error('[ChatPage] Failed to load:', err)
   } finally {
@@ -127,7 +154,10 @@ function extractContent(content: any): string {
   return ''
 }
 
-const title = ref<string>('新会话')
+const title = computed(() => {
+  const session = sessions.value.find(s => s.id === sessionId)
+  return session?.title || '新会话'
+})
 
 const businessKey = ref(
   new URLSearchParams(window.location.search).get('business_key')
@@ -137,6 +167,17 @@ const businessKey = ref(
 )
 
 const { messages, status, error, streamingPhase, currentAssistantId, sendMessage, stop } = useChat(sessionId)
+
+function syncBackendTitle() {
+  $fetch(`/api/chats/${sessionId}/history`).then((history: any) => {
+    const backendTitle = history?.title
+    if (backendTitle && backendTitle !== title.value) {
+      updateSession(sessionId, { title: backendTitle })
+    }
+  }).catch((err: any) => {
+    console.error('[ChatPage] Failed to sync title:', err)
+  })
+}
 
 const input = ref('')
 const editingId = ref<string | null>(null)
@@ -160,12 +201,6 @@ function handleSubmit() {
   const text = input.value
   input.value = ''
   sendMessage(text)
-
-  if (messages.value.length <= 1) {
-    const newTitle = text.slice(0, 50)
-    updateSession(sessionId, { title: newTitle })
-    title.value = newTitle
-  }
 }
 
 function startEdit(msg: ChatMessage) {
