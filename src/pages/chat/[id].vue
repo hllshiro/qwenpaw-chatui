@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useSessions } from '../../composables/useSessions'
 import { useChat, type ChatMessage } from '../../composables/useChat'
 import Navbar from '../../components/Navbar.vue'
+import ChatComark from '../../components/chat/Comark'
 
 const route = useRoute<'/chat/[id]'>()
 const toast = useToast()
@@ -27,17 +28,74 @@ onMounted(async () => {
 
     // Load history messages
     if (history?.messages?.length > 0) {
-      for (const msg of history.messages) {
+      const historyMessages = history.messages
+      // Build a set of reasoning message IDs: when multiple assistant messages share
+      // the same original_id, the first one is the thinking/reasoning content.
+      const reasoningIds = new Set<string>()
+      const assistantByOrigId = new Map<string, any[]>()
+      for (const msg of historyMessages) {
+        if (msg.role !== 'assistant') continue
+        const origId = msg.metadata?.original_id || msg.id
+        if (!assistantByOrigId.has(origId)) assistantByOrigId.set(origId, [])
+        assistantByOrigId.get(origId)!.push(msg)
+      }
+      for (const [, msgs] of assistantByOrigId) {
+        if (msgs.length >= 2) {
+          reasoningIds.add(msgs[0].id)
+        }
+      }
+
+      let lastUserMsg: ChatMessage | null = null
+      for (const msg of historyMessages) {
         const role = msg.role || 'user'
-        const content = extractContent(msg.content)
-        if (content) {
-          const historyMsg: ChatMessage = {
-            id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            role,
-            content,
-            timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
+        if (role === 'user') {
+          const content = extractContent(msg.content)
+          if (content) {
+            const historyMsg: ChatMessage = {
+              id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              role: 'user',
+              content,
+              timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
+            }
+            messages.value.push(historyMsg)
+            lastUserMsg = historyMsg
           }
-          messages.value.push(historyMsg)
+          continue
+        }
+
+        if (role === 'assistant') {
+          const isReasoning = reasoningIds.has(msg.id)
+          if (isReasoning) {
+            // Attach reasoning to the previous assistant message or create one
+            const reasoning = extractContent(msg.content)
+            if (reasoning) {
+              const lastAssistant = [...messages.value].reverse().find(m => m.role === 'assistant')
+              if (lastAssistant && lastAssistant.timestamp > (lastUserMsg?.timestamp || 0)) {
+                lastAssistant.reasoning = reasoning
+              } else {
+                // No assistant message yet, create one with reasoning only
+                const historyMsg: ChatMessage = {
+                  id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                  role: 'assistant',
+                  content: '',
+                  reasoning,
+                  timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
+                }
+                messages.value.push(historyMsg)
+              }
+            }
+          } else {
+            const content = extractContent(msg.content)
+            if (content) {
+              const historyMsg: ChatMessage = {
+                id: msg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                role: 'assistant',
+                content,
+                timestamp: msg.created_at ? new Date(msg.created_at).getTime() : Date.now()
+              }
+              messages.value.push(historyMsg)
+            }
+          }
         }
       }
     }
@@ -68,11 +126,20 @@ const businessKey = ref(
   || 'default'
 )
 
-const { messages, status, error, sendMessage, stop } = useChat(sessionId)
+const { messages, status, error, streamingPhase, sendMessage, stop } = useChat(sessionId)
 
 const input = ref('')
 const editingId = ref<string | null>(null)
 const editingText = ref('')
+const expandedReasoning = ref(new Set<string>())
+
+function toggleReasoning(msgId: string) {
+  if (expandedReasoning.value.has(msgId)) {
+    expandedReasoning.value.delete(msgId)
+  } else {
+    expandedReasoning.value.add(msgId)
+  }
+}
 
 function handleSubmit() {
   if (!input.value.trim()) return
@@ -154,12 +221,20 @@ function regenerate() {
                 : 'bg-default ring ring-default'"
             >
               <!-- Reasoning -->
-              <div v-if="msg.reasoning" class="mb-2 text-xs text-muted italic border-l-2 border-primary/30 pl-2">
-                <div class="flex items-center gap-1 mb-1">
+              <div v-if="msg.reasoning || (streamingPhase === 'reasoning' && msg.id === messages[messages.length - 1]?.id)" class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
+                <div
+                  class="flex items-center gap-1 cursor-pointer select-none hover:text-default transition-colors"
+                  @click="toggleReasoning(msg.id)"
+                >
                   <UIcon name="i-lucide-brain" class="size-3" />
-                  <span>思考过程</span>
+                  <span v-if="streamingPhase === 'reasoning' && !msg.reasoning" class="animate-pulse">思考中...</span>
+                  <span v-else>思考过程</span>
+                  <UIcon
+                    :name="expandedReasoning.has(msg.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                    class="size-3 ml-auto"
+                  />
                 </div>
-                <div class="whitespace-pre-wrap">{{ msg.reasoning }}</div>
+                <div v-if="expandedReasoning.has(msg.id) && msg.reasoning" class="mt-1 whitespace-pre-wrap italic">{{ msg.reasoning }}</div>
               </div>
 
               <!-- Tool calls -->
@@ -185,6 +260,7 @@ function regenerate() {
                   <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
                 </div>
               </template>
+              <ChatComark v-else-if="msg.role === 'assistant' && msg.content" :markdown="msg.content" class="prose dark:prose-invert prose-sm max-w-none" />
               <div v-else class="whitespace-pre-wrap">{{ msg.content }}</div>
 
               <!-- Actions -->
@@ -194,8 +270,8 @@ function regenerate() {
             </div>
           </div>
 
-          <!-- Streaming indicator -->
-          <div v-if="status === 'streaming' && !messages.some(m => m.role === 'assistant' && m.content)" class="flex justify-start">
+          <!-- Streaming indicator: only show when waiting for first event -->
+          <div v-if="streamingPhase === 'waiting'" class="flex justify-start">
             <div class="bg-default ring ring-default rounded-lg px-4 py-2 flex items-center gap-1.5">
               <div class="flex gap-1">
                 <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0ms" />

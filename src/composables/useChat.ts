@@ -10,6 +10,7 @@ export interface ChatMessage {
 }
 
 export type ChatStatus = 'ready' | 'streaming' | 'error'
+export type StreamingPhase = 'idle' | 'waiting' | 'reasoning' | 'message'
 
 const sessionMessages = new Map<string, ChatMessage[]>()
 
@@ -22,6 +23,7 @@ export function useChat(sessionId: string) {
   const status = ref<ChatStatus>('ready')
   const error = ref<Error | null>(null)
   const currentAssistantId = ref<string | null>(null)
+  const streamingPhase = ref<StreamingPhase>('idle')
 
   function getOrCreateAssistantMessage(): ChatMessage {
     const existing = messages.value.find(
@@ -30,15 +32,15 @@ export function useChat(sessionId: string) {
     if (existing) return existing
 
     const id = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const msg: ChatMessage = {
+    messages.value.push({
       id,
       role: 'assistant',
       content: '',
       timestamp: Date.now()
-    }
-    messages.value.push(msg)
+    })
     currentAssistantId.value = id
-    return msg
+    // Return the reactive proxy from the array, not the plain object
+    return messages.value[messages.value.length - 1]
   }
 
   async function sendMessage(text: string) {
@@ -55,6 +57,7 @@ export function useChat(sessionId: string) {
     status.value = 'streaming'
     error.value = null
     currentAssistantId.value = null
+    streamingPhase.value = 'waiting'
 
     try {
       const response = await fetch(`/api/chats/${sessionId}`, {
@@ -117,7 +120,23 @@ export function useChat(sessionId: string) {
       if (status.value === 'streaming') {
         status.value = 'ready'
       }
+      streamingPhase.value = 'idle'
     }
+  }
+
+  function extractTextFromContent(content: unknown): string {
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) {
+      return content
+        .filter((p: any) => p.type === 'text' && p.text)
+        .map((p: any) => p.text)
+        .join('')
+    }
+    if (content && typeof content === 'object') {
+      const obj = content as Record<string, unknown>
+      if (typeof obj.text === 'string') return obj.text
+    }
+    return ''
   }
 
   function handleEvent(event: Record<string, unknown>) {
@@ -125,13 +144,19 @@ export function useChat(sessionId: string) {
     const type = event.type as string
 
     if (obj === 'message' && type === 'message') {
-      const content = event.content as string
+      if (streamingPhase.value !== 'message') {
+        streamingPhase.value = 'message'
+      }
+      const content = extractTextFromContent(event.content)
       if (content) {
         const msg = getOrCreateAssistantMessage()
         msg.content += content
       }
     } else if (obj === 'message' && type === 'reasoning') {
-      const content = event.content as string
+      if (streamingPhase.value === 'waiting') {
+        streamingPhase.value = 'reasoning'
+      }
+      const content = extractTextFromContent(event.content)
       if (content) {
         const msg = getOrCreateAssistantMessage()
         msg.reasoning = (msg.reasoning || '') + content
@@ -168,6 +193,7 @@ export function useChat(sessionId: string) {
     messages: computed(() => messages.value),
     status: computed(() => status),
     error: computed(() => error.value),
+    streamingPhase: computed(() => streamingPhase.value),
     sendMessage,
     stop,
     clearMessages
