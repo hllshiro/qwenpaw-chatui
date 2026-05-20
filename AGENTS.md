@@ -1,56 +1,63 @@
-# 开发规范
+# AGENTS.md — qwenpaw-chatui
 
-## 环境说明
+## What this is
 
-- 项目开发环境：**Windows**
-- 工具运行环境：**WSL (Linux)**
+Vue 3 chat UI that proxies to a separate QwenPaw backend (FastAPI). Not a Nuxt app — uses Nuxt UI as a component library via Vite. Nitro handles server routes.
 
-## 禁止执行的命令
+## Quick commands
 
-**严禁**在 WSL 中执行以下命令，因为会覆盖 Windows 的 node_modules，导致项目无法在 Windows 下正常运行：
+- `pnpm dev` — Vite dev server on `localhost:3000`
+- `pnpm lint` — ESLint on `src/`
+- `pnpm typecheck` — `vue-tsc -p ./tsconfig.app.json`
+- `pnpm db:generate` — generate Drizzle migrations
+- `pnpm db:migrate` — apply migrations
+- `pnpm build` — runs `db:migrate` then `vite build`
 
-- `pnpm install`
-- `pnpm add`
-- `pnpm remove`
-- `pnpm update`
-- `pnpm dev`
-- `pnpm build`
-- `pnpm run db:generate`
-- `pnpm run db:migrate`
-- `npm install`
-- `yarn install`
-- 任何会修改 `node_modules` 或 `pnpm-lock.yaml` 的命令
+CI order: lint → build → typecheck (see `.github/workflows/ci.yml`)
 
-## 允许执行的命令
+## Architecture
 
-- `pnpm typecheck`（只读操作，不修改依赖）
-- `git` 命令
-- 文件读写操作（Read/Write/Edit 工具）
+```
+src/              — Vue 3 frontend (pages, composables, components)
+server/           — Nitro server routes (API proxy to QwenPaw backend)
+server/routes/api/ — REST endpoints for sessions
+server/utils/qwenpaw.ts — calls QwenPaw backend API
+server/utils/drizzle.ts — DB singleton
+server/database/schema.ts — Drizzle schema (sessions table only)
+```
 
-## 依赖修改流程
+Frontend → Nitro server → QwenPaw backend (`localhost:8088`). SSE streaming is proxied through Nitro.
 
-如需修改依赖（package.json），只修改文件内容，由用户在 Windows 环境中自行执行 `pnpm install`。
+## Environment
 
-## QwenPaw 后端
+Copy `.env.example` to `.env`. Key vars:
+- `QWENPAW_BACKEND_URL` — QwenPaw backend (default `http://localhost:8088`)
+- `DATABASE_URL` — SQLite path (default `file:.data/qwenpaw.db`)
+- `PORT` — dev server port (default `3000`)
 
-- API 文档地址：`http://localhost:8088/docs`（FastAPI 自动生成）
-- 后端源码：`/mnt/d/Project/OpenSource/QwenPaw`
-- 有关 API 调用的问题，请先查阅 API 文档
+## Gotchas
 
-### 核心端点
+- **DB path mismatch**: runtime uses `file:.data/qwenpaw.db`, but `drizzle.config.ts` uses `file:./data/qwenpaw.db` — they're different directories
+- **Auto-imports**: `auto-imports.d.ts` and `components.d.ts` are generated — don't hand-edit
+- **Nitro plugins** run on server start: `server/plugins/migrations.ts` creates DB directory
+- **Session messages** are stored server-side in QwenPaw, not in local SQLite — local DB only tracks session metadata
+- **UI language** is Chinese throughout
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/console/chat` | 发送消息（流式响应） |
-| POST | `/api/console/chat/stop` | 停止正在运行的对话 |
-| GET | `/api/chats` | 列出会话 |
-| POST | `/api/chats` | 创建会话 |
-| GET | `/api/chats/{chat_id}` | 获取会话详情（含消息历史） |
-| PUT | `/api/chats/{chat_id}` | 更新会话 |
-| DELETE | `/api/chats/{chat_id}` | 删除会话 |
+## QwenPaw backend
 
-### 请求格式
+API docs: `http://localhost:8088/docs` (FastAPI auto-generated)
 
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/console/chat` | Send message (SSE stream) |
+| POST | `/api/console/chat/stop` | Stop active chat |
+| GET | `/api/chats` | List sessions |
+| POST | `/api/chats` | Create session |
+| GET | `/api/chats/{chat_id}` | Session detail + history |
+| PUT | `/api/chats/{chat_id}` | Update session |
+| DELETE | `/api/chats/{chat_id}` | Delete session |
+
+Request format:
 ```json
 {
   "input": [{"role": "user", "content": [{"type": "text", "text": "..."}]}],
