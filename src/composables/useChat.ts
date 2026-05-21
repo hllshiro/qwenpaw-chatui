@@ -50,7 +50,7 @@ export function useChat(sessionId: string) {
     return messages.value[messages.value.length - 1]
   }
 
-  async function sendMessage(text: string) {
+  async function sendMessage(text: string, options?: { onComplete?: () => void }) {
     if (!text.trim() || status.value === 'streaming') return
 
     const userMsg: ChatMessage = {
@@ -137,6 +137,7 @@ export function useChat(sessionId: string) {
         status.value = 'ready'
       }
       streamingPhase.value = 'idle'
+      options?.onComplete?.()
     }
   }
 

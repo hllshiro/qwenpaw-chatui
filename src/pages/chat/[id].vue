@@ -18,15 +18,18 @@ const loading = ref(true)
 
 onMounted(async () => {
   try {
-    const [data, history] = await Promise.all([
+    const [data, history, qwenpawChat] = await Promise.all([
       $fetch(`/api/chats/${sessionId}`),
-      $fetch(`/api/chats/${sessionId}/history`).catch(() => ({ messages: [] }))
+      $fetch(`/api/chats/${sessionId}/history`).catch(() => ({ messages: [] })),
+      $fetch(`/api/chats/spec?session_id=${sessionId}`).catch(() => null)
     ])
 
     sessionData.value = data
-    const sessionTitle = data?.title || '新会话'
-    if (sessionTitle !== title.value) {
-      updateSession(sessionId, { title: sessionTitle })
+
+    // Sync title from QwenPaw backend if available
+    const backendTitle = qwenpawChat?.name
+    if (backendTitle && backendTitle !== data?.title) {
+      updateSession(sessionId, { title: backendTitle })
     }
 
     // Skip history load if messages already cached in memory
@@ -133,8 +136,7 @@ onMounted(async () => {
       if (window.history.replaceState) {
         window.history.replaceState({}, '', `/chat/${sessionId}`)
       }
-      await sendMessage(initialMsg.trim())
-      syncBackendTitle()
+      await sendMessage(initialMsg.trim(), { onComplete: syncBackendTitle })
     }
   } catch (err) {
     console.error('[ChatPage] Failed to load:', err)
@@ -169,8 +171,8 @@ const businessKey = ref(
 const { messages, status, error, streamingPhase, currentAssistantId, sendMessage, stop } = useChat(sessionId)
 
 function syncBackendTitle() {
-  $fetch(`/api/chats/${sessionId}/history`).then((history: any) => {
-    const backendTitle = history?.title
+  $fetch(`/api/chats/spec?session_id=${sessionId}`).then((chat: any) => {
+    const backendTitle = chat?.name
     if (backendTitle && backendTitle !== title.value) {
       updateSession(sessionId, { title: backendTitle })
     }
@@ -200,7 +202,7 @@ function handleSubmit() {
   if (!input.value.trim()) return
   const text = input.value
   input.value = ''
-  sendMessage(text)
+  sendMessage(text, { onComplete: syncBackendTitle })
 }
 
 function startEdit(msg: ChatMessage) {
@@ -223,7 +225,7 @@ function saveEdit(msg: ChatMessage) {
     messages.value.splice(idx + 1)
   }
   msg.content = text
-  sendMessage(text)
+  sendMessage(text, { onComplete: syncBackendTitle })
 }
 
 function regenerate() {
@@ -232,7 +234,7 @@ function regenerate() {
     if (lastUserMsg) {
       const idx = messages.value.indexOf(lastUserMsg)
       messages.value.splice(idx + 1)
-      sendMessage(lastUserMsg.content)
+      sendMessage(lastUserMsg.content, { onComplete: syncBackendTitle })
     }
   }
 }
