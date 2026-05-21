@@ -101,88 +101,91 @@ function loadHistoryMessages(historyMessages: any[]) {
       }
     }
 
+    // Build blocks in order of appearance (preserves backend message order)
     const blocks: MessageBlock[] = []
+    const seenApprovalRequestIds = new Set<string>()
 
-    // Reasoning
-    const reasoningMsg = msgs.find((m: any) => m.type === 'reasoning')
-    if (reasoningMsg) {
-      const reasoningText = extractContent(reasoningMsg.content)
-      if (reasoningText) {
-        blocks.push({
-          id: reasoningMsg.id || `blk-${Date.now()}-reasoning`,
-          type: 'reasoning',
-          text: reasoningText
-        })
+    for (const msg of msgs) {
+      // Reasoning
+      if (msg.type === 'reasoning') {
+        const text = extractContent(msg.content)
+        if (text) {
+          blocks.push({
+            id: msg.id || `blk-${Date.now()}-reasoning`,
+            type: 'reasoning',
+            text
+          })
+        }
+        continue
       }
-    }
 
-    // Assistant message text (exclude approval messages)
-    const assistantMsg = msgs.find((m: any) => m.type === 'message' && m.role === 'assistant'
-      && m.metadata?.message_type !== 'tool_guard_approval')
-    if (assistantMsg) {
-      const content = extractContent(assistantMsg.content)
-      if (content) {
-        blocks.push({
-          id: assistantMsg.id || `blk-${Date.now()}-text`,
-          type: 'text',
-          text: content
-        })
+      // Assistant message text (exclude approval messages)
+      if (msg.type === 'message' && msg.role === 'assistant'
+        && msg.metadata?.message_type !== 'tool_guard_approval') {
+        const text = extractContent(msg.content)
+        if (text) {
+          blocks.push({
+            id: msg.id || `blk-${Date.now()}-text`,
+            type: 'text',
+            text
+          })
+        }
+        continue
       }
-    }
 
-    // Tool calls
-    const pluginCalls = msgs.filter((m: any) => m.type === 'plugin_call')
-    for (const callMsg of pluginCalls) {
-      const dataPart = Array.isArray(callMsg.content)
-        ? callMsg.content.find((p: any) => p.type === 'data')
-        : null
-      const data = dataPart?.data || {}
-
-      const outputMsg = msgs.find((om: any) => {
-        if (om.type !== 'plugin_call_output') return false
-        const outData = Array.isArray(om.content)
-          ? om.content.find((p: any) => p.type === 'data')?.data
+      // Plugin call (tool call request)
+      if (msg.type === 'plugin_call') {
+        const dataPart = Array.isArray(msg.content)
+          ? msg.content.find((p: any) => p.type === 'data')
           : null
-        return outData?.call_id === data.call_id
-      })
-      const outputData = outputMsg && Array.isArray(outputMsg.content)
-        ? outputMsg.content.find((p: any) => p.type === 'data')?.data
-        : null
+        const data = dataPart?.data || {}
 
-      blocks.push({
-        id: callMsg.id || `blk-${Date.now()}-tool`,
-        type: 'toolCall',
-        toolCall: {
-          id: data.call_id || `call-${Date.now()}`,
-          name: data.name || '',
-          args: data.arguments,
-          result: outputData?.output || null
-        }
-      })
-    }
+        // Find matching output
+        const outputMsg = msgs.find((om: any) => {
+          if (om.type !== 'plugin_call_output') return false
+          const outData = Array.isArray(om.content)
+            ? om.content.find((p: any) => p.type === 'data')?.data
+            : null
+          return outData?.call_id === data.call_id
+        })
+        const outputData = outputMsg && Array.isArray(outputMsg.content)
+          ? outputMsg.content.find((p: any) => p.type === 'data')?.data
+          : null
 
-    // Approval (deduplicate by requestId)
-    const seenRequestIds = new Set<string>()
-    const approvalMsgs = msgs.filter((m: any) => m.metadata?.message_type === 'tool_guard_approval')
-    for (const approvalMsg of approvalMsgs) {
-      const meta = approvalMsg.metadata
-      const requestId = meta?.approval_request_id || ''
-      if (requestId && seenRequestIds.has(requestId)) continue
-      if (requestId) seenRequestIds.add(requestId)
+        blocks.push({
+          id: msg.id || `blk-${Date.now()}-tool`,
+          type: 'toolCall',
+          toolCall: {
+            id: data.call_id || `call-${Date.now()}`,
+            name: data.name || '',
+            args: data.arguments,
+            result: outputData?.output || null
+          }
+        })
+        continue
+      }
 
-      blocks.push({
-        id: approvalMsg.id || `blk-${Date.now()}-approval`,
-        type: 'approval',
-        approval: {
-          requestId,
-          toolName: meta?.tool_name || '',
-          severity: meta?.severity || '',
-          findingsSummary: meta?.findings_summary || '',
-          toolParams: meta?.tool_params,
-          status: 'pending',
-          text: extractContent(approvalMsg.content) || undefined
-        }
-      })
+      // Approval message
+      if (msg.metadata?.message_type === 'tool_guard_approval') {
+        const meta = msg.metadata
+        const requestId = meta?.approval_request_id || ''
+        if (requestId && seenApprovalRequestIds.has(requestId)) continue
+        if (requestId) seenApprovalRequestIds.add(requestId)
+
+        blocks.push({
+          id: msg.id || `blk-${Date.now()}-approval`,
+          type: 'approval',
+          approval: {
+            requestId,
+            toolName: meta?.tool_name || '',
+            severity: meta?.severity || '',
+            findingsSummary: meta?.findings_summary || '',
+            toolParams: meta?.tool_params,
+            status: 'pending'
+          }
+        })
+        continue
+      }
     }
 
     if (blocks.length > 0) {
@@ -190,6 +193,9 @@ function loadHistoryMessages(historyMessages: any[]) {
         .filter(b => b.type === 'text')
         .map(b => b.text || '')
         .join('')
+
+      const assistantMsg = msgs.find((m: any) => m.type === 'message' && m.role === 'assistant')
+      const reasoningMsg = msgs.find((m: any) => m.type === 'reasoning')
 
       messages.value.push({
         id: assistantMsg?.id || reasoningMsg?.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -471,47 +477,36 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                       class="mb-2 border rounded-lg overflow-hidden"
                       :class="block.approval.severity === 'HIGH' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30'"
                     >
-                      <!-- Pending state: show full approval card -->
-                      <template v-if="block.approval.status === 'pending'">
-                        <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
-                          <span>🛡️</span>
-                          <span>等待审批</span>
-                          <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
-                            {{ block.approval.severity }}
-                          </span>
+                      <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
+                        <span>🛡️</span>
+                        <span v-if="block.approval.status === 'pending'">等待审批</span>
+                        <span v-else-if="block.approval.status === 'approved'">✅ 已批准</span>
+                        <span v-else>❌ 已拒绝</span>
+                        <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
+                          {{ block.approval.severity }}
+                        </span>
+                      </div>
+                      <div class="px-3 pb-2 text-xs space-y-1">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-muted">工具:</span>
+                          <span class="font-mono">{{ block.approval.toolName }}</span>
                         </div>
-                        <div class="px-3 pb-2 text-xs space-y-1">
-                          <div class="flex items-center gap-1.5">
-                            <span class="text-muted">工具:</span>
-                            <span class="font-mono">{{ block.approval.toolName }}</span>
-                          </div>
-                          <div v-if="block.approval.findingsSummary" class="text-muted">
-                            {{ block.approval.findingsSummary }}
-                          </div>
-                          <div v-if="block.approval.toolParams" class="mt-1">
-                            <div class="text-muted font-medium mb-0.5">参数</div>
-                            <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
-                          </div>
+                        <div v-if="block.approval.findingsSummary" class="text-muted">
+                          {{ block.approval.findingsSummary }}
                         </div>
-                        <div class="px-3 pb-2 flex gap-2">
-                          <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
-                            批准
-                          </UButton>
-                          <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
-                            拒绝
-                          </UButton>
+                        <div v-if="block.approval.toolParams" class="mt-1">
+                          <div class="text-muted font-medium mb-0.5">参数</div>
+                          <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
                         </div>
-                      </template>
-
-                      <!-- Processed state: show status indicator -->
-                      <template v-else>
-                        <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
-                          <span>{{ block.approval.status === 'approved' ? '✅' : '❌' }}</span>
-                          <span>{{ block.approval.status === 'approved' ? '已批准' : '已拒绝' }}</span>
-                          <span class="text-muted ml-1">- {{ block.approval.toolName }}</span>
-                        </div>
-                        <div v-if="block.approval.text" class="px-3 pb-2 text-xs text-muted whitespace-pre-wrap">{{ block.approval.text }}</div>
-                      </template>
+                      </div>
+                      <div v-if="block.approval.status === 'pending'" class="px-3 pb-2 flex gap-2">
+                        <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
+                          批准
+                        </UButton>
+                        <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
+                          拒绝
+                        </UButton>
+                      </div>
                     </div>
                   </template>
                 </template>
