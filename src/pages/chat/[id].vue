@@ -394,20 +394,24 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                 <template v-if="msg.blocks.length > 0">
                   <template v-for="block in msg.blocks" :key="block.id">
                     <!-- Reasoning block -->
-                    <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
-                      <div
-                        class="flex items-center gap-1 cursor-pointer select-none hover:text-default transition-colors"
-                        @click="toggleReasoning(block.id)"
-                      >
-                        <UIcon name="i-lucide-brain" class="size-3" />
-                        <span v-if="isStreamingBlock(msg, block) && !block.text" class="animate-pulse">思考中...</span>
-                        <span v-else>思考过程</span>
-                        <UIcon
-                          :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                          class="size-3 ml-auto"
-                        />
+                    <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted">
+                      <div class="bg-muted/50 rounded overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
+                          @click="toggleReasoning(block.id)"
+                        >
+                          <UIcon name="i-lucide-brain" class="size-3 text-primary" />
+                          <span v-if="isStreamingBlock(msg, block) && !block.text" class="animate-pulse">思考中...</span>
+                          <span v-else>思考过程</span>
+                          <UIcon
+                            :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                            class="size-3 ml-auto"
+                          />
+                        </div>
+                        <div v-if="expandedReasoning.has(block.id) && block.text" class="px-2 pb-2 border-t border-muted">
+                          <div class="mt-1 whitespace-pre-wrap italic text-[11px] leading-relaxed">{{ block.text }}</div>
+                        </div>
                       </div>
-                      <div v-if="expandedReasoning.has(block.id) && block.text" class="mt-1 whitespace-pre-wrap italic">{{ block.text }}</div>
                     </div>
 
                     <!-- Text block -->
