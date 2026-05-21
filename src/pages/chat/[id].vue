@@ -494,10 +494,10 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                           </div>
                         </div>
                         <div class="px-3 pb-2 flex gap-2">
-                          <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="status === 'streaming' || approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
+                          <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
                             批准
                           </UButton>
-                          <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="status === 'streaming' || approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
+                          <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
                             拒绝
                           </UButton>
                         </div>
