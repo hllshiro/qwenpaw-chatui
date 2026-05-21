@@ -1,0 +1,92 @@
+# QwenPaw ChatUI 功能清单
+
+## 会话管理
+
+- [x] 发起会话（首页输入消息后自动创建）
+- [x] 修改会话名称（侧边栏右键菜单重命名）
+- [x] 删除会话（侧边栏右键菜单删除，含确认弹窗）
+- [x] 会话列表（侧边栏按时间分组：今天、昨天、最近7天、最近30天、更早）
+- [x] 新建会话按钮（侧边栏顶部 + 移动端导航栏）
+- [ ] 会话列表按业务隔离（仅展示与当前 business_key 相关的记录，默认展示 "default"）
+- [ ] 会话搜索（在侧边栏输入标题关键词检索当前业务下的会话）
+- [ ] 停止生成（流式过程中可中断）
+- [ ] 滚动到最新位置（生成时若位于底部则自动滚动，否则保持当前位置）
+
+## 消息与对话
+
+- [x] 用户消息发送
+- [x] AI 流式回复（SSE 实时推送）
+- [x] 思考过程展示（reasoning 块，支持折叠/展开）
+- [x] Markdown 渲染（@comark/vue）
+- [x] 代码高亮（Shiki，支持 17 种语言）
+- [x] 用户消息内联编辑（编辑后重新发送）
+- [x] 消息历史加载（从 QwenPaw 后端恢复）
+- [x] 流式状态管理（idle → waiting → reasoning → message）
+- [x] 空状态提示（无消息时显示引导文案）
+- [x] 错误处理（404 页面、流式错误提示）
+
+## 工具调用与审批
+
+- [x] 工具调用展示（工具名称、参数、执行结果，支持折叠/展开）
+- [x] 工具守卫审批（Tool Guard Approval）
+  - [x] 审批卡片渲染（工具名称、严重级别 HIGH/LOW、发现摘要、工具参数）
+  - [x] 批准操作
+  - [x] 拒绝操作
+  - [x] 三种状态展示（pending / approved / denied）
+  - [x] 防重复提交
+
+## 配置管理
+
+- [x] 明亮/暗色模式切换（颜色模式按钮 + localStorage 持久化）
+- [x] 自定义主题色（`window.__QWENPAW_CONFIG__.theme.primaryColor`）
+- [x] 自定义品牌名（`window.__QWENPAW_CONFIG__.theme.brandName`）
+- [x] CSS 变量注入（自动设置 `--ui-primary` 等变量）
+- [x] Dashboard 风格布局（可折叠侧边栏 + 内容区）
+- [x] 响应式设计（移动端适配）
+- [x] 侧边栏可调整大小
+- [ ] 默认展开推理摘要（设置项，控制 reasoning 块默认折叠/展开）
+- [ ] 默认展开工具部分（设置项，控制 toolCall 块默认折叠/展开）
+- [ ] 生成完成后提醒（AI 回复结束后系统通知或声音提示）
+
+## 连接与代理
+
+- [x] API 代理（前端请求经 Nitro 转发到 QwenPaw 后端）
+- [x] SSE 流透传（后端响应直接透传到前端）
+- [x] 会话元数据同步（创建/重命名/删除时同步到 QwenPaw 后端）
+- [x] 聊天历史同步（从 QwenPaw 后端加载）
+- [x] 后端会话名称同步（对话完成后自动同步）
+- [x] 后端配置获取（`GET /api/config` 返回后端地址）
+
+## 快捷键管理
+
+- [x] 新建会话（Cmd/Ctrl + O）
+
+## 数据存储
+
+- [x] SQLite 本地数据库（存储会话元数据）
+- [x] Drizzle ORM（类型安全的数据库操作）
+- [x] 自动迁移（服务器启动时自动执行）
+- [x] SessionStorage 持久化（未完成消息刷新后恢复）
+
+## 嵌入式支持
+
+- [x] WebView 嵌入（支持三方程序通过 WebView 集成）
+- [x] URL 参数注入（`business_key` 通过 query 参数传入）
+- [x] 全局配置注入（`window.__QWENPAW_CONFIG__` 支持业务键和主题配置）
+- [x] 环境变量配置（PORT、QWENPAW_BACKEND_URL、DATABASE_URL）
+
+## 知识管理
+
+- [ ] 知识库上传（支持文档、图片等文件上传）
+- [ ] 知识库检索（基于 RAG 的语义检索）
+- [ ] 知识库管理（查看、删除已有知识条目）
+- [ ] 对话引用知识（AI 回复时标注引用来源）
+
+## 构建与部署
+
+- [x] Vite 构建（前端 + Nitro 服务端打包）
+- [x] 自包含 Node.js 程序（`.output/` 目录）
+- [x] 数据库迁移脚本（`db:generate` / `db:migrate`）
+- [x] ESLint 代码检查
+- [x] TypeScript 类型检查（`vue-tsc`）
+- [x] CI 集成（GitHub Actions：lint → build → typecheck）
