@@ -42,3 +42,6 @@ dist
 .env
 .env.local
 .vercel
+
+# QwenPaw backend reference (cloned, not source)
+docs/QwenPaw

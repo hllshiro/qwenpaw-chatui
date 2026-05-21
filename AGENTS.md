@@ -75,6 +75,12 @@ The chat uses a custom SSE event protocol (parsed in `src/composables/useChat.ts
 | `message` | `plugin_call`/`tool_call` | Informational signal, no content |
 | `message` | `plugin_call_output`/`tool_output` | Informational signal, no content |
 
+## QwenPaw backend reference
+
+QwenPaw backend source is available at `docs/QwenPaw` (cloned from `https://github.com/agentscope-ai/QwenPaw.git`).
+The `console` directory in that repo contains the official implementation this UI proxies to — use it as reference when modifying server-side proxy logic or SSE streaming.
+If the directory is missing, clone it: `git clone https://github.com/agentscope-ai/QwenPaw.git docs/QwenPaw`.
+
 ## Tool guard approval
 
 The backend can pause responses for approval. When a `message(message)` event has `metadata.message_type === 'tool_guard_approval'`, the assistant message gets an `approval` object with `requestId`, `toolName`, `severity`, `findingsSummary`, and `toolParams`. The UI renders approve/deny buttons calling `/api/approval/approve` and `/api/approval/deny`.
