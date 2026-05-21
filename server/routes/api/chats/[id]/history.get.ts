@@ -9,39 +9,27 @@ export default defineHandler(async (event) => {
 
   const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
 
-  console.log('[ChatHistory] Fetching history for session:', id)
-
   try {
-    // QwenPaw uses chat_id (UUID), not session_id. We need to find chat_id by listing chats
     const listResponse = await fetch(`${backendUrl}/api/chats`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     })
 
     if (!listResponse.ok) {
-      console.log('[ChatHistory] Failed to list chats:', listResponse.status)
       return { messages: [], status: 'idle' }
     }
 
     const chats = await listResponse.json()
-    console.log('[ChatHistory] Found', chats.length, 'chats')
 
-    // Find the chat with matching session_id
     const chat = chats.find((c: any) => c.session_id === id)
     if (!chat) {
-      console.log('[ChatHistory] No chat found for session:', id)
       return { messages: [], status: 'idle' }
     }
 
-    console.log('[ChatHistory] Found chat_id:', chat.id, 'for session:', id)
-
-    // Fetch the chat history using chat_id
     const response = await fetch(`${backendUrl}/api/chats/${chat.id}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     })
-
-    console.log('[ChatHistory] Response status:', response.status)
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -54,8 +42,16 @@ export default defineHandler(async (event) => {
     }
 
     const data = await response.json()
-    console.log('[ChatHistory] Messages count:', data?.messages?.length)
-    return data
+
+    const msgs = data?.messages || []
+    const backendStatus = data?.status || 'idle'
+    const generating = backendStatus === 'running'
+      || (msgs.length > 0 && msgs[msgs.length - 1]?.role === 'user')
+
+    return {
+      messages: msgs,
+      status: generating ? 'running' : 'idle'
+    }
   } catch (err) {
     console.error('[ChatHistory] Error fetching history:', err)
     return { messages: [], status: 'idle' }

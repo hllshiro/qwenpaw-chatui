@@ -7,25 +7,56 @@ export interface ToolCall {
   result?: any
 }
 
+export interface ApprovalData {
+  requestId: string
+  toolName: string
+  severity: string
+  findingsSummary: string
+  toolParams: any
+  status: 'pending' | 'approved' | 'denied'
+  text?: string
+}
+
+export interface MessageBlock {
+  id: string
+  type: 'reasoning' | 'text' | 'toolCall' | 'approval'
+  text?: string
+  toolCall?: ToolCall
+  approval?: ApprovalData
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string
-  reasoning?: string
-  toolCalls?: ToolCall[]
-  approval?: {
-    requestId: string
-    toolName: string
-    severity: string
-    findingsSummary: string
-    toolParams: any
-    text?: string
-  }
+  blocks: MessageBlock[]
   timestamp: number
 }
 
 export type ChatStatus = 'ready' | 'streaming' | 'error'
 export type StreamingPhase = 'idle' | 'waiting' | 'reasoning' | 'message'
+
+const STORAGE_PREFIX = 'qwenpaw_pending_msg_'
+
+function savePendingMessage(sessionId: string, text: string) {
+  try {
+    sessionStorage.setItem(`${STORAGE_PREFIX}${sessionId}`, text)
+  } catch { /* quota exceeded */ }
+}
+
+function loadPendingMessage(sessionId: string): string {
+  try {
+    return sessionStorage.getItem(`${STORAGE_PREFIX}${sessionId}`) || ''
+  } catch {
+    return ''
+  }
+}
+
+function clearPendingMessage(sessionId: string) {
+  try {
+    sessionStorage.removeItem(`${STORAGE_PREFIX}${sessionId}`)
+  } catch { /* ignore */ }
+}
 
 const sessionMessages = new Map<string, ChatMessage[]>()
 
@@ -40,9 +71,12 @@ export function useChat(sessionId: string) {
   const currentAssistantId = ref<string | null>(null)
   const streamingPhase = ref<StreamingPhase>('idle')
 
-  // Track which backend msg_ids belong to reasoning vs message
   const reasoningMsgIds = new Set<string>()
   const messageMsgIds = new Set<string>()
+
+  function generateBlockId(): string {
+    return `blk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  }
 
   function getOrCreateAssistantMessage(): ChatMessage {
     const existing = messages.value.find(
@@ -51,48 +85,98 @@ export function useChat(sessionId: string) {
     if (existing) return existing
 
     const id = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    messages.value.push({
+    const msg: ChatMessage = {
       id,
       role: 'assistant',
       content: '',
-      timestamp: Date.now()
-    })
-    currentAssistantId.value = id
-    return messages.value[messages.value.length - 1]
-  }
-
-  async function sendMessage(text: string, options?: { onComplete?: () => void }) {
-    if (!text.trim() || status.value === 'streaming') return
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      role: 'user',
-      content: text,
+      blocks: [],
       timestamp: Date.now()
     }
-    messages.value.push(userMsg)
+    messages.value.push(msg)
+    currentAssistantId.value = id
+    return msg
+  }
 
-    const assistantId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    messages.value.push({
-      id: assistantId,
-      role: 'assistant',
-      content: '',
-      timestamp: Date.now()
+  function findOrCreateBlock(msg: ChatMessage, type: MessageBlock['type'], matchId?: string): MessageBlock {
+    if (matchId) {
+      const existing = msg.blocks.find(b => b.id === matchId)
+      if (existing) return existing
+    }
+    const lastBlock = msg.blocks[msg.blocks.length - 1]
+    if (lastBlock && lastBlock.type === type && !matchId) {
+      return lastBlock
+    }
+    const block: MessageBlock = { id: matchId || generateBlockId(), type }
+    msg.blocks.push(block)
+    return block
+  }
+
+  function findBlockByMsgId(msg: ChatMessage, msgId: string): MessageBlock | undefined {
+    return msg.blocks.find(b => b.id === msgId)
+  }
+
+  function sendMessage(text: string, options?: { onComplete?: () => void }): Promise<void> {
+    return new Promise((resolve) => {
+      if (!text.trim() || status.value === 'streaming') {
+        resolve()
+        return
+      }
+
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        role: 'user',
+        content: text,
+        blocks: [],
+        timestamp: Date.now()
+      }
+      messages.value.push(userMsg)
+
+      const assistantId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      messages.value.push({
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        blocks: [],
+        timestamp: Date.now()
+      })
+      currentAssistantId.value = assistantId
+
+      status.value = 'streaming'
+      error.value = null
+      streamingPhase.value = 'waiting'
+      reasoningMsgIds.clear()
+      messageMsgIds.clear()
+
+      savePendingMessage(sessionId, text)
+
+      doFetch(text, options?.onComplete, resolve)
     })
-    currentAssistantId.value = assistantId
+  }
 
-    status.value = 'streaming'
-    error.value = null
-    streamingPhase.value = 'waiting'
-    reasoningMsgIds.clear()
-    messageMsgIds.clear()
+  function reconnect(options?: { onComplete?: () => void }): Promise<void> {
+    return new Promise((resolve) => {
+      if (status.value === 'streaming') {
+        resolve()
+        return
+      }
 
+      status.value = 'streaming'
+      error.value = null
+      streamingPhase.value = 'waiting'
+      reasoningMsgIds.clear()
+      messageMsgIds.clear()
+
+      doFetch('', options?.onComplete, resolve)
+    })
+  }
+
+  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void) {
     try {
       const response = await fetch(`/api/chats/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: text }]
+          messages: [{ role: 'user', content: messageText }]
         })
       })
 
@@ -140,25 +224,35 @@ export function useChat(sessionId: string) {
           }
         }
       }
+
+      clearPendingMessage(sessionId)
     } catch (err) {
       error.value = err instanceof Error ? err : new Error(String(err))
       status.value = 'error'
+      clearPendingMessage(sessionId)
     } finally {
       if (status.value === 'streaming') {
         status.value = 'ready'
       }
       streamingPhase.value = 'idle'
-      options?.onComplete?.()
+      onComplete?.()
+      onDone?.()
     }
   }
 
   function findOrCreateToolCall(msg: ChatMessage, callId: string): ToolCall {
-    const existing = msg.toolCalls?.find(t => t.id === callId)
-    if (existing) return existing
+    const existingBlock = msg.blocks.find(
+      b => b.type === 'toolCall' && b.toolCall?.id === callId
+    )
+    if (existingBlock?.toolCall) return existingBlock.toolCall
 
-    if (!msg.toolCalls) msg.toolCalls = []
     const tc: ToolCall = { id: callId, name: '', args: undefined }
-    msg.toolCalls.push(tc)
+    const block: MessageBlock = {
+      id: generateBlockId(),
+      type: 'toolCall',
+      toolCall: tc
+    }
+    msg.blocks.push(block)
     return tc
   }
 
@@ -167,8 +261,6 @@ export function useChat(sessionId: string) {
     const type = event.type as string
 
     // ── response lifecycle ─────────────────────────────────────────
-    // Seq 0: response created, Seq 1: response in_progress
-    // Seq N: response completed
     if (obj === 'response') {
       if (event.status === 'completed') {
         status.value = 'ready'
@@ -177,57 +269,46 @@ export function useChat(sessionId: string) {
     }
 
     // ── message + reasoning ────────────────────────────────────────
-    // Seq 2:  message(reasoning) in_progress, id="msg_1d835b3f..."
-    // Seq 57: message(reasoning) completed
-    // These events define that a msg_id belongs to reasoning.
-    // Content is streamed via content/text with matching msg_id.
     if (obj === 'message' && type === 'reasoning') {
       const msgId = event.id as string
       reasoningMsgIds.add(msgId)
       if (streamingPhase.value === 'waiting') {
         streamingPhase.value = 'reasoning'
       }
-      // Content already streamed via content/text — do NOT update here
       return
     }
 
     // ── message + message ──────────────────────────────────────────
-    // Seq 46: message(message) in_progress, id="msg_61f1e65f..."
-    // Seq 58: message(message) completed
-    // Seq 94: message(message) in_progress with metadata (approval)
-    // Seq 97: message(message) completed with metadata (approval)
-    // These events define that a msg_id belongs to message.
-    // Content is streamed via content/text with matching msg_id.
     if (obj === 'message' && type === 'message') {
       const msgId = event.id as string
       messageMsgIds.add(msgId)
 
-      // Check for approval metadata
       const metadata = (event as any).metadata
       if (metadata?.message_type === 'tool_guard_approval') {
         const msg = getOrCreateAssistantMessage()
-        msg.approval = {
-          requestId: metadata.approval_request_id || '',
-          toolName: metadata.tool_name || '',
-          severity: metadata.severity || '',
-          findingsSummary: metadata.findings_summary || '',
-          toolParams: metadata.tool_params
+        const block: MessageBlock = {
+          id: msgId,
+          type: 'approval',
+          approval: {
+            requestId: metadata.approval_request_id || '',
+            toolName: metadata.tool_name || '',
+            severity: metadata.severity || '',
+            findingsSummary: metadata.findings_summary || '',
+            toolParams: metadata.tool_params,
+            status: 'pending'
+          }
         }
+        msg.blocks.push(block)
         triggerRef(messages)
       }
 
       if (streamingPhase.value !== 'message') {
         streamingPhase.value = 'message'
       }
-      // Content already streamed via content/text — do NOT update here
       return
     }
 
     // ── content + text ─────────────────────────────────────────────
-    // Seq 3-45: content(text), msg_id="msg_1d835b3f..." → reasoning text
-    // Seq 47-55: content(text), msg_id="msg_61f1e65f..." → message text
-    // Seq 95-96: content(text), msg_id="msg_a579aef0..." → approval text
-    // The msg_id tells us exactly which message this content belongs to.
     if (obj === 'content' && type === 'text') {
       const msgId = event.msg_id as string
       const text = (event as any).text as string
@@ -236,22 +317,34 @@ export function useChat(sessionId: string) {
       const msg = getOrCreateAssistantMessage()
 
       if (reasoningMsgIds.has(msgId)) {
-        // This is reasoning content
         if (streamingPhase.value === 'waiting') {
           streamingPhase.value = 'reasoning'
         }
-        msg.reasoning = (msg.reasoning || '') + text
+        const block = findBlockByMsgId(msg, msgId)
+          || findOrCreateBlock(msg, 'reasoning', msgId)
+        block.text = (block.text || '') + text
       } else if (messageMsgIds.has(msgId)) {
-        // This is message content — check if it's an approval message
-        if (msg.approval) {
-          // Store approval text separately, don't render as markdown
-          msg.approval.text = (msg.approval.text || '') + text
+        const approvalBlock = msg.blocks.find(
+          b => b.type === 'approval' && b.id === msgId
+        )
+        if (approvalBlock?.approval) {
+          approvalBlock.approval.text = (approvalBlock.approval.text || '') + text
         } else {
-          msg.content += text
+          const block = findBlockByMsgId(msg, msgId)
+            || findOrCreateBlock(msg, 'text', msgId)
+          block.text = (block.text || '') + text
+          msg.content = msg.blocks
+            .filter(b => b.type === 'text')
+            .map(b => b.text || '')
+            .join('')
         }
       } else {
-        // Unknown msg_id — treat as message content (fallback)
-        msg.content += text
+        const block = findOrCreateBlock(msg, 'text')
+        block.text = (block.text || '') + text
+        msg.content = msg.blocks
+          .filter(b => b.type === 'text')
+          .map(b => b.text || '')
+          .join('')
       }
 
       triggerRef(messages)
@@ -259,10 +352,6 @@ export function useChat(sessionId: string) {
     }
 
     // ── content + data (tool call info OR tool call output) ────────
-    // Seq 60-91: content(data) with call_id, name, arguments (heartbeat)
-    // Seq 92: content(data) completed (final arguments)
-    // Both tool call requests and outputs use this format,
-    // distinguished by presence of "arguments" vs "output" field.
     if (obj === 'content' && type === 'data') {
       const data = (event as any).data
       if (!data) return
@@ -281,16 +370,12 @@ export function useChat(sessionId: string) {
       return
     }
 
-    // ── message + plugin_call ──────────────────────────────────────
-    // Seq 59: plugin_call in_progress, content=null (signal)
-    // Seq 93: plugin_call completed, content=[{type:"data",...}] (summary)
-    // Both are informational — actual data handled by content/data
+    // ── message + plugin_call / tool_call ──────────────────────────
     if (obj === 'message' && (type === 'plugin_call' || type === 'tool_call')) {
       return
     }
 
-    // ── message + plugin_call_output ───────────────────────────────
-    // Same pattern as plugin_call — data handled by content/data
+    // ── message + plugin_call_output / tool_output ─────────────────
     if (obj === 'message' && (type === 'plugin_call_output' || type === 'tool_output')) {
       return
     }
@@ -308,14 +393,45 @@ export function useChat(sessionId: string) {
     sessionMessages.set(sessionId, [])
   }
 
+  function patchPendingUserMessage(generating: boolean) {
+    if (!generating) {
+      clearPendingMessage(sessionId)
+      return
+    }
+
+    const pendingText = loadPendingMessage(sessionId)
+    if (!pendingText) return
+
+    const lastMsg = messages.value[messages.value.length - 1]
+    if (lastMsg?.role === 'user' && lastMsg.content) {
+      // User message already present, no need to patch
+      return
+    }
+
+    if (lastMsg?.role === 'user' && !lastMsg.content) {
+      lastMsg.content = pendingText
+    } else {
+      messages.value.push({
+        id: `user-pending-${Date.now()}`,
+        role: 'user',
+        content: pendingText,
+        blocks: [],
+        timestamp: Date.now()
+      })
+    }
+    triggerRef(messages)
+  }
+
   return {
     messages: computed(() => messages.value),
-    status: computed(() => status),
+    status: computed(() => status.value),
     error: computed(() => error.value),
     streamingPhase: computed(() => streamingPhase.value),
     currentAssistantId: computed(() => currentAssistantId.value),
     sendMessage,
+    reconnect,
     stop,
-    clearMessages
+    clearMessages,
+    patchPendingUserMessage
   }
 }

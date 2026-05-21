@@ -3,12 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useSessions } from '../../composables/useSessions'
-import { useChat, type ChatMessage } from '../../composables/useChat'
+import { useChat, type ChatMessage, type MessageBlock } from '../../composables/useChat'
 import Navbar from '../../components/Navbar.vue'
 import ChatComark from '../../components/chat/Comark'
 
 const route = useRoute<'/chat/[id]'>()
-const toast = useToast()
 const { updateSession, sessions } = useSessions()
 
 const sessionId = route.params.id as string
@@ -20,19 +19,17 @@ onMounted(async () => {
   try {
     const [data, history, qwenpawChat] = await Promise.all([
       $fetch(`/api/chats/${sessionId}`),
-      $fetch(`/api/chats/${sessionId}/history`).catch(() => ({ messages: [] })),
+      $fetch(`/api/chats/${sessionId}/history`).catch(() => ({ messages: [], status: 'idle' })),
       $fetch(`/api/chats/spec?session_id=${sessionId}`).catch(() => null)
     ])
 
     sessionData.value = data
 
-    // Sync name from QwenPaw backend if available
     const backendName = qwenpawChat?.name
     if (backendName && backendName !== data?.name) {
       updateSession(sessionId, { name: backendName })
     }
 
-    // Skip history load if messages already cached in memory
     if (messages.value.length > 0) {
       const initialMsg = route.query.msg as string | undefined
       if (initialMsg?.trim()) {
@@ -45,94 +42,21 @@ onMounted(async () => {
       return
     }
 
-    // Load history messages
+    const generating = history?.status === 'running'
+
     if (history?.messages?.length > 0) {
-      const historyMessages = history.messages
-      // Group messages by original_id to reconstruct conversation turns
-      const turnsByOrigId = new Map<string, any[]>()
-      for (const msg of historyMessages) {
-        const origId = msg.metadata?.original_id || msg.id
-        if (!turnsByOrigId.has(origId)) turnsByOrigId.set(origId, [])
-        turnsByOrigId.get(origId)!.push(msg)
-      }
-
-      for (const [, msgs] of turnsByOrigId) {
-        // Find user message in this turn
-        const userMsg = msgs.find((m: any) => m.role === 'user')
-        if (userMsg) {
-          const content = extractContent(userMsg.content)
-          if (content) {
-            messages.value.push({
-              id: userMsg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              role: 'user',
-              content,
-              timestamp: userMsg.created_at ? new Date(userMsg.created_at).getTime() : Date.now()
-            })
-          }
-        }
-
-        // Find reasoning in this turn
-        const reasoningMsg = msgs.find((m: any) => m.type === 'reasoning')
-        const reasoning = reasoningMsg ? extractContent(reasoningMsg.content) : ''
-
-        // Find tool calls in this turn
-        const pluginCalls = msgs.filter((m: any) => m.type === 'plugin_call')
-        const toolCalls = pluginCalls.map((m: any) => {
-          const dataPart = Array.isArray(m.content) ? m.content.find((p: any) => p.type === 'data') : null
-          const data = dataPart?.data || {}
-          // Find matching output
-          const outputMsg = msgs.find((om: any) => {
-            if (om.type !== 'plugin_call_output') return false
-            const outData = Array.isArray(om.content) ? om.content.find((p: any) => p.type === 'data')?.data : null
-            return outData?.call_id === data.call_id
-          })
-          const outputData = outputMsg && Array.isArray(outputMsg.content)
-            ? outputMsg.content.find((p: any) => p.type === 'data')?.data
-            : null
-          return {
-            id: data.call_id || `call-${Date.now()}`,
-            name: data.name || '',
-            args: data.arguments,
-            result: outputData?.output || null
-          }
-        })
-
-        // Find final message content in this turn
-        const assistantMsg = msgs.find((m: any) => m.type === 'message' && m.role === 'assistant')
-        const content = assistantMsg ? extractContent(assistantMsg.content) : ''
-
-        // Find approval request in this turn
-        const approvalMsg = msgs.find((m: any) => m.metadata?.message_type === 'tool_guard_approval')
-        const approvalMeta = approvalMsg?.metadata
-        const approval = approvalMeta?.message_type === 'tool_guard_approval' ? {
-          requestId: approvalMeta.approval_request_id || '',
-          toolName: approvalMeta.tool_name || '',
-          severity: approvalMeta.severity || '',
-          findingsSummary: approvalMeta.findings_summary || '',
-          toolParams: approvalMeta.tool_params
-        } : undefined
-
-        // Create assistant message if there's any content
-        if (content || reasoning || toolCalls.length > 0 || approval) {
-          messages.value.push({
-            id: assistantMsg?.id || reasoningMsg?.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            role: 'assistant',
-            content: content || '',
-            reasoning: reasoning || undefined,
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-            approval,
-            timestamp: (assistantMsg || reasoningMsg)?.created_at
-              ? new Date((assistantMsg || reasoningMsg).created_at).getTime()
-              : Date.now()
-          })
-        }
-      }
+      loadHistoryMessages(history.messages)
     }
 
-    // Send initial message if passed from home page
+    if (generating) {
+      patchPendingUserMessage(true)
+      reconnect({ onComplete: syncBackendTitle })
+    } else {
+      patchPendingUserMessage(false)
+    }
+
     const initialMsg = route.query.msg as string | undefined
     if (initialMsg?.trim()) {
-      // Clean up URL query parameter
       if (window.history.replaceState) {
         window.history.replaceState({}, '', `/chat/${sessionId}`)
       }
@@ -144,6 +68,127 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function loadHistoryMessages(historyMessages: any[]) {
+  const turnsByOrigId = new Map<string, any[]>()
+  for (const msg of historyMessages) {
+    const origId = msg.metadata?.original_id || msg.id
+    if (!turnsByOrigId.has(origId)) turnsByOrigId.set(origId, [])
+    turnsByOrigId.get(origId)!.push(msg)
+  }
+
+  for (const [, msgs] of turnsByOrigId) {
+    const userMsg = msgs.find((m: any) => m.role === 'user')
+    if (userMsg) {
+      const content = extractContent(userMsg.content)
+      if (content) {
+        messages.value.push({
+          id: userMsg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: 'user',
+          content,
+          blocks: [],
+          timestamp: userMsg.created_at ? new Date(userMsg.created_at).getTime() : Date.now()
+        })
+      }
+    }
+
+    const blocks: MessageBlock[] = []
+
+    // Reasoning
+    const reasoningMsg = msgs.find((m: any) => m.type === 'reasoning')
+    if (reasoningMsg) {
+      const reasoningText = extractContent(reasoningMsg.content)
+      if (reasoningText) {
+        blocks.push({
+          id: reasoningMsg.id || `blk-${Date.now()}-reasoning`,
+          type: 'reasoning',
+          text: reasoningText
+        })
+      }
+    }
+
+    // Assistant message text
+    const assistantMsg = msgs.find((m: any) => m.type === 'message' && m.role === 'assistant'
+      && m.metadata?.message_type !== 'tool_guard_approval')
+    if (assistantMsg) {
+      const content = extractContent(assistantMsg.content)
+      if (content) {
+        blocks.push({
+          id: assistantMsg.id || `blk-${Date.now()}-text`,
+          type: 'text',
+          text: content
+        })
+      }
+    }
+
+    // Tool calls
+    const pluginCalls = msgs.filter((m: any) => m.type === 'plugin_call')
+    for (const callMsg of pluginCalls) {
+      const dataPart = Array.isArray(callMsg.content)
+        ? callMsg.content.find((p: any) => p.type === 'data')
+        : null
+      const data = dataPart?.data || {}
+
+      const outputMsg = msgs.find((om: any) => {
+        if (om.type !== 'plugin_call_output') return false
+        const outData = Array.isArray(om.content)
+          ? om.content.find((p: any) => p.type === 'data')?.data
+          : null
+        return outData?.call_id === data.call_id
+      })
+      const outputData = outputMsg && Array.isArray(outputMsg.content)
+        ? outputMsg.content.find((p: any) => p.type === 'data')?.data
+        : null
+
+      blocks.push({
+        id: callMsg.id || `blk-${Date.now()}-tool`,
+        type: 'toolCall',
+        toolCall: {
+          id: data.call_id || `call-${Date.now()}`,
+          name: data.name || '',
+          args: data.arguments,
+          result: outputData?.output || null
+        }
+      })
+    }
+
+    // Approval
+    const approvalMsg = msgs.find((m: any) => m.metadata?.message_type === 'tool_guard_approval')
+    if (approvalMsg?.metadata) {
+      const meta = approvalMsg.metadata
+      blocks.push({
+        id: approvalMsg.id || `blk-${Date.now()}-approval`,
+        type: 'approval',
+        approval: {
+          requestId: meta.approval_request_id || '',
+          toolName: meta.tool_name || '',
+          severity: meta.severity || '',
+          findingsSummary: meta.findings_summary || '',
+          toolParams: meta.tool_params,
+          status: 'pending',
+          text: extractContent(approvalMsg.content) || undefined
+        }
+      })
+    }
+
+    if (blocks.length > 0) {
+      const contentText = blocks
+        .filter(b => b.type === 'text')
+        .map(b => b.text || '')
+        .join('')
+
+      messages.value.push({
+        id: assistantMsg?.id || reasoningMsg?.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        role: 'assistant',
+        content: contentText,
+        blocks,
+        timestamp: (assistantMsg || reasoningMsg)?.created_at
+          ? new Date((assistantMsg || reasoningMsg).created_at).getTime()
+          : Date.now()
+      })
+    }
+  }
+}
 
 function extractContent(content: any): string {
   if (typeof content === 'string') return content
@@ -161,14 +206,10 @@ const sessionName = computed(() => {
   return session?.name || '新会话'
 })
 
-const businessKey = ref(
-  new URLSearchParams(window.location.search).get('business_key')
-  || (window as unknown as Record<string, { business_key?: string }>).__QWENPAW_CONFIG__?.business_key
-  || sessionData.value?.businessKey
-  || 'default'
-)
-
-const { messages, status, error, streamingPhase, currentAssistantId, sendMessage, stop } = useChat(sessionId)
+const {
+  messages, status, error, currentAssistantId,
+  sendMessage, reconnect, stop, patchPendingUserMessage
+} = useChat(sessionId)
 
 function syncBackendTitle() {
   $fetch(`/api/chats/spec?session_id=${sessionId}`).then((chat: any) => {
@@ -187,11 +228,11 @@ const editingText = ref('')
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 
-function toggleReasoning(msgId: string) {
-  if (expandedReasoning.value.has(msgId)) {
-    expandedReasoning.value.delete(msgId)
+function toggleReasoning(blockId: string) {
+  if (expandedReasoning.value.has(blockId)) {
+    expandedReasoning.value.delete(blockId)
   } else {
-    expandedReasoning.value.add(msgId)
+    expandedReasoning.value.add(blockId)
   }
 }
 
@@ -237,6 +278,12 @@ function isStreamingMessage(msg: ChatMessage): boolean {
   return status.value === 'streaming' && msg.role === 'assistant' && msg.id === currentAssistantId.value
 }
 
+function isStreamingBlock(msg: ChatMessage, block: MessageBlock): boolean {
+  if (!isStreamingMessage(msg)) return false
+  const lastBlock = msg.blocks[msg.blocks.length - 1]
+  return lastBlock?.id === block.id
+}
+
 function handleSubmit() {
   if (!input.value.trim()) return
   const text = input.value
@@ -258,7 +305,6 @@ function saveEdit(msg: ChatMessage) {
   const text = editingText.value
   editingId.value = null
   editingText.value = ''
-  // Remove messages after this one and resend
   const idx = messages.value.findIndex(m => m.id === msg.id)
   if (idx >= 0) {
     messages.value.splice(idx + 1)
@@ -267,33 +313,21 @@ function saveEdit(msg: ChatMessage) {
   sendMessage(text, { onComplete: syncBackendTitle })
 }
 
-function regenerate() {
-  if (messages.value.length > 0) {
-    const lastUserMsg = [...messages.value].reverse().find(m => m.role === 'user')
-    if (lastUserMsg) {
-      const idx = messages.value.indexOf(lastUserMsg)
-      messages.value.splice(idx + 1)
-      sendMessage(lastUserMsg.content, { onComplete: syncBackendTitle })
-    }
-  }
-}
-
 const approvalLoading = ref(false)
 
-async function handleApproval(msg: ChatMessage, action: 'approve' | 'deny') {
-  if (!msg.approval?.requestId || approvalLoading.value) return
+async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'approve' | 'deny') {
+  if (!block.approval?.requestId || approvalLoading.value) return
 
   approvalLoading.value = true
   try {
     await $fetch(`/api/approval/${action}`, {
       method: 'POST',
       body: {
-        request_id: msg.approval.requestId,
+        request_id: block.approval.requestId,
         session_id: sessionId
       }
     })
-    // Mark approval as processed
-    msg.approval.text = action === 'approve' ? '✅ 已批准' : '❌ 已拒绝'
+    block.approval.status = action === 'approve' ? 'approved' : 'denied'
   } catch (err) {
     console.error('[ChatPage] Approval failed:', err)
   } finally {
@@ -333,104 +367,147 @@ async function handleApproval(msg: ChatMessage, action: 'approve' | 'deny') {
                 ? 'bg-primary text-white'
                 : 'bg-default ring ring-default'"
             >
-              <!-- Reasoning -->
-              <div v-if="msg.reasoning || isStreamingMessage(msg)" class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
-                <div
-                  class="flex items-center gap-1 cursor-pointer select-none hover:text-default transition-colors"
-                  @click="toggleReasoning(msg.id)"
-                >
-                  <UIcon name="i-lucide-brain" class="size-3" />
-                  <span v-if="isStreamingMessage(msg) && !msg.reasoning" class="animate-pulse">思考中...</span>
-                  <span v-else>思考过程</span>
-                  <UIcon
-                    :name="expandedReasoning.has(msg.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                    class="size-3 ml-auto"
+              <!-- User message content -->
+              <template v-if="msg.role === 'user'">
+                <template v-if="editingId === msg.id">
+                  <textarea
+                    v-model="editingText"
+                    class="w-full bg-transparent border border-default rounded p-1 text-sm resize-none"
+                    rows="3"
+                    @keydown.escape="cancelEdit"
                   />
-                </div>
-                <div v-if="expandedReasoning.has(msg.id) && msg.reasoning" class="mt-1 whitespace-pre-wrap italic">{{ msg.reasoning }}</div>
-              </div>
-
-              <!-- Tool calls -->
-              <div v-if="msg.toolCalls?.length" class="mb-2 space-y-1">
-                <div v-for="tool in msg.toolCalls" :key="tool.id" class="text-xs bg-muted/50 rounded overflow-hidden">
-                  <div
-                    class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
-                    @click="toggleToolCall(tool.id)"
-                  >
-                    <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
-                    <span class="font-mono">{{ tool.name || '...' }}</span>
-                    <span v-if="tool.result" class="text-green-500">✓</span>
-                    <span v-else-if="tool.name" class="text-muted animate-pulse">...</span>
-                    <UIcon
-                      :name="expandedToolCalls.has(tool.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                      class="size-3 ml-auto"
-                    />
+                  <div class="flex gap-1 mt-1 justify-end">
+                    <UButton size="xs" variant="ghost" @click="cancelEdit">取消</UButton>
+                    <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
                   </div>
-                  <div v-if="expandedToolCalls.has(tool.id)" class="px-2 pb-2 border-t border-muted">
-                    <div v-if="tool.args !== undefined" class="mt-1">
-                      <div class="text-muted font-medium mb-0.5">参数</div>
-                      <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(tool.args) }}</pre>
-                    </div>
-                    <div v-if="tool.result !== undefined" class="mt-1">
-                      <div class="text-muted font-medium mb-0.5">结果</div>
-                      <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(tool.result) }}</pre>
-                    </div>
+                </template>
+                <template v-else>
+                  <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+                  <div class="flex justify-end mt-1">
+                    <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">编辑</button>
                   </div>
-                </div>
-              </div>
-
-              <!-- Approval -->
-              <div v-if="msg.approval" class="mb-2 border rounded-lg overflow-hidden" :class="msg.approval.severity === 'HIGH' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30'">
-                <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
-                  <span>🛡️</span>
-                  <span>等待审批</span>
-                  <span v-if="msg.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="msg.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
-                    {{ msg.approval.severity }}
-                  </span>
-                </div>
-                <div class="px-3 pb-2 text-xs space-y-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-muted">工具:</span>
-                    <span class="font-mono">{{ msg.approval.toolName }}</span>
-                  </div>
-                  <div v-if="msg.approval.findingsSummary" class="text-muted">
-                    {{ msg.approval.findingsSummary }}
-                  </div>
-                  <div v-if="msg.approval.toolParams" class="mt-1">
-                    <div class="text-muted font-medium mb-0.5">参数</div>
-                    <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(msg.approval.toolParams) }}</pre>
-                  </div>
-                </div>
-                <div class="px-3 pb-2 flex gap-2">
-                  <UButton size="xs" color="success" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, 'approve')">
-                    批准
-                  </UButton>
-                  <UButton size="xs" color="error" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, 'deny')">
-                    拒绝
-                  </UButton>
-                </div>
-              </div>
-
-              <!-- Content -->
-              <template v-if="editingId === msg.id">
-                <textarea
-                  v-model="editingText"
-                  class="w-full bg-transparent border border-default rounded p-1 text-sm resize-none"
-                  rows="3"
-                  @keydown.escape="cancelEdit"
-                />
-                <div class="flex gap-1 mt-1 justify-end">
-                  <UButton size="xs" variant="ghost" @click="cancelEdit">取消</UButton>
-                  <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
-                </div>
+                </template>
               </template>
-              <ChatComark v-else-if="msg.role === 'assistant' && msg.content && !msg.approval" :markdown="msg.content" :streaming="streamingPhase === 'message'" class="prose dark:prose-invert prose-sm max-w-none" />
-              <div v-else-if="msg.content && !msg.approval" class="whitespace-pre-wrap">{{ msg.content }}</div>
 
-              <!-- Actions -->
-              <div v-if="msg.role === 'user' && editingId !== msg.id" class="flex justify-end mt-1">
-                <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">编辑</button>
-              </div>
+              <!-- Assistant message: render blocks in order -->
+              <template v-else>
+                <template v-if="msg.blocks.length > 0">
+                  <template v-for="block in msg.blocks" :key="block.id">
+                    <!-- Reasoning block -->
+                    <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
+                      <div
+                        class="flex items-center gap-1 cursor-pointer select-none hover:text-default transition-colors"
+                        @click="toggleReasoning(block.id)"
+                      >
+                        <UIcon name="i-lucide-brain" class="size-3" />
+                        <span v-if="isStreamingBlock(msg, block) && !block.text" class="animate-pulse">思考中...</span>
+                        <span v-else>思考过程</span>
+                        <UIcon
+                          :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                          class="size-3 ml-auto"
+                        />
+                      </div>
+                      <div v-if="expandedReasoning.has(block.id) && block.text" class="mt-1 whitespace-pre-wrap italic">{{ block.text }}</div>
+                    </div>
+
+                    <!-- Text block -->
+                    <ChatComark
+                      v-else-if="block.type === 'text' && block.text"
+                      :markdown="block.text"
+                      :streaming="isStreamingBlock(msg, block)"
+                      class="prose dark:prose-invert prose-sm max-w-none"
+                    />
+
+                    <!-- Tool call block -->
+                    <div v-else-if="block.type === 'toolCall' && block.toolCall" class="mb-2 space-y-1">
+                      <div class="text-xs bg-muted/50 rounded overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
+                          @click="toggleToolCall(block.toolCall!.id)"
+                        >
+                          <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
+                          <span class="font-mono">{{ block.toolCall!.name || '...' }}</span>
+                          <span v-if="block.toolCall!.result" class="text-green-500">✓</span>
+                          <span v-else-if="block.toolCall!.name" class="text-muted animate-pulse">...</span>
+                          <UIcon
+                            :name="expandedToolCalls.has(block.toolCall!.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                            class="size-3 ml-auto"
+                          />
+                        </div>
+                        <div v-if="expandedToolCalls.has(block.toolCall!.id)" class="px-2 pb-2 border-t border-muted">
+                          <div v-if="block.toolCall!.args !== undefined" class="mt-1">
+                            <div class="text-muted font-medium mb-0.5">参数</div>
+                            <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.toolCall!.args) }}</pre>
+                          </div>
+                          <div v-if="block.toolCall!.result !== undefined" class="mt-1">
+                            <div class="text-muted font-medium mb-0.5">结果</div>
+                            <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(block.toolCall!.result) }}</pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Approval block -->
+                    <div
+                      v-else-if="block.type === 'approval' && block.approval"
+                      class="mb-2 border rounded-lg overflow-hidden"
+                      :class="block.approval.severity === 'HIGH' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30'"
+                    >
+                      <!-- Pending state: show full approval card -->
+                      <template v-if="block.approval.status === 'pending'">
+                        <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
+                          <span>🛡️</span>
+                          <span>等待审批</span>
+                          <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
+                            {{ block.approval.severity }}
+                          </span>
+                        </div>
+                        <div class="px-3 pb-2 text-xs space-y-1">
+                          <div class="flex items-center gap-1.5">
+                            <span class="text-muted">工具:</span>
+                            <span class="font-mono">{{ block.approval.toolName }}</span>
+                          </div>
+                          <div v-if="block.approval.findingsSummary" class="text-muted">
+                            {{ block.approval.findingsSummary }}
+                          </div>
+                          <div v-if="block.approval.toolParams" class="mt-1">
+                            <div class="text-muted font-medium mb-0.5">参数</div>
+                            <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
+                          </div>
+                        </div>
+                        <div class="px-3 pb-2 flex gap-2">
+                          <UButton size="xs" color="success" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, block, 'approve')">
+                            批准
+                          </UButton>
+                          <UButton size="xs" color="error" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, block, 'deny')">
+                            拒绝
+                          </UButton>
+                        </div>
+                      </template>
+
+                      <!-- Processed state: show status indicator -->
+                      <template v-else>
+                        <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
+                          <span>{{ block.approval.status === 'approved' ? '✅' : '❌' }}</span>
+                          <span>{{ block.approval.status === 'approved' ? '已批准' : '已拒绝' }}</span>
+                          <span class="text-muted ml-1">- {{ block.approval.toolName }}</span>
+                        </div>
+                        <div v-if="block.approval.text" class="px-3 pb-2 text-xs text-muted whitespace-pre-wrap">{{ block.approval.text }}</div>
+                      </template>
+                    </div>
+                  </template>
+                </template>
+
+                <!-- Fallback: streaming message with no blocks yet -->
+                <template v-else-if="isStreamingMessage(msg)">
+                  <div class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
+                    <div class="flex items-center gap-1">
+                      <UIcon name="i-lucide-brain" class="size-3" />
+                      <span class="animate-pulse">思考中...</span>
+                    </div>
+                  </div>
+                </template>
+              </template>
             </div>
           </div>
         </div>
