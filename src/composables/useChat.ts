@@ -309,12 +309,39 @@ export function useChat(sessionId: string) {
     }
 
     // ── content + text ─────────────────────────────────────────────
+    // delta: true  → incremental chunk, append
+    // delta: null/false → final complete text, replace
     if (obj === 'content' && type === 'text') {
       const msgId = event.msg_id as string
       const text = (event as any).text as string
-      if (!text) return
+      if (text === undefined || text === null) return
+      const isDelta = (event as any).delta === true
 
       const msg = getOrCreateAssistantMessage()
+
+      const applyText = (block: MessageBlock) => {
+        if (isDelta) {
+          block.text = (block.text || '') + text
+        } else {
+          block.text = text
+        }
+      }
+
+      const applyApprovalText = (block: MessageBlock) => {
+        if (!block.approval) return
+        if (isDelta) {
+          block.approval.text = (block.approval.text || '') + text
+        } else {
+          block.approval.text = text
+        }
+      }
+
+      const syncContent = () => {
+        msg.content = msg.blocks
+          .filter(b => b.type === 'text')
+          .map(b => b.text || '')
+          .join('')
+      }
 
       if (reasoningMsgIds.has(msgId)) {
         if (streamingPhase.value === 'waiting') {
@@ -322,29 +349,23 @@ export function useChat(sessionId: string) {
         }
         const block = findBlockByMsgId(msg, msgId)
           || findOrCreateBlock(msg, 'reasoning', msgId)
-        block.text = (block.text || '') + text
+        applyText(block)
       } else if (messageMsgIds.has(msgId)) {
         const approvalBlock = msg.blocks.find(
           b => b.type === 'approval' && b.id === msgId
         )
         if (approvalBlock?.approval) {
-          approvalBlock.approval.text = (approvalBlock.approval.text || '') + text
+          applyApprovalText(approvalBlock)
         } else {
           const block = findBlockByMsgId(msg, msgId)
             || findOrCreateBlock(msg, 'text', msgId)
-          block.text = (block.text || '') + text
-          msg.content = msg.blocks
-            .filter(b => b.type === 'text')
-            .map(b => b.text || '')
-            .join('')
+          applyText(block)
+          syncContent()
         }
       } else {
         const block = findOrCreateBlock(msg, 'text')
-        block.text = (block.text || '') + text
-        msg.content = msg.blocks
-          .filter(b => b.type === 'text')
-          .map(b => b.text || '')
-          .join('')
+        applyText(block)
+        syncContent()
       }
 
       triggerRef(messages)
