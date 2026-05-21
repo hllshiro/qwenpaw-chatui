@@ -46,13 +46,14 @@ onMounted(async () => {
 
     if (history?.messages?.length > 0) {
       loadHistoryMessages(history.messages)
-    }
-
-    if (generating) {
+      if (generating) {
+        patchPendingUserMessage(true)
+      } else {
+        patchPendingUserMessage(false)
+      }
+    } else if (generating) {
       patchPendingUserMessage(true)
       reconnect({ onComplete: syncBackendTitle })
-    } else {
-      patchPendingUserMessage(false)
     }
 
     const initialMsg = route.query.msg as string | undefined
@@ -70,14 +71,22 @@ onMounted(async () => {
 })
 
 function loadHistoryMessages(historyMessages: any[]) {
-  const turnsByOrigId = new Map<string, any[]>()
-  for (const msg of historyMessages) {
-    const origId = msg.metadata?.original_id || msg.id
-    if (!turnsByOrigId.has(origId)) turnsByOrigId.set(origId, [])
-    turnsByOrigId.get(origId)!.push(msg)
+  // Group consecutive non-user messages into single turns (matches official convertMessages)
+  const turns: any[][] = []
+  let i = 0
+  while (i < historyMessages.length) {
+    if (historyMessages[i].role === 'user') {
+      turns.push([historyMessages[i++]])
+    } else {
+      const group: any[] = []
+      while (i < historyMessages.length && historyMessages[i].role !== 'user') {
+        group.push(historyMessages[i++])
+      }
+      if (group.length) turns.push(group)
+    }
   }
 
-  for (const [, msgs] of turnsByOrigId) {
+  for (const msgs of turns) {
     const userMsg = msgs.find((m: any) => m.role === 'user')
     if (userMsg) {
       const content = extractContent(userMsg.content)
@@ -107,7 +116,7 @@ function loadHistoryMessages(historyMessages: any[]) {
       }
     }
 
-    // Assistant message text
+    // Assistant message text (exclude approval messages)
     const assistantMsg = msgs.find((m: any) => m.type === 'message' && m.role === 'assistant'
       && m.metadata?.message_type !== 'tool_guard_approval')
     if (assistantMsg) {
@@ -152,19 +161,24 @@ function loadHistoryMessages(historyMessages: any[]) {
       })
     }
 
-    // Approval
-    const approvalMsg = msgs.find((m: any) => m.metadata?.message_type === 'tool_guard_approval')
-    if (approvalMsg?.metadata) {
+    // Approval (deduplicate by requestId)
+    const seenRequestIds = new Set<string>()
+    const approvalMsgs = msgs.filter((m: any) => m.metadata?.message_type === 'tool_guard_approval')
+    for (const approvalMsg of approvalMsgs) {
       const meta = approvalMsg.metadata
+      const requestId = meta?.approval_request_id || ''
+      if (requestId && seenRequestIds.has(requestId)) continue
+      if (requestId) seenRequestIds.add(requestId)
+
       blocks.push({
         id: approvalMsg.id || `blk-${Date.now()}-approval`,
         type: 'approval',
         approval: {
-          requestId: meta.approval_request_id || '',
-          toolName: meta.tool_name || '',
-          severity: meta.severity || '',
-          findingsSummary: meta.findings_summary || '',
-          toolParams: meta.tool_params,
+          requestId,
+          toolName: meta?.tool_name || '',
+          severity: meta?.severity || '',
+          findingsSummary: meta?.findings_summary || '',
+          toolParams: meta?.tool_params,
           status: 'pending',
           text: extractContent(approvalMsg.content) || undefined
         }
@@ -313,12 +327,12 @@ function saveEdit(msg: ChatMessage) {
   sendMessage(text, { onComplete: syncBackendTitle })
 }
 
-const approvalLoading = ref(false)
+const approvalLoadingIds = ref(new Set<string>())
 
 async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'approve' | 'deny') {
-  if (!block.approval?.requestId || approvalLoading.value) return
+  if (!block.approval?.requestId || approvalLoadingIds.value.has(block.approval.requestId)) return
 
-  approvalLoading.value = true
+  approvalLoadingIds.value.add(block.approval.requestId)
   try {
     await $fetch(`/api/approval/${action}`, {
       method: 'POST',
@@ -331,7 +345,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
   } catch (err) {
     console.error('[ChatPage] Approval failed:', err)
   } finally {
-    approvalLoading.value = false
+    approvalLoadingIds.value.delete(block.approval!.requestId)
   }
 }
 </script>
@@ -480,10 +494,10 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                           </div>
                         </div>
                         <div class="px-3 pb-2 flex gap-2">
-                          <UButton size="xs" color="success" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, block, 'approve')">
+                          <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="status === 'streaming' || approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
                             批准
                           </UButton>
-                          <UButton size="xs" color="error" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, block, 'deny')">
+                          <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="status === 'streaming' || approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
                             拒绝
                           </UButton>
                         </div>

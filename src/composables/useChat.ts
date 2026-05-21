@@ -285,21 +285,28 @@ export function useChat(sessionId: string) {
 
       const metadata = (event as any).metadata
       if (metadata?.message_type === 'tool_guard_approval') {
+        const requestId = metadata.approval_request_id || ''
         const msg = getOrCreateAssistantMessage()
-        const block: MessageBlock = {
-          id: msgId,
-          type: 'approval',
-          approval: {
-            requestId: metadata.approval_request_id || '',
-            toolName: metadata.tool_name || '',
-            severity: metadata.severity || '',
-            findingsSummary: metadata.findings_summary || '',
-            toolParams: metadata.tool_params,
-            status: 'pending'
+        // Deduplicate: skip if an approval block with the same requestId already exists
+        const existingApproval = msg.blocks.find(
+          b => b.type === 'approval' && b.approval?.requestId === requestId
+        )
+        if (!existingApproval) {
+          const block: MessageBlock = {
+            id: msgId,
+            type: 'approval',
+            approval: {
+              requestId,
+              toolName: metadata.tool_name || '',
+              severity: metadata.severity || '',
+              findingsSummary: metadata.findings_summary || '',
+              toolParams: metadata.tool_params,
+              status: 'pending'
+            }
           }
+          msg.blocks.push(block)
+          triggerRef(messages)
         }
-        msg.blocks.push(block)
-        triggerRef(messages)
       }
 
       if (streamingPhase.value !== 'message') {
