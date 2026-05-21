@@ -1,17 +1,25 @@
 import { ref, computed, triggerRef } from 'vue'
 
+export interface ToolCall {
+  id: string
+  name: string
+  args: any
+  result?: any
+}
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant' | 'system'
   content: string
   reasoning?: string
-  toolCalls?: Array<{ id: string; name: string; args: any; result?: any }>
+  toolCalls?: ToolCall[]
   approval?: {
     requestId: string
     toolName: string
     severity: string
     findingsSummary: string
     toolParams: any
+    text?: string
   }
   timestamp: number
 }
@@ -32,6 +40,10 @@ export function useChat(sessionId: string) {
   const currentAssistantId = ref<string | null>(null)
   const streamingPhase = ref<StreamingPhase>('idle')
 
+  // Track which backend msg_ids belong to reasoning vs message
+  const reasoningMsgIds = new Set<string>()
+  const messageMsgIds = new Set<string>()
+
   function getOrCreateAssistantMessage(): ChatMessage {
     const existing = messages.value.find(
       m => m.id === currentAssistantId.value && m.role === 'assistant'
@@ -46,7 +58,6 @@ export function useChat(sessionId: string) {
       timestamp: Date.now()
     })
     currentAssistantId.value = id
-    // Return the reactive proxy from the array, not the plain object
     return messages.value[messages.value.length - 1]
   }
 
@@ -61,7 +72,6 @@ export function useChat(sessionId: string) {
     }
     messages.value.push(userMsg)
 
-    // Create assistant message immediately for thinking indicator
     const assistantId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     messages.value.push({
       id: assistantId,
@@ -74,6 +84,8 @@ export function useChat(sessionId: string) {
     status.value = 'streaming'
     error.value = null
     streamingPhase.value = 'waiting'
+    reasoningMsgIds.clear()
+    messageMsgIds.clear()
 
     try {
       const response = await fetch(`/api/chats/${sessionId}`, {
@@ -117,7 +129,6 @@ export function useChat(sessionId: string) {
         }
       }
 
-      // Process remaining buffer
       if (buffer) {
         const trimmed = buffer.trim()
         if (trimmed.startsWith('data: ')) {
@@ -141,40 +152,57 @@ export function useChat(sessionId: string) {
     }
   }
 
-  function extractTextFromContent(content: unknown): string {
-    if (typeof content === 'string') return content
-    if (Array.isArray(content)) {
-      return content
-        .filter((p: any) => p.type === 'text' && p.text)
-        .map((p: any) => p.text)
-        .join('')
-    }
-    if (content && typeof content === 'object') {
-      const obj = content as Record<string, unknown>
-      if (typeof obj.text === 'string') return obj.text
-    }
-    return ''
-  }
+  function findOrCreateToolCall(msg: ChatMessage, callId: string): ToolCall {
+    const existing = msg.toolCalls?.find(t => t.id === callId)
+    if (existing) return existing
 
-  function extractTextFromEvent(event: Record<string, unknown>): string {
-    // Try event.content first
-    const fromContent = extractTextFromContent(event.content)
-    if (fromContent) return fromContent
-    // Try event.text directly (QwenPaw format: {object: "content", type: "text", text: "..."})
-    if (typeof event.text === 'string') return event.text
-    return ''
+    if (!msg.toolCalls) msg.toolCalls = []
+    const tc: ToolCall = { id: callId, name: '', args: undefined }
+    msg.toolCalls.push(tc)
+    return tc
   }
 
   function handleEvent(event: Record<string, unknown>) {
     const obj = event.object as string
     const type = event.type as string
-    console.log('[Chat] SSE event:', JSON.stringify(event).substring(0, 200))
 
-    if (obj === 'message' && type === 'message') {
-      if (streamingPhase.value !== 'message') {
-        streamingPhase.value = 'message'
+    // ── response lifecycle ─────────────────────────────────────────
+    // Seq 0: response created, Seq 1: response in_progress
+    // Seq N: response completed
+    if (obj === 'response') {
+      if (event.status === 'completed') {
+        status.value = 'ready'
       }
-      // Check for approval request metadata
+      return
+    }
+
+    // ── message + reasoning ────────────────────────────────────────
+    // Seq 2:  message(reasoning) in_progress, id="msg_1d835b3f..."
+    // Seq 57: message(reasoning) completed
+    // These events define that a msg_id belongs to reasoning.
+    // Content is streamed via content/text with matching msg_id.
+    if (obj === 'message' && type === 'reasoning') {
+      const msgId = event.id as string
+      reasoningMsgIds.add(msgId)
+      if (streamingPhase.value === 'waiting') {
+        streamingPhase.value = 'reasoning'
+      }
+      // Content already streamed via content/text — do NOT update here
+      return
+    }
+
+    // ── message + message ──────────────────────────────────────────
+    // Seq 46: message(message) in_progress, id="msg_61f1e65f..."
+    // Seq 58: message(message) completed
+    // Seq 94: message(message) in_progress with metadata (approval)
+    // Seq 97: message(message) completed with metadata (approval)
+    // These events define that a msg_id belongs to message.
+    // Content is streamed via content/text with matching msg_id.
+    if (obj === 'message' && type === 'message') {
+      const msgId = event.id as string
+      messageMsgIds.add(msgId)
+
+      // Check for approval metadata
       const metadata = (event as any).metadata
       if (metadata?.message_type === 'tool_guard_approval') {
         const msg = getOrCreateAssistantMessage()
@@ -186,109 +214,89 @@ export function useChat(sessionId: string) {
           toolParams: metadata.tool_params
         }
         triggerRef(messages)
-        console.log('[Chat] Approval request:', msg.approval)
       }
-      const content = extractTextFromEvent(event)
-      if (content) {
-        const msg = getOrCreateAssistantMessage()
-        msg.content += content
-        triggerRef(messages)
-        console.log('[Chat] Message updated, length:', msg.content.length)
-      }
-    } else if (obj === 'message' && type === 'reasoning') {
-      if (streamingPhase.value === 'waiting') {
-        streamingPhase.value = 'reasoning'
-      }
-      const content = extractTextFromEvent(event)
-      if (content) {
-        const msg = getOrCreateAssistantMessage()
-        msg.reasoning = (msg.reasoning || '') + content
-        triggerRef(messages)
-      }
-    } else if (obj === 'content' && type === 'text') {
-      // QwenPaw content chunk format
+
       if (streamingPhase.value !== 'message') {
         streamingPhase.value = 'message'
       }
-      const content = extractTextFromEvent(event)
-      if (content) {
-        const msg = getOrCreateAssistantMessage()
-        msg.content += content
-        triggerRef(messages)
-        console.log('[Chat] Content chunk, length:', msg.content.length)
-      }
-    } else if ((obj === 'message' && type === 'plugin_call') || (obj === 'message' && type === 'tool_call')) {
-      const msg = getOrCreateAssistantMessage()
-      if (!msg.toolCalls) msg.toolCalls = []
-      // Extract from content array or event fields
-      let callId = '', name = '', args: any = undefined
-      if (Array.isArray(event.content)) {
-        const dataPart = event.content.find((p: any) => p.type === 'data')
-        if (dataPart?.data) {
-          callId = dataPart.data.call_id || ''
-          name = dataPart.data.name || ''
-          args = dataPart.data.arguments
-        }
-      }
-      if (!name) name = (event.name as string) || ''
-      if (!callId) callId = (event.id as string) || (event as any).call_id || `call-${Date.now()}`
-      if (args === undefined) args = event.args || (event as any).arguments
-      console.log('[Chat] Plugin call:', { id: callId, name })
-      msg.toolCalls.push({ id: callId, name, args })
-      triggerRef(messages)
-    } else if ((obj === 'message' && type === 'plugin_call_output') || (obj === 'message' && type === 'tool_output')) {
-      const msg = getOrCreateAssistantMessage()
-      if (msg.toolCalls) {
-        let callId = ''
-        let output: any = undefined
-        if (Array.isArray(event.content)) {
-          const dataPart = event.content.find((p: any) => p.type === 'data')
-          if (dataPart?.data) {
-            callId = dataPart.data.call_id || ''
-            output = dataPart.data.output
-          }
-        }
-        if (!callId) callId = (event.id as string) || (event as any).call_id || ''
-        const last = callId
-          ? msg.toolCalls.find(t => t.id === callId)
-          : msg.toolCalls[msg.toolCalls.length - 1]
-        if (last) {
-          last.result = output || extractTextFromEvent(event) || event.content
-          console.log('[Chat] Plugin output for:', last.name)
-          triggerRef(messages)
-        }
-      }
-    } else if (obj === 'content' && type === 'data') {
-      // QwenPaw data content format (tool calls stored as data)
-      const data = (event as any).data
-      if (data && data.name) {
-        const msg = getOrCreateAssistantMessage()
-        if (!msg.toolCalls) msg.toolCalls = []
-        const toolCall = {
-          id: data.call_id || `call-${Date.now()}`,
-          name: data.name,
-          args: data.arguments
-        }
-        console.log('[Chat] Content data (tool call):', toolCall)
-        msg.toolCalls.push(toolCall)
-        triggerRef(messages)
-      }
-    } else if (obj === 'content' && type === 'tool_output') {
-      // QwenPaw tool_output in content format
-      const msg = getOrCreateAssistantMessage()
-      if (msg.toolCalls) {
-        const last = msg.toolCalls[msg.toolCalls.length - 1]
-        if (last) {
-          last.result = extractTextFromEvent(event) || event.content
-          console.log('[Chat] Content tool_output for:', last.name)
-          triggerRef(messages)
-        }
-      }
-    } else if (obj === 'response' && event.status === 'completed') {
-      status.value = 'ready'
-    } else {
-      console.log('[Chat] Unhandled event:', obj, type, Object.keys(event))
+      // Content already streamed via content/text — do NOT update here
+      return
     }
+
+    // ── content + text ─────────────────────────────────────────────
+    // Seq 3-45: content(text), msg_id="msg_1d835b3f..." → reasoning text
+    // Seq 47-55: content(text), msg_id="msg_61f1e65f..." → message text
+    // Seq 95-96: content(text), msg_id="msg_a579aef0..." → approval text
+    // The msg_id tells us exactly which message this content belongs to.
+    if (obj === 'content' && type === 'text') {
+      const msgId = event.msg_id as string
+      const text = (event as any).text as string
+      if (!text) return
+
+      const msg = getOrCreateAssistantMessage()
+
+      if (reasoningMsgIds.has(msgId)) {
+        // This is reasoning content
+        if (streamingPhase.value === 'waiting') {
+          streamingPhase.value = 'reasoning'
+        }
+        msg.reasoning = (msg.reasoning || '') + text
+      } else if (messageMsgIds.has(msgId)) {
+        // This is message content — check if it's an approval message
+        if (msg.approval) {
+          // Store approval text separately, don't render as markdown
+          msg.approval.text = (msg.approval.text || '') + text
+        } else {
+          msg.content += text
+        }
+      } else {
+        // Unknown msg_id — treat as message content (fallback)
+        msg.content += text
+      }
+
+      triggerRef(messages)
+      return
+    }
+
+    // ── content + data (tool call info OR tool call output) ────────
+    // Seq 60-91: content(data) with call_id, name, arguments (heartbeat)
+    // Seq 92: content(data) completed (final arguments)
+    // Both tool call requests and outputs use this format,
+    // distinguished by presence of "arguments" vs "output" field.
+    if (obj === 'content' && type === 'data') {
+      const data = (event as any).data
+      if (!data) return
+
+      const callId = data.call_id
+      if (!callId) return
+
+      const msg = getOrCreateAssistantMessage()
+      const tc = findOrCreateToolCall(msg, callId)
+
+      if (data.name) tc.name = data.name
+      if (data.arguments !== undefined) tc.args = data.arguments
+      if (data.output !== undefined) tc.result = data.output
+
+      triggerRef(messages)
+      return
+    }
+
+    // ── message + plugin_call ──────────────────────────────────────
+    // Seq 59: plugin_call in_progress, content=null (signal)
+    // Seq 93: plugin_call completed, content=[{type:"data",...}] (summary)
+    // Both are informational — actual data handled by content/data
+    if (obj === 'message' && (type === 'plugin_call' || type === 'tool_call')) {
+      return
+    }
+
+    // ── message + plugin_call_output ───────────────────────────────
+    // Same pattern as plugin_call — data handled by content/data
+    if (obj === 'message' && (type === 'plugin_call_output' || type === 'tool_output')) {
+      return
+    }
+
+    // ── unhandled ──────────────────────────────────────────────────
+    console.log('[Chat] Unhandled event:', obj, type)
   }
 
   function stop() {

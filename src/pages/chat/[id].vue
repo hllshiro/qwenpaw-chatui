@@ -185,12 +185,51 @@ const input = ref('')
 const editingId = ref<string | null>(null)
 const editingText = ref('')
 const expandedReasoning = ref(new Set<string>())
+const expandedToolCalls = ref(new Set<string>())
 
 function toggleReasoning(msgId: string) {
   if (expandedReasoning.value.has(msgId)) {
     expandedReasoning.value.delete(msgId)
   } else {
     expandedReasoning.value.add(msgId)
+  }
+}
+
+function toggleToolCall(callId: string) {
+  if (expandedToolCalls.value.has(callId)) {
+    expandedToolCalls.value.delete(callId)
+  } else {
+    expandedToolCalls.value.add(callId)
+  }
+}
+
+function formatToolArgs(args: any): string {
+  if (!args) return '{}'
+  if (typeof args === 'string') return args || '{}'
+  try {
+    return JSON.stringify(args, null, 2)
+  } catch {
+    return String(args)
+  }
+}
+
+function formatToolResult(result: any): string {
+  if (!result) return ''
+  if (typeof result === 'string') {
+    try {
+      const parsed = JSON.parse(result)
+      if (Array.isArray(parsed)) {
+        return parsed.map((p: any) => p.text || JSON.stringify(p)).join('\n')
+      }
+      return result
+    } catch {
+      return result
+    }
+  }
+  try {
+    return JSON.stringify(result, null, 2)
+  } catch {
+    return String(result)
   }
 }
 
@@ -237,6 +276,10 @@ function regenerate() {
       sendMessage(lastUserMsg.content, { onComplete: syncBackendTitle })
     }
   }
+}
+
+function handleApproval(action: 'approve' | 'deny') {
+  sendMessage(`/approval ${action}`, { onComplete: syncBackendTitle })
 }
 </script>
 
@@ -290,11 +333,62 @@ function regenerate() {
 
               <!-- Tool calls -->
               <div v-if="msg.toolCalls?.length" class="mb-2 space-y-1">
-                <div v-for="tool in msg.toolCalls" :key="tool.id" class="flex items-center gap-2 text-xs bg-muted/50 rounded px-2 py-1">
-                  <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
-                  <span class="font-mono">{{ tool.name }}</span>
-                  <span v-if="tool.result" class="text-muted">✓</span>
-                  <span v-else class="text-muted animate-pulse">...</span>
+                <div v-for="tool in msg.toolCalls" :key="tool.id" class="text-xs bg-muted/50 rounded overflow-hidden">
+                  <div
+                    class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
+                    @click="toggleToolCall(tool.id)"
+                  >
+                    <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
+                    <span class="font-mono">{{ tool.name || '...' }}</span>
+                    <span v-if="tool.result" class="text-green-500">✓</span>
+                    <span v-else-if="tool.name" class="text-muted animate-pulse">...</span>
+                    <UIcon
+                      :name="expandedToolCalls.has(tool.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                      class="size-3 ml-auto"
+                    />
+                  </div>
+                  <div v-if="expandedToolCalls.has(tool.id)" class="px-2 pb-2 border-t border-muted">
+                    <div v-if="tool.args !== undefined" class="mt-1">
+                      <div class="text-muted font-medium mb-0.5">参数</div>
+                      <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(tool.args) }}</pre>
+                    </div>
+                    <div v-if="tool.result !== undefined" class="mt-1">
+                      <div class="text-muted font-medium mb-0.5">结果</div>
+                      <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(tool.result) }}</pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Approval -->
+              <div v-if="msg.approval" class="mb-2 border rounded-lg overflow-hidden" :class="msg.approval.severity === 'HIGH' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30'">
+                <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
+                  <span>🛡️</span>
+                  <span>等待审批</span>
+                  <span v-if="msg.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="msg.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
+                    {{ msg.approval.severity }}
+                  </span>
+                </div>
+                <div class="px-3 pb-2 text-xs space-y-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-muted">工具:</span>
+                    <span class="font-mono">{{ msg.approval.toolName }}</span>
+                  </div>
+                  <div v-if="msg.approval.findingsSummary" class="text-muted">
+                    {{ msg.approval.findingsSummary }}
+                  </div>
+                  <div v-if="msg.approval.toolParams" class="mt-1">
+                    <div class="text-muted font-medium mb-0.5">参数</div>
+                    <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(msg.approval.toolParams) }}</pre>
+                  </div>
+                </div>
+                <div class="px-3 pb-2 flex gap-2">
+                  <UButton size="xs" color="success" variant="soft" :disabled="status === 'streaming'" @click="handleApproval('approve')">
+                    批准
+                  </UButton>
+                  <UButton size="xs" color="error" variant="soft" :disabled="status === 'streaming'" @click="handleApproval('deny')">
+                    拒绝
+                  </UButton>
                 </div>
               </div>
 
@@ -311,8 +405,8 @@ function regenerate() {
                   <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
                 </div>
               </template>
-              <ChatComark v-else-if="msg.role === 'assistant' && msg.content" :markdown="msg.content" :streaming="streamingPhase === 'message'" class="prose dark:prose-invert prose-sm max-w-none" />
-              <div v-else-if="msg.content" class="whitespace-pre-wrap">{{ msg.content }}</div>
+              <ChatComark v-else-if="msg.role === 'assistant' && msg.content && !msg.approval" :markdown="msg.content" :streaming="streamingPhase === 'message'" class="prose dark:prose-invert prose-sm max-w-none" />
+              <div v-else-if="msg.content && !msg.approval" class="whitespace-pre-wrap">{{ msg.content }}</div>
 
               <!-- Actions -->
               <div v-if="msg.role === 'user' && editingId !== msg.id" class="flex justify-end mt-1">
