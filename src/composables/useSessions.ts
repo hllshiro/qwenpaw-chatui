@@ -5,7 +5,7 @@ import { $fetch } from 'ofetch'
 interface Session {
   id: string
   businessKey: string
-  title: string
+  name: string
   createdAt: string
   updatedAt: string
 }
@@ -34,7 +34,7 @@ export const useSessions = createSharedComposable(() => {
     })
     const s = sessions.value.find(s => s.id === id)
     if (s) {
-      if (data.title !== undefined) s.title = data.title
+      if (data.name !== undefined) s.name = data.name
       s.updatedAt = new Date().toISOString()
     }
   }

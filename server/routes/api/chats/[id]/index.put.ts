@@ -10,13 +10,35 @@ export default defineHandler(async (event) => {
 
   const body = await readBody(event)
   const db = useDrizzle()
+  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
 
   const updateData: Record<string, unknown> = {
     updatedAt: new Date()
   }
 
-  if (body.title !== undefined) {
-    updateData.title = body.title
+  if (body.name !== undefined) {
+    updateData.name = body.name
+
+    // Sync name to QwenPaw backend
+    try {
+      const listResponse = await fetch(`${backendUrl}/api/chats`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (listResponse.ok) {
+        const chats = await listResponse.json()
+        const chat = chats.find((c: any) => c.session_id === id)
+        if (chat) {
+          await fetch(`${backendUrl}/api/chats/${chat.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: body.name })
+          })
+        }
+      }
+    } catch (err) {
+      console.error('[ChatUpdate] Failed to sync name to QwenPaw:', err)
+    }
   }
   if (body.business_key !== undefined) {
     updateData.businessKey = body.business_key

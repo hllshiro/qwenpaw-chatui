@@ -26,10 +26,10 @@ onMounted(async () => {
 
     sessionData.value = data
 
-    // Sync title from QwenPaw backend if available
-    const backendTitle = qwenpawChat?.name
-    if (backendTitle && backendTitle !== data?.title) {
-      updateSession(sessionId, { title: backendTitle })
+    // Sync name from QwenPaw backend if available
+    const backendName = qwenpawChat?.name
+    if (backendName && backendName !== data?.name) {
+      updateSession(sessionId, { name: backendName })
     }
 
     // Skip history load if messages already cached in memory
@@ -156,9 +156,9 @@ function extractContent(content: any): string {
   return ''
 }
 
-const title = computed(() => {
+const sessionName = computed(() => {
   const session = sessions.value.find(s => s.id === sessionId)
-  return session?.title || '新会话'
+  return session?.name || '新会话'
 })
 
 const businessKey = ref(
@@ -172,12 +172,12 @@ const { messages, status, error, streamingPhase, currentAssistantId, sendMessage
 
 function syncBackendTitle() {
   $fetch(`/api/chats/spec?session_id=${sessionId}`).then((chat: any) => {
-    const backendTitle = chat?.name
-    if (backendTitle && backendTitle !== title.value) {
-      updateSession(sessionId, { title: backendTitle })
+    const backendName = chat?.name
+    if (backendName && backendName !== sessionName.value) {
+      updateSession(sessionId, { name: backendName })
     }
   }).catch((err: any) => {
-    console.error('[ChatPage] Failed to sync title:', err)
+    console.error('[ChatPage] Failed to sync name:', err)
   })
 }
 
@@ -251,7 +251,7 @@ function regenerate() {
       <Navbar>
         <template #title>
           <span class="text-sm font-medium text-highlighted truncate min-w-0 max-w-3xs">
-            {{ title }}
+            {{ sessionName }}
           </span>
         </template>
       </Navbar>

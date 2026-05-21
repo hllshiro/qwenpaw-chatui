@@ -21,7 +21,7 @@ const items = computed(() => groupedSessions.value?.flatMap((group) => {
     type: 'label' as const
   }, ...group[1].map(item => ({
     id: item.id,
-    label: item.title || '新会话',
+    label: item.name || '新会话',
     to: `/chat/${item.id}`,
     icon: 'i-lucide-message-circle',
     slot: 'chat' as const
@@ -45,15 +45,15 @@ function getChatActions(item: { id: string, label: string }): DropdownMenuItem[]
   ]]
 }
 
-function startRename(id: string, currentTitle: string) {
+function startRename(id: string, currentName: string) {
   renamingId.value = id
-  renameInput.value = currentTitle === '新会话' ? '' : currentTitle
+  renameInput.value = currentName === '新会话' ? '' : currentName
 }
 
 async function confirmRename() {
   if (!renamingId.value) return
-  const title = renameInput.value.trim() || '新会话'
-  await updateSession(renamingId.value, { title })
+  const name = renameInput.value.trim() || '新会话'
+  await updateSession(renamingId.value, { name })
   renamingId.value = null
 }
 
