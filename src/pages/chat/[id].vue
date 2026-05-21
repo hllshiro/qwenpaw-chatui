@@ -278,8 +278,27 @@ function regenerate() {
   }
 }
 
-function handleApproval(action: 'approve' | 'deny') {
-  sendMessage(`/approval ${action}`, { onComplete: syncBackendTitle })
+const approvalLoading = ref(false)
+
+async function handleApproval(msg: ChatMessage, action: 'approve' | 'deny') {
+  if (!msg.approval?.requestId || approvalLoading.value) return
+
+  approvalLoading.value = true
+  try {
+    await $fetch(`/api/approval/${action}`, {
+      method: 'POST',
+      body: {
+        request_id: msg.approval.requestId,
+        session_id: sessionId
+      }
+    })
+    // Mark approval as processed
+    msg.approval.text = action === 'approve' ? '✅ 已批准' : '❌ 已拒绝'
+  } catch (err) {
+    console.error('[ChatPage] Approval failed:', err)
+  } finally {
+    approvalLoading.value = false
+  }
 }
 </script>
 
@@ -383,10 +402,10 @@ function handleApproval(action: 'approve' | 'deny') {
                   </div>
                 </div>
                 <div class="px-3 pb-2 flex gap-2">
-                  <UButton size="xs" color="success" variant="soft" :disabled="status === 'streaming'" @click="handleApproval('approve')">
+                  <UButton size="xs" color="success" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, 'approve')">
                     批准
                   </UButton>
-                  <UButton size="xs" color="error" variant="soft" :disabled="status === 'streaming'" @click="handleApproval('deny')">
+                  <UButton size="xs" color="error" variant="soft" :loading="approvalLoading" :disabled="status === 'streaming' || approvalLoading" @click="handleApproval(msg, 'deny')">
                     拒绝
                   </UButton>
                 </div>
