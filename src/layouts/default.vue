@@ -11,9 +11,20 @@ const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSess
 await fetchSessions()
 
 const sidebarOpen = ref(false)
+const settingsOpen = ref(false)
 const renamingId = ref<string | null>(null)
 const renameInput = ref('')
 const deletingId = ref<string | null>(null)
+
+const isRenamingOpen = computed({
+  get: () => renamingId.value !== null,
+  set: (v) => { if (!v) renamingId.value = null },
+})
+
+const isDeletingOpen = computed({
+  get: () => deletingId.value !== null,
+  set: (v) => { if (!v) deletingId.value = null },
+})
 
 const items = computed(() => groupedSessions.value?.flatMap((group) => {
   return [{
@@ -170,6 +181,18 @@ defineShortcuts({
           </template>
         </UNavigationMenu>
       </template>
+
+      <template #footer="{ collapsed }">
+        <UNavigationMenu
+          :items="[{
+            label: '设置',
+            icon: 'i-lucide-settings',
+            onSelect: () => settingsOpen = true,
+          }]"
+          :collapsed="collapsed"
+          orientation="vertical"
+        />
+      </template>
     </UDashboardSidebar>
 
     <div class="flex-1 flex m-4 lg:ml-0 rounded-lg ring ring-default bg-default/75 shadow min-w-0 overflow-hidden">
@@ -178,7 +201,7 @@ defineShortcuts({
   </UDashboardGroup>
 
   <UModal
-    v-model:open="renamingId"
+    v-model:open="isRenamingOpen"
     title="重命名会话"
   >
     <template #body>
@@ -204,7 +227,7 @@ defineShortcuts({
   </UModal>
 
   <UModal
-    v-model:open="deletingId"
+    v-model:open="isDeletingOpen"
     title="删除会话"
   >
     <template #body>
@@ -224,4 +247,6 @@ defineShortcuts({
       />
     </template>
   </UModal>
+
+  <SettingsModal v-model:open="settingsOpen" />
 </template>

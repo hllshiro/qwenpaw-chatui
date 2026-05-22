@@ -15,6 +15,13 @@
       "when": 1779326822769,
       "tag": "0001_robust_rumiko_fujikawa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779417619208,
+      "tag": "0002_parallel_famine",
+      "breakpoints": true
     }
   ]
 }
