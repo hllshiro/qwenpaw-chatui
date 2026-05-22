@@ -1,109 +1,167 @@
-# Vue AI Chatbot Template
+# QwenPaw ChatUI
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
-[![Nitro](https://img.shields.io/badge/Built%20with-Nitro-ff637e?logo=nitro&labelColor=18181B)](https://nitro.build)
+基于 Vue 3 的 QwenPaw 聊天界面，为 QwenPaw 后端提供现代化的 Web 聊天体验。
 
-Full-featured AI Chatbot Vue application with authentication, chat history, collapsible sidebar, keyboard shortcuts, light & dark mode, command palette and more. Built using [Nuxt UI](https://ui.nuxt.com) components and integrated with [AI SDK](https://ai-sdk.dev) for a complete chat experience.
+## 项目简介
 
-- [Live demo](https://chat-vue-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/vue)
+QwenPaw ChatUI 是一个功能完整的 AI 聊天前端应用，专为对接 [QwenPaw](https://github.com/agentscope-ai/QwenPaw) 后端而设计。采用 Vue 3 + Nitro 架构，提供流式对话、工具调用审批、会话管理等核心功能。
 
-<a href="https://chat-vue-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/vue/chat-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/vue/chat-light.png">
-    <img alt="Vue AI Chatbot Template" src="https://ui.nuxt.com/assets/templates/vue/chat-light.png">
-  </picture>
-</a>
+### 核心特性
 
-> The chat template for Nuxt is on https://github.com/nuxt-ui-templates/chat.
+- **流式对话** - SSE 实时推送，支持思考过程展示
+- **工具调用** - 完整的工具调用展示与审批流程
+- **会话管理** - 创建、重命名、删除会话，支持历史记录恢复
+- **配置管理** - 主题切换、暗色模式、自定义品牌
+- **嵌入式支持** - 可通过 WebView 嵌入第三方应用
+- **响应式设计** - 适配桌面端和移动端
 
-## Features
+## 技术栈
 
-- ⚡️ **Streaming AI messages** powered by the [AI SDK](https://ai-sdk.dev) with thinking/reasoning support
-- 🤖 **Multiple model support** — Claude Haiku 4.5, Gemini 3 Flash and GPT-5 Nano via [Vercel AI Gateway](https://vercel.com/docs/ai-gateway)
-- 🔍 **Web search** with built-in provider tools (Anthropic, OpenAI)
-- 📊 **Charts and weather** tool calling with rich UI rendering
-- 🔐 **Authentication** via GitHub OAuth using [Nitro](https://nitro.build) server routes and httpOnly cookies
-- 💾 **Chat history persistence** using SQLite database ([Turso](https://turso.tech) in production) and [Drizzle ORM](https://orm.drizzle.team)
-- ✨ **Markdown rendering** with streaming code highlighting via [Comark](https://comark.dev)
+| 层级 | 技术 |
+|------|------|
+| 前端框架 | Vue 3 + TypeScript |
+| UI 组件库 | Nuxt UI |
+| 构建工具 | Vite |
+| 服务端 | Nitro |
+| 数据库 | SQLite + Drizzle ORM |
+| 路由 | Vue Router |
+| 样式 | Tailwind CSS |
 
-## Quick Start
+## 快速开始
 
-```bash
-npm create nuxt@latest -- --no-modules -t ui-vue/chat
-```
+### 环境要求
 
-## Deploy your own
+- Node.js >= 18
+- pnpm >= 8
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fchat-vue&repository-name=chat-vue&env=GITHUB_OAUTH_CLIENT_ID%2CGITHUB_OAUTH_CLIENT_SECRET%2CSESSION_SECRET&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22tursocloud%22%2C%22productSlug%22%3A%22database%22%2C%22protocol%22%3A%22storage%22%7D%5D&demo-title=Vue+Chat+Template&demo-description=An+AI+chatbot+template+with+GitHub+authentication+and+persistent+chat+history+powered+by+Vercel+AI+SDK.&demo-url=https%3A%2F%2Fchat-vue-template.nuxt.dev&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fvue%2Fchat-dark.png)
-
-## Setup
-
-Make sure to install the dependencies:
+### 安装依赖
 
 ```bash
 pnpm install
 ```
 
-Run database migrations:
+### 配置环境变量
+
+复制 `.env.example` 为 `.env`，根据需要修改配置：
+
+```bash
+cp .env.example .env
+```
+
+主要配置项：
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `QWENPAW_BACKEND_URL` | QwenPaw 后端地址 | `http://localhost:8088` |
+| `DATABASE_URL` | SQLite 数据库路径 | `file:.data/qwenpaw.db` |
+| `PORT` | 开发服务器端口 | `3000` |
+
+### 初始化数据库
 
 ```bash
 pnpm db:migrate
 ```
 
-> [!NOTE]
-> In production, configure your database connection. On Vercel, add the [Turso integration](https://vercel.com/integrations/turso) to automatically provision `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
-
-### AI Integration
-
-This template uses the [Vercel AI SDK](https://ai-sdk.dev/) for streaming AI responses with support for multiple providers through [Vercel AI Gateway](https://vercel.com/docs/ai-gateway). When deployed on Vercel, the AI Gateway is configured automatically.
-
-For local development, set your API key in `.env`:
-
-```bash
-AI_GATEWAY_API_KEY=<your-vercel-ai-gateway-api-key>
-```
-
-> [!TIP]
-> With [Vercel AI Gateway](https://vercel.com/docs/ai-gateway), you don't need individual API keys for OpenAI, Anthropic, etc. It provides a unified API to access hundreds of models through a single endpoint with automatic load balancing, fallbacks, and spend monitoring.
-
-### Authentication (Optional)
-
-This template uses [Nitro](https://nitro.build) server routes with httpOnly cookies for authentication with GitHub OAuth.
-
-To enable authentication, [create a GitHub OAuth application](https://github.com/settings/applications/new) and set:
-
-```bash
-GITHUB_OAUTH_CLIENT_ID=<your-github-oauth-app-client-id>
-GITHUB_OAUTH_CLIENT_SECRET=<your-github-oauth-app-client-secret>
-SESSION_SECRET=<your-secret-minimum-32-characters>
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+### 启动开发服务器
 
 ```bash
 pnpm dev
 ```
 
-## Production
+访问 `http://localhost:3000` 即可使用。
 
-Build the application for production:
+## 常用命令
+
+```bash
+# 开发
+pnpm dev              # 启动开发服务器
+pnpm build            # 构建生产版本
+pnpm preview          # 预览生产构建
+
+# 代码质量
+pnpm lint             # ESLint 检查
+pnpm typecheck        # TypeScript 类型检查
+
+# 数据库
+pnpm db:generate      # 生成迁移文件
+pnpm db:migrate       # 执行迁移
+```
+
+## 项目结构
+
+```
+qwenpaw-chatui/
+├── src/                    # Vue 3 前端
+│   ├── components/         # 组件
+│   ├── composables/        # 组合式函数
+│   ├── layouts/            # 布局
+│   ├── pages/              # 页面
+│   └── utils/              # 工具函数
+├── server/                 # Nitro 服务端
+│   ├── database/           # 数据库 schema 和迁移
+│   ├── routes/api/         # API 路由
+│   └── utils/              # 服务端工具函数
+├── docs/                   # 项目文档
+└── public/                 # 静态资源
+```
+
+详细架构说明请参考 [架构文档](./docs/architecture.md)。
+
+## 文档
+
+- [架构设计](./docs/architecture.md) - 系统整体架构
+- [功能清单](./docs/features.md) - 功能完成状态
+- 模块文档
+  - [前端模块](./docs/modules/frontend.md)
+  - [服务端模块](./docs/modules/server.md)
+  - [数据库模块](./docs/modules/database.md)
+  - [SSE 流式通信](./docs/modules/sse.md)
+  - [会话管理](./docs/modules/sessions.md)
+  - [配置管理](./docs/modules/settings.md)
+  - [审批系统](./docs/modules/approval.md)
+
+## 部署
+
+### 构建
 
 ```bash
 pnpm build
 ```
 
-Locally preview production build:
+构建产物位于 `.output/` 目录，是一个自包含的 Node.js 应用。
+
+### 运行
 
 ```bash
-pnpm preview
+node .output/server/index.mjs
 ```
 
-Check out the [deployment documentation](https://nitro.build/deploy) for more information.
+### 环境变量
 
-## Renovate integration
+生产环境需要配置：
 
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+- `QWENPAW_BACKEND_URL` - QwenPaw 后端地址
+- `DATABASE_URL` - 数据库连接路径
+
+## 开发指南
+
+### 添加新页面
+
+在 `src/pages/` 目录下创建 `.vue` 文件，Vue Router 会自动生成路由。
+
+### 添加新 API
+
+在 `server/routes/api/` 目录下创建文件，Nitro 会自动注册路由。
+
+### 数据库迁移
+
+修改 `server/database/schema.ts` 后执行：
+
+```bash
+pnpm db:generate
+pnpm db:migrate
+```
+
+## 许可证
+
+MIT
