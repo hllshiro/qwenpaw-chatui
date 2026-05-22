@@ -80,6 +80,12 @@ const emit = defineEmits<{
         class="cursor-pointer"
         @click="emit('action', item.key)"
       />
+
+      <IconPicker
+        v-else-if="item.type === 'icon'"
+        :model-value="value"
+        @update:model-value="emit('update', $event)"
+      />
     </div>
   </div>
 </template>

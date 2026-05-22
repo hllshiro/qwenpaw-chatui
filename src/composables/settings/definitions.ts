@@ -108,12 +108,11 @@ registerSetting({
 registerSetting({
   key: 'appearance.brand.icon',
   label: '品牌图标',
-  type: 'input',
+  type: 'icon',
   defaultValue: 'i-lucide-sparkles',
   category: 'appearance',
   group: 'brand',
   advanced: true,
-  placeholder: '图片URL或emoji',
 })
 
 registerSetting({

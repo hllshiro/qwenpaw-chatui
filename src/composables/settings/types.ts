@@ -1,4 +1,4 @@
-export type SettingType = 'switch' | 'select' | 'input' | 'color' | 'shortcut' | 'button'
+export type SettingType = 'switch' | 'select' | 'input' | 'color' | 'shortcut' | 'button' | 'icon'
 
 export interface SettingOption {
   label: string
