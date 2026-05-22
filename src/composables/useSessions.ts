@@ -68,7 +68,7 @@ export const useSessions = createSharedComposable(() => {
       else groups['更早']!.push(session)
     })
 
-    return Object.entries(groups).filter(([_, items]) => items.length > 0)
+    return Object.entries(groups).filter(([, items]) => items.length > 0)
   })
 
   return {
