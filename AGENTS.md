@@ -88,3 +88,122 @@ If the directory is missing, clone it: `git clone https://github.com/agentscope-
 ## Tool guard approval
 
 The backend can pause responses for approval. When a `message(message)` event has `metadata.message_type === 'tool_guard_approval'`, the assistant message gets an `approval` object with `requestId`, `toolName`, `severity`, `findingsSummary`, and `toolParams`. The UI renders approve/deny buttons calling `/api/approval/approve` and `/api/approval/deny`.
+
+## Documentation Management
+
+When implementing features, changes, or deletions, documentation must be updated synchronously to maintain project integrity.
+
+### Pre-Implementation Assessment
+
+Before implementing any feature, complete this assessment:
+
+1. **Impact Analysis**
+   - Check `docs/features.md` for related features
+   - Check `docs/modules/` for related module documentation
+   - Check `docs/architecture.md` for architectural implications
+   - Identify potentially affected existing features
+
+2. **Dependency Analysis**
+   - Determine existing modules the new feature depends on
+   - Determine existing modules that may be affected
+   - Assess whether existing modules need modification
+
+3. **Risk Assessment**
+   - Evaluate impact level on existing features (High/Medium/Low)
+   - Identify potential breaking changes
+   - Determine if additional testing is required
+
+### Documentation Update Steps
+
+#### After New Feature Implementation
+1. Update `docs/features.md`:
+   - Add new feature entry
+   - Mark as completed `[x]` or pending `[ ]`
+   - Add feature description and related module links
+
+2. Create or update module documentation:
+   - For new modules: Create `docs/modules/<module-name>.md`
+   - For existing modules: Update corresponding documentation
+   - Include module responsibilities, interfaces, and usage methods
+
+3. Update architecture documentation (if needed):
+   - Update architecture diagrams in `docs/architecture.md`
+   - Update module descriptions and data flow
+
+#### After Existing Feature Changes
+1. Update `docs/features.md`:
+   - Modify feature description
+   - Update status markers
+   - Add change description
+
+2. Update related module documentation:
+   - Update interface descriptions
+   - Update usage methods
+   - Update example code
+
+#### After Feature Deletion
+1. Update `docs/features.md`:
+   - Remove feature entry or mark as deprecated
+   - Add deprecation notice
+
+2. Update related module documentation:
+   - Remove related interface descriptions
+   - Update module responsibility descriptions
+
+### Scenario Handling
+
+#### New Module Development
+1. First add feature list in `docs/features.md`
+2. Create `docs/modules/<module-name>.md` module documentation
+3. Update `docs/architecture.md` architecture documentation
+4. Implement module code
+5. Update implementation details in module documentation
+
+#### Existing Module Extension
+1. Check existing module documentation
+2. Assess impact on existing features
+3. Update `docs/features.md` feature list
+4. Update module documentation
+5. Implement extension functionality
+6. Update implementation details in documentation
+
+#### Feature Refactoring
+1. Document current feature state
+2. Assess refactoring impact scope
+3. Update `docs/features.md` feature list
+4. Update related module documentation
+5. Execute refactoring
+6. Update change description in documentation
+
+#### Feature Deprecation
+1. Mark as deprecated in `docs/features.md`
+2. Update related module documentation
+3. Add deprecation notice and migration guide (if needed)
+4. Execute code cleanup
+
+### Verification Checklists
+
+#### Pre-Implementation Checklist
+- [ ] Checked related features in `docs/features.md`
+- [ ] Checked related module documentation in `docs/modules/`
+- [ ] Assessed impact on existing features
+- [ ] Identified documentation that needs updating
+
+#### Post-Implementation Checklist
+- [ ] Updated `docs/features.md` (if needed)
+- [ ] Created or updated module documentation
+- [ ] Updated architecture documentation (if needed)
+- [ ] Documentation content matches implementation
+- [ ] Documentation format complies with standards
+
+### Documentation Quality Standards
+1. **Completeness**: Covers all related features and interfaces
+2. **Accuracy**: Consistent with actual implementation
+3. **Clarity**: Easy to understand, includes examples
+4. **Timeliness**: Updated promptly, reflects current state
+5. **Format**: Follows Markdown syntax, uses consistent heading levels and list formats
+
+### Enforcement
+- PRs without proper documentation updates should not be merged
+- Code reviews must check documentation updates
+- Regularly verify consistency between documentation and code
