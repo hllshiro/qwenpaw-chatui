@@ -47,11 +47,23 @@ const emit = defineEmits<{
         @update:model-value="emit('update', $event)"
       />
 
-      <UColorPicker
+      <UPopover
         v-else-if="item.type === 'color'"
-        :model-value="value"
-        @update:model-value="emit('update', $event)"
-      />
+        :content="{ align: 'end' }"
+      >
+        <div
+          class="w-8 h-8 rounded-md border border-default cursor-pointer"
+          :style="{ backgroundColor: value }"
+        />
+        <template #content>
+          <div class="p-2">
+            <UColorPicker
+              :model-value="value"
+              @update:model-value="emit('update', $event)"
+            />
+          </div>
+        </template>
+      </UPopover>
 
       <ShortcutInput
         v-else-if="item.type === 'shortcut'"
