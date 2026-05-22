@@ -24,7 +24,7 @@ server/           — Nitro server routes (API proxy to QwenPaw backend)
 server/routes/api/ — REST endpoints for sessions + approval
 server/utils/qwenpaw.ts — calls QwenPaw backend API
 server/utils/drizzle.ts — DB singleton (re-exports sql, eq, and, or, asc, desc)
-server/database/schema.ts — Drizzle schema (sessions table only)
+server/database/schema.ts — Drizzle schema (sessions + settings tables)
 ```
 
 Frontend → Nitro server → QwenPaw backend (`localhost:8088`). SSE streaming is proxied through Nitro.
@@ -50,6 +50,10 @@ Copy `.env.example` to `.env`. Key vars:
 | GET | `/api/chats/:id/history` | Fetch chat history from QwenPaw backend |
 | POST | `/api/approval/approve` | Approve tool guard request |
 | POST | `/api/approval/deny` | Deny tool guard request |
+| GET | `/api/settings` | List all settings |
+| PUT | `/api/settings/:key` | Update a setting |
+| GET | `/api/settings/export` | Export all settings as JSON |
+| POST | `/api/settings/import` | Import settings from JSON |
 | GET | `/api/config` | Returns `{ qwenpawBackendUrl }` |
 
 ## Gotchas
