@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useSettings } from '../composables/settings'
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const {
   getVisibleSettings,
 } = useSettings()
 
+const isWide = useMediaQuery('(min-width: 640px)')
 const activeCategory = ref('general')
 const brandClickCount = ref(0)
 let brandClickTimer: ReturnType<typeof setTimeout> | null = null
@@ -77,10 +79,9 @@ async function handleExport() {
       description: '配置已下载',
       color: 'success',
     })
-  } catch (e) {
+  } catch {
     useToast().add({
       title: '导出失败',
-      description: String(e),
       color: 'error',
     })
   }
@@ -106,10 +107,10 @@ function handleImport() {
         description: `已导入 ${Object.keys(data.settings).length} 项配置`,
         color: 'success',
       })
-    } catch (e) {
+    } catch (err) {
       useToast().add({
         title: '导入失败',
-        description: String(e),
+        description: String(err),
         color: 'error',
       })
     }
@@ -121,7 +122,8 @@ function handleImport() {
 <template>
   <UModal
     v-model:open="isOpen"
-    class="max-w-4xl"
+    class="w-[680px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-4rem)]"
+    :ui="{ body: 'p-0 overflow-hidden' }"
   >
     <template #header>
       <div class="flex items-center gap-2">
@@ -131,70 +133,90 @@ function handleImport() {
     </template>
 
     <template #body>
-      <div class="flex gap-6 min-h-[400px]">
+      <div class="flex h-[460px]">
         <!-- 左侧分类导航 -->
-        <div class="w-48 flex flex-col shrink-0">
-          <nav class="flex-1 space-y-1">
+        <div
+          class="flex flex-col shrink-0 border-r border-default bg-elevated/30"
+          :class="isWide ? 'w-48' : 'w-14'"
+        >
+          <!-- 分类导航 -->
+          <nav class="flex-1 space-y-0.5 p-2 overflow-y-auto">
             <button
               v-for="cat in categories"
               :key="cat.key"
-              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-              :class="activeCategory === cat.key
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted hover:bg-elevated hover:text-default'"
+              class="w-full flex items-center rounded-lg text-sm transition-colors cursor-pointer"
+              :class="[
+                isWide ? 'gap-2 px-3 py-2' : 'justify-center py-2.5',
+                activeCategory === cat.key
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted hover:bg-elevated hover:text-default',
+              ]"
+              :title="!isWide ? cat.label : undefined"
               @click="activeCategory = cat.key"
             >
-              <UIcon :name="cat.icon" class="w-4 h-4" />
-              <span>{{ cat.label }}</span>
+              <UIcon :name="cat.icon" class="w-4 h-4 shrink-0" />
+              <span v-if="isWide" class="truncate">{{ cat.label }}</span>
             </button>
           </nav>
 
-          <!-- 底部操作 -->
-          <div class="space-y-1 pt-4 border-t border-default">
-            <UButton
-              label="导出配置"
-              variant="ghost"
-              size="sm"
-              icon="i-lucide-download"
-              block
-              @click="handleExport"
-            />
-            <UButton
-              label="导入配置"
-              variant="ghost"
-              size="sm"
-              icon="i-lucide-upload"
-              block
-              @click="handleImport"
-            />
-          </div>
+          <!-- 底部固定区域 -->
+          <div class="shrink-0 border-t border-default">
+            <!-- 底部操作 -->
+            <div class="p-2 space-y-0.5">
+              <UButton
+                :label="isWide ? '导出配置' : undefined"
+                variant="ghost"
+                size="sm"
+                icon="i-lucide-download"
+                :block="isWide"
+                class="cursor-pointer"
+                :class="isWide ? '' : 'justify-center w-full'"
+                @click="handleExport"
+              />
+              <UButton
+                :label="isWide ? '导入配置' : undefined"
+                variant="ghost"
+                size="sm"
+                icon="i-lucide-upload"
+                :block="isWide"
+                class="cursor-pointer"
+                :class="isWide ? '' : 'justify-center w-full'"
+                @click="handleImport"
+              />
+            </div>
 
-          <!-- 品牌区域（连续点击触发开发者模式） -->
-          <div
-            class="mt-4 pt-4 border-t border-default cursor-default select-none"
-            @click="handleBrandClick"
-          >
-            <div class="flex items-center gap-2 text-xs text-muted">
-              <UIcon name="i-lucide-sparkles" class="w-3 h-3" />
-              <span>QwenPaw</span>
+            <!-- 品牌区域（连续点击触发开发者模式） -->
+            <div
+              class="p-2 border-t border-default cursor-default select-none"
+              @click="handleBrandClick"
+            >
+              <div
+                class="flex items-center gap-2 text-xs text-muted"
+                :class="isWide ? 'justify-start px-1' : 'justify-center'"
+              >
+                <UIcon name="i-lucide-sparkles" class="w-3 h-3 shrink-0" />
+                <span v-if="isWide">QwenPaw</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- 右侧配置内容 -->
-        <div class="flex-1 space-y-6 overflow-y-auto max-h-[500px] pr-2">
-          <div v-for="group in groups" :key="group.key">
-            <h3 class="text-sm font-medium text-muted mb-3 px-1">
-              {{ group.label }}
-            </h3>
-            <div class="space-y-1 bg-elevated/50 rounded-lg p-3">
-              <SettingItem
-                v-for="item in getGroupSettings(group.key)"
-                :key="item.key"
-                :item="item"
-                :value="getValue(item.key)"
-                @update="(v: any) => setValue(item.key, v)"
-              />
+        <div class="flex-1 overflow-y-auto p-4">
+          <div class="space-y-6">
+            <div v-for="group in groups" :key="group.key">
+              <h3 class="text-sm font-medium text-muted mb-3 px-1">
+                {{ group.label }}
+              </h3>
+              <div class="space-y-1 bg-elevated/50 rounded-lg p-3">
+                <SettingItem
+                  v-for="item in getGroupSettings(group.key)"
+                  :key="item.key"
+                  :item="item"
+                  :value="getValue(item.key)"
+                  @update="(v: any) => setValue(item.key, v)"
+                />
+              </div>
             </div>
           </div>
         </div>
