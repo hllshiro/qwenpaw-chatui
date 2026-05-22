@@ -16,17 +16,26 @@ useHead({
 
 useTheme()
 
-const { loadSettings, getValue } = useSettings()
+const { loadSettings, getValue, setValue } = useSettings()
 
 onMounted(async () => {
   await loadSettings()
 })
 
-// 监听颜色方案变化
+// 监听颜色方案变化（设置 → 界面）
 watch(
   () => getValue('appearance.theme.colorScheme'),
   (scheme) => {
-    if (scheme) colorMode.value = scheme
+    if (scheme && scheme !== colorMode.value) colorMode.value = scheme
+  }
+)
+
+// 监听颜色模式变化（界面操作 → 同步到设置）
+watch(
+  () => colorMode.value,
+  (mode) => {
+    const saved = getValue('appearance.theme.colorScheme')
+    if (mode !== saved) setValue('appearance.theme.colorScheme', mode)
   }
 )
 

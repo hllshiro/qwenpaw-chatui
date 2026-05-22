@@ -3,10 +3,12 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useSessions } from '../composables/useSessions'
+import { useSettings } from '../composables/settings'
 
 const router = useRouter()
 const route = useRoute()
 const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
+const { getValue } = useSettings()
 
 await fetchSessions()
 
@@ -25,6 +27,10 @@ const isDeletingOpen = computed({
   get: () => deletingId.value !== null,
   set: (v) => { if (!v) deletingId.value = null },
 })
+
+const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
+const brandIcon = computed(() => getValue('appearance.brand.icon') || 'i-lucide-sparkles')
+const isBrandImage = computed(() => brandIcon.value && !brandIcon.value.startsWith('i-lucide-'))
 
 const items = computed(() => groupedSessions.value?.flatMap((group) => {
   return [{
@@ -113,11 +119,13 @@ defineShortcuts({
           to="/"
           class="flex items-center gap-0.5"
         >
+          <img v-if="isBrandImage" :src="brandIcon" class="h-5 w-5 shrink-0 rounded" />
           <UIcon
-            name="i-lucide-sparkles"
+            v-else
+            :name="brandIcon"
             class="h-5 w-auto shrink-0 text-primary"
           />
-          <span class="text-xl font-bold text-highlighted">QwenPaw</span>
+          <span class="text-xl font-bold text-highlighted">{{ brandName }}</span>
         </ULink>
 
         <UDashboardSidebarCollapse class="ms-auto" />

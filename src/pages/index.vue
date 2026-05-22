@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessions } from '../composables/useSessions'
+import { useSettings } from '../composables/settings'
 
 const router = useRouter()
 const { createSession } = useSessions()
+const { getValue } = useSettings()
+
+const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 
 const input = ref('')
 const loading = ref(false)
@@ -53,7 +57,7 @@ async function onSubmit() {
     <template #body>
       <UContainer class="flex-1 flex flex-col justify-center gap-4 sm:gap-6 py-8">
         <h1 class="text-3xl sm:text-4xl text-highlighted font-bold">
-          QwenPaw Console
+          {{ brandName }}
         </h1>
 
         <p class="text-muted">
