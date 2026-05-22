@@ -64,6 +64,14 @@ function handleBrandClick() {
   }
 }
 
+function handleAction(key: string) {
+  if (key === 'advanced.backup.export') {
+    handleExport()
+  } else if (key === 'advanced.backup.import') {
+    handleImport()
+  }
+}
+
 async function handleExport() {
   try {
     const data = await exportSettings()
@@ -133,14 +141,14 @@ function handleImport() {
     </template>
 
     <template #body>
-      <div class="flex h-[460px]">
+      <div class="flex h-full min-h-0">
         <!-- 左侧分类导航 -->
         <div
-          class="flex flex-col shrink-0 border-r border-default bg-elevated/30"
+          class="flex flex-col shrink-0 h-full min-h-0 border-r border-default bg-elevated/30"
           :class="isWide ? 'w-48' : 'w-14'"
         >
-          <!-- 分类导航 -->
-          <nav class="flex-1 space-y-0.5 p-2 overflow-y-auto">
+          <!-- 分类导航：占据剩余空间 -->
+          <nav class="flex-1 min-h-0 space-y-0.5 p-2 overflow-y-auto">
             <button
               v-for="cat in categories"
               :key="cat.key"
@@ -161,33 +169,9 @@ function handleImport() {
 
           <!-- 底部固定区域 -->
           <div class="shrink-0 border-t border-default">
-            <!-- 底部操作 -->
-            <div class="p-2 space-y-0.5">
-              <UButton
-                :label="isWide ? '导出配置' : undefined"
-                variant="ghost"
-                size="sm"
-                icon="i-lucide-download"
-                :block="isWide"
-                class="cursor-pointer"
-                :class="isWide ? '' : 'justify-center w-full'"
-                @click="handleExport"
-              />
-              <UButton
-                :label="isWide ? '导入配置' : undefined"
-                variant="ghost"
-                size="sm"
-                icon="i-lucide-upload"
-                :block="isWide"
-                class="cursor-pointer"
-                :class="isWide ? '' : 'justify-center w-full'"
-                @click="handleImport"
-              />
-            </div>
-
             <!-- 品牌区域（连续点击触发开发者模式） -->
             <div
-              class="p-2 border-t border-default cursor-default select-none"
+              class="p-2 cursor-default select-none"
               @click="handleBrandClick"
             >
               <div
@@ -202,7 +186,7 @@ function handleImport() {
         </div>
 
         <!-- 右侧配置内容 -->
-        <div class="flex-1 overflow-y-auto p-4">
+        <div class="flex-1 min-h-0 h-full overflow-y-auto p-4">
           <div class="space-y-6">
             <div v-for="group in groups" :key="group.key">
               <h3 class="text-sm font-medium text-muted mb-3 px-1">
@@ -215,6 +199,7 @@ function handleImport() {
                   :item="item"
                   :value="getValue(item.key)"
                   @update="(v: any) => setValue(item.key, v)"
+                  @action="handleAction"
                 />
               </div>
             </div>

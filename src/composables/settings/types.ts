@@ -1,4 +1,4 @@
-export type SettingType = 'switch' | 'select' | 'input' | 'color' | 'shortcut'
+export type SettingType = 'switch' | 'select' | 'input' | 'color' | 'shortcut' | 'button'
 
 export interface SettingOption {
   label: string
@@ -17,6 +17,8 @@ export interface SettingItem {
   advanced?: boolean
   options?: SettingOption[]
   placeholder?: string
+  icon?: string
+  action?: () => void | Promise<void>
   validate?: (value: any) => boolean | string
 }
 

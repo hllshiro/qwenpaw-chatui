@@ -4,6 +4,7 @@ import { registerSetting, registerCategory, registerGroup } from './registry'
 registerCategory({ key: 'general', label: '通用', icon: 'i-lucide-settings' })
 registerCategory({ key: 'shortcuts', label: '快捷键', icon: 'i-lucide-keyboard' })
 registerCategory({ key: 'appearance', label: '外观', icon: 'i-lucide-palette', advanced: true })
+registerCategory({ key: 'advanced', label: '高级', icon: 'i-lucide-shield', advanced: true })
 
 // === 注册分组 ===
 registerGroup({ key: 'behavior', label: '行为', category: 'general' })
@@ -12,6 +13,7 @@ registerGroup({ key: 'bindings', label: '快捷键绑定', category: 'shortcuts'
 registerGroup({ key: 'brand', label: '品牌', category: 'appearance' })
 registerGroup({ key: 'theme', label: '主题', category: 'appearance' })
 registerGroup({ key: 'typography', label: '字体', category: 'appearance' })
+registerGroup({ key: 'backup', label: '数据备份', category: 'advanced' })
 
 // === 注册配置项 - 通用 - 行为 ===
 registerSetting({
@@ -158,4 +160,29 @@ registerSetting({
   category: 'appearance',
   group: 'theme',
   advanced: true,
+})
+
+// === 注册配置项 - 高级 - 数据备份 ===
+registerSetting({
+  key: 'advanced.backup.export',
+  label: '配置导出',
+  description: '导出所有配置为 JSON 文件',
+  type: 'button',
+  defaultValue: null,
+  category: 'advanced',
+  group: 'backup',
+  advanced: true,
+  icon: 'i-lucide-download',
+})
+
+registerSetting({
+  key: 'advanced.backup.import',
+  label: '配置导入',
+  description: '从 JSON 文件导入配置',
+  type: 'button',
+  defaultValue: null,
+  category: 'advanced',
+  group: 'backup',
+  advanced: true,
+  icon: 'i-lucide-upload',
 })
