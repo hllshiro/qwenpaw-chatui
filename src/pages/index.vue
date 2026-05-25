@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
 
 const router = useRouter()
+const { t } = useI18n()
 const { createSession } = useSessions()
 const { getValue } = useSettings()
 
@@ -49,7 +51,7 @@ async function onSubmit() {
         </h1>
 
         <p class="text-muted">
-          有什么可以帮你的？
+          {{ t('chat.welcome') }}
         </p>
 
         <UChatPrompt
