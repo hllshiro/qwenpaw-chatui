@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import { useSettings } from '../composables/settings'
 
 const props = defineProps<{
@@ -10,6 +11,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:open': [value: boolean]
 }>()
+
+const { t } = useI18n()
 
 const {
   getValue,
@@ -61,8 +64,8 @@ function handleBrandClick() {
     brandClickCount.value = 0
     enableDeveloperMode()
     useToast().add({
-      title: '已启用开发者模式',
-      description: '高级配置选项已显示',
+      title: t('settings.developerMode'),
+      description: t('settings.developerModeDescription'),
       color: 'success',
     })
   }
@@ -87,13 +90,13 @@ async function handleExport() {
     a.click()
     URL.revokeObjectURL(url)
     useToast().add({
-      title: '导出成功',
-      description: '配置已下载',
+      title: t('settings.exportSuccess'),
+      description: t('settings.exportSuccessDescription'),
       color: 'success',
     })
   } catch {
     useToast().add({
-      title: '导出失败',
+      title: t('settings.exportError'),
       color: 'error',
     })
   }
@@ -111,17 +114,17 @@ function handleImport() {
       const text = await file.text()
       const data = JSON.parse(text)
       if (!data.settings) {
-        throw new Error('无效的配置文件')
+        throw new Error(t('settings.invalidConfig'))
       }
       await importSettings(data)
       useToast().add({
-        title: '导入成功',
-        description: `已导入 ${Object.keys(data.settings).length} 项配置`,
+        title: t('settings.importSuccess'),
+        description: t('settings.importSuccessDescription', { count: Object.keys(data.settings).length }),
         color: 'success',
       })
     } catch (err) {
       useToast().add({
-        title: '导入失败',
+        title: t('settings.importError'),
         description: String(err),
         color: 'error',
       })
@@ -140,7 +143,7 @@ function handleImport() {
     <template #header>
       <div class="flex items-center gap-2">
         <UIcon name="i-lucide-settings" class="w-5 h-5" />
-        <h2 class="text-lg font-semibold">设置</h2>
+        <h2 class="text-lg font-semibold">{{ t('settings.title') }}</h2>
       </div>
     </template>
 
