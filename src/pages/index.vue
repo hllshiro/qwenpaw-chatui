@@ -5,7 +5,7 @@ import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
 
 const router = useRouter()
-const { createSession } = useSessions()
+const { createSession, setBusinessKey } = useSessions()
 const { getValue } = useSettings()
 
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
@@ -19,18 +19,17 @@ interface QwenPawConfig {
 }
 
 const config = (window as unknown as Record<string, QwenPawConfig>).__QWENPAW_CONFIG__
-const businessKey = ref(
-  new URLSearchParams(window.location.search).get('business_key')
+const initKey = new URLSearchParams(window.location.search).get('business_key')
   || config?.business_key
   || 'default'
-)
+setBusinessKey(initKey)
 
 async function onSubmit() {
   if (!input.value.trim()) return
   loading.value = true
   try {
     console.log('[Home] Creating session...')
-    const session = await createSession(businessKey.value)
+    const session = await createSession()
     console.log('[Home] Session created:', session)
     const msg = input.value
     input.value = ''

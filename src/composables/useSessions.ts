@@ -10,20 +10,28 @@ interface Session {
   updatedAt: string
 }
 
+const STORAGE_KEY = 'qwenpaw_business_key'
+
 export const useSessions = createSharedComposable(() => {
   const sessions = ref<Session[]>([])
+  const businessKey = ref<string>(localStorage.getItem(STORAGE_KEY) || 'default')
 
-  async function fetchSessions(businessKey?: string) {
-    const url = businessKey ? `/api/chats?business_key=${encodeURIComponent(businessKey)}` : '/api/chats'
+  function setBusinessKey(key: string) {
+    businessKey.value = key || 'default'
+    localStorage.setItem(STORAGE_KEY, businessKey.value)
+  }
+
+  async function fetchSessions() {
+    const url = `/api/chats?business_key=${encodeURIComponent(businessKey.value)}`
     sessions.value = await $fetch<Session[]>(url).catch(() => [])
   }
 
-  async function createSession(businessKey?: string): Promise<Session> {
+  async function createSession(): Promise<Session> {
     const session = await $fetch<Session>('/api/chats', {
       method: 'POST',
-      body: { business_key: businessKey || 'default' }
+      body: { business_key: businessKey.value }
     })
-    await fetchSessions(businessKey)
+    await fetchSessions()
     return session
   }
 
@@ -73,7 +81,9 @@ export const useSessions = createSharedComposable(() => {
 
   return {
     sessions,
+    businessKey,
     groupedSessions,
+    setBusinessKey,
     fetchSessions,
     createSession,
     updateSession,
