@@ -2,6 +2,7 @@ export type SettingType = 'switch' | 'select' | 'input' | 'color' | 'shortcut' |
 
 export interface SettingOption {
   label: string
+  labelKey?: string
   value: any
   description?: string
 }
@@ -9,7 +10,9 @@ export interface SettingOption {
 export interface SettingItem {
   key: string
   label: string
+  labelKey?: string
   description?: string
+  descriptionKey?: string
   type: SettingType
   defaultValue: any
   category: string
@@ -25,6 +28,7 @@ export interface SettingItem {
 export interface SettingCategory {
   key: string
   label: string
+  labelKey?: string
   icon: string
   advanced?: boolean
 }
@@ -32,5 +36,6 @@ export interface SettingCategory {
 export interface SettingGroup {
   key: string
   label: string
+  labelKey?: string
   category: string
 }

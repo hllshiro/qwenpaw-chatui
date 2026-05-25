@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { SettingItem } from '../composables/settings/types'
 
 defineProps<{
   item: SettingItem
   value: any
 }>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   update: [value: any]
@@ -18,9 +21,11 @@ const emit = defineEmits<{
     :class="item.type === 'button' ? 'cursor-pointer' : ''"
   >
     <div class="flex-1 min-w-0 mr-4">
-      <label class="text-sm font-medium text-default">{{ item.label }}</label>
+      <label class="text-sm font-medium text-default">
+        {{ item.labelKey ? t(item.labelKey) : item.label }}
+      </label>
       <p v-if="item.description" class="text-xs text-muted mt-0.5">
-        {{ item.description }}
+        {{ item.descriptionKey ? t(item.descriptionKey) : item.description }}
       </p>
     </div>
 
@@ -34,7 +39,7 @@ const emit = defineEmits<{
       <USelect
         v-else-if="item.type === 'select'"
         :model-value="value"
-        :items="item.options || []"
+        :items="(item.options || []).map(o => ({ ...o, label: o.labelKey ? t(o.labelKey) : o.label }))"
         class="w-32"
         @update:model-value="emit('update', $event)"
       />
@@ -74,7 +79,7 @@ const emit = defineEmits<{
       <UButton
         v-else-if="item.type === 'button'"
         :icon="item.icon"
-        :label="item.label"
+        :label="item.labelKey ? t(item.labelKey) : item.label"
         variant="soft"
         size="sm"
         class="cursor-pointer"

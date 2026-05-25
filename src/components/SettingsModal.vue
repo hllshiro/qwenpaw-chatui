@@ -166,11 +166,11 @@ function handleImport() {
                   ? 'bg-primary/10 text-primary font-medium'
                   : 'text-muted hover:bg-elevated hover:text-default',
               ]"
-              :title="!isWide ? cat.label : undefined"
+              :title="!isWide ? (cat.labelKey ? t(cat.labelKey) : cat.label) : undefined"
               @click="activeCategory = cat.key"
             >
               <UIcon :name="cat.icon" class="w-4 h-4 shrink-0" />
-              <span v-if="isWide" class="truncate">{{ cat.label }}</span>
+              <span v-if="isWide" class="truncate">{{ cat.labelKey ? t(cat.labelKey) : cat.label }}</span>
             </button>
           </nav>
 
@@ -198,7 +198,7 @@ function handleImport() {
           <div class="space-y-6">
             <div v-for="group in groups" :key="group.key">
               <h3 class="text-sm font-medium text-muted mb-3 px-1">
-                {{ group.label }}
+                {{ group.labelKey ? t(group.labelKey) : group.label }}
               </h3>
               <div class="space-y-1 bg-elevated/50 rounded-lg p-3">
                 <SettingItem
