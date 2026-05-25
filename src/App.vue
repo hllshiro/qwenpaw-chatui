@@ -11,7 +11,7 @@ const { locale } = useI18n()
 const colorMode = useColorMode()
 
 const uiLocale = computed(() => {
-  const key = locale.value.replace('-', '_') as keyof typeof locales
+  const key = locale.value.replace('-', '_').toLowerCase() as keyof typeof locales
   return locales[key] ?? locales.en
 })
 const themeColor = computed(() => colorMode.value === 'dark' ? '#09090b' : '#fafafa')
