@@ -126,6 +126,7 @@ src/composables/settings/
 registerCategory({
   key: 'general',
   label: '通用',
+  labelKey: 'settings.general.label',  // 国际化翻译键（可选）
   icon: 'i-lucide-settings',
   advanced: false  // 是否仅在高级模式显示
 })
@@ -137,6 +138,7 @@ registerCategory({
 registerGroup({
   key: 'behavior',
   label: '行为',
+  labelKey: 'settings.general.behavior.label',  // 国际化翻译键（可选）
   category: 'general'  // 所属分类
 })
 ```
@@ -147,14 +149,16 @@ registerGroup({
 registerSetting({
   key: 'general.behavior.expandReasoning',
   label: '默认展开推理摘要',
+  labelKey: 'settings.general.behavior.expandReasoning',  // 国际化翻译键（可选）
   type: 'switch',
   defaultValue: false,
   category: 'general',
   group: 'behavior',
   description: '可选描述',
+  descriptionKey: 'settings.general.behavior.expandReasoningDesc',  // 描述翻译键（可选）
   advanced: false,
   placeholder: '可选占位符',
-  options: []  // select 类型的选项
+  options: []  // select 类型的选项（每项可包含 labelKey）
 })
 ```
 
@@ -382,6 +386,21 @@ const data = { settings: { 'key': 'value' } }
 await importSettings(data)
 ```
 
+## 国际化支持
+
+配置项、分类和分组的标签支持国际化。在注册时提供 `labelKey` 和 `descriptionKey` 字段，组件会自动使用 `t()` 函数进行翻译：
+
+```typescript
+registerSetting({
+  key: 'general.behavior.expandReasoning',
+  label: '默认展开推理摘要',  // fallback
+  labelKey: 'settings.general.behavior.expandReasoning',  // 翻译键
+  // ...
+})
+```
+
+组件渲染时优先使用 `labelKey` 对应的翻译，若无则回退到 `label` 文本。翻译键需在 `src/locales/zh-CN/settings.json` 和 `src/locales/en/settings.json` 中定义。
+
 ## 注意事项
 
 1. **共享状态** - `useSettings` 使用 `createSharedComposable` 确保全局唯一
@@ -389,3 +408,4 @@ await importSettings(data)
 3. **默认值** - 未设置的配置返回定义中的 `defaultValue`
 4. **乐观更新** - 先更新本地状态，失败时回滚
 5. **高级模式** - 默认隐藏，需手动启用
+6. **国际化** - 配置标签使用 `labelKey` 翻译键，支持中英文切换
