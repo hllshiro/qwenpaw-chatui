@@ -68,12 +68,12 @@ function getChatActions(item: { id: string, label: string }): DropdownMenuItem[]
 
 function startRename(id: string, currentName: string) {
   renamingId.value = id
-  renameInput.value = currentName === t('chat.newSession') ? '' : currentName
+  renameInput.value = (currentName === '新会话' || currentName === 'New Session') ? '' : currentName
 }
 
 async function confirmRename() {
   if (!renamingId.value) return
-  const name = renameInput.value.trim() || t('chat.newSession')
+  const name = renameInput.value.trim() || '新会话'
   await updateSession(renamingId.value, { name })
   renamingId.value = null
 }
