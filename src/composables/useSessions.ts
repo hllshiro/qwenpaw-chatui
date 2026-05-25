@@ -14,7 +14,11 @@ const STORAGE_KEY = 'qwenpaw_business_key'
 
 export const useSessions = createSharedComposable(() => {
   const sessions = ref<Session[]>([])
-  const businessKey = ref<string>(localStorage.getItem(STORAGE_KEY) || 'default')
+  const businessKey = ref<string>(
+    typeof window !== 'undefined'
+      ? localStorage.getItem(STORAGE_KEY) || 'default'
+      : 'default'
+  )
 
   function setBusinessKey(key: string) {
     businessKey.value = key || 'default'
