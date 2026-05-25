@@ -15,15 +15,15 @@ const i18n = createI18n({
   messages: {
     'zh-CN': {
       ...zhCNCommon,
-      settings: zhCNSettings,
-      chat: zhCNChat,
-      components: zhCNComponents
+      ...zhCNSettings,
+      ...zhCNChat,
+      ...zhCNComponents
     },
     en: {
       ...enCommon,
-      settings: enSettings,
-      chat: enChat,
-      components: enComponents
+      ...enSettings,
+      ...enChat,
+      ...enComponents
     }
   }
 })
