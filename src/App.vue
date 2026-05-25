@@ -2,9 +2,12 @@
 import { computed, watch, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useColorMode } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+import * as locales from '@nuxt/ui/locale'
 import { useTheme } from './composables/useTheme'
 import { useSettings } from './composables/settings'
 
+const { locale } = useI18n()
 const colorMode = useColorMode()
 const themeColor = computed(() => colorMode.value === 'dark' ? '#09090b' : '#fafafa')
 
@@ -58,7 +61,7 @@ watch(
 
 <template>
   <Suspense>
-    <UApp :toaster="{ position: 'top-right' }">
+    <UApp :locale="locales[locale as keyof typeof locales]" :toaster="{ position: 'top-right' }">
       <RouterView />
     </UApp>
   </Suspense>
