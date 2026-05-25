@@ -13,6 +13,7 @@ registerGroup({ key: 'bindings', label: '快捷键绑定', category: 'shortcuts'
 registerGroup({ key: 'brand', label: '品牌', category: 'appearance' })
 registerGroup({ key: 'theme', label: '主题', category: 'appearance' })
 registerGroup({ key: 'typography', label: '字体', category: 'appearance' })
+registerGroup({ key: 'language', label: '语言', category: 'appearance' })
 registerGroup({ key: 'backup', label: '数据备份', category: 'advanced' })
 
 // === 注册配置项 - 通用 - 行为 ===
@@ -159,6 +160,20 @@ registerSetting({
   category: 'appearance',
   group: 'theme',
   advanced: true,
+})
+
+registerSetting({
+  key: 'appearance.language.locale',
+  label: '界面语言',
+  type: 'select',
+  defaultValue: 'zh-CN',
+  category: 'appearance',
+  group: 'language',
+  advanced: true,
+  options: [
+    { label: '简体中文', value: 'zh-CN' },
+    { label: 'English', value: 'en' }
+  ]
 })
 
 // === 注册配置项 - 高级 - 数据备份 ===
