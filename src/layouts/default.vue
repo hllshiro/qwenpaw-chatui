@@ -2,11 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
+import { useI18n } from 'vue-i18n'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
 const { getValue } = useSettings()
 
@@ -40,7 +42,7 @@ const items = computed(() => groupedSessions.value?.flatMap((group) => {
     type: 'label' as const
   }, ...group[1].map(item => ({
     id: item.id,
-    label: item.name || '新会话',
+    label: item.name || t('chat.newSession'),
     to: `/chat/${item.id}`,
     icon: 'i-lucide-message-circle',
     slot: 'chat' as const
@@ -50,13 +52,13 @@ const items = computed(() => groupedSessions.value?.flatMap((group) => {
 function getChatActions(item: { id: string, label: string }): DropdownMenuItem[][] {
   return [[
     {
-      label: '重命名',
+      label: t('common.rename'),
       icon: 'i-lucide-pencil',
       onSelect: () => startRename(item.id, item.label)
     }
   ], [
     {
-      label: '删除',
+      label: t('common.delete'),
       icon: 'i-lucide-trash',
       color: 'error' as const,
       onSelect: () => handleDelete(item.id)
@@ -66,12 +68,12 @@ function getChatActions(item: { id: string, label: string }): DropdownMenuItem[]
 
 function startRename(id: string, currentName: string) {
   renamingId.value = id
-  renameInput.value = currentName === '新会话' ? '' : currentName
+  renameInput.value = currentName === t('chat.newSession') ? '' : currentName
 }
 
 async function confirmRename() {
   if (!renamingId.value) return
-  const name = renameInput.value.trim() || '新会话'
+  const name = renameInput.value.trim() || t('chat.newSession')
   await updateSession(renamingId.value, { name })
   renamingId.value = null
 }
@@ -136,7 +138,7 @@ defineShortcuts({
       <template #default="{ collapsed }">
         <UNavigationMenu
           :items="[{
-            label: '新建会话',
+            label: t('common.newSession'),
             to: '/',
             kbds: ['meta', 'o'],
             icon: 'i-lucide-circle-plus'
@@ -183,7 +185,7 @@ defineShortcuts({
                 variant="link"
                 size="sm"
                 class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50"
-                aria-label="会话操作"
+                :aria-label="t('chat.sessionActions')"
                 tabindex="-1"
                 @click.stop.prevent
               />
@@ -195,7 +197,7 @@ defineShortcuts({
       <template #footer="{ collapsed }">
         <UNavigationMenu
           :items="[{
-            label: '设置',
+            label: t('common.settings'),
             icon: 'i-lucide-settings',
             onSelect: () => settingsOpen = true,
           }]"
@@ -212,25 +214,25 @@ defineShortcuts({
 
   <UModal
     v-model:open="isRenamingOpen"
-    title="重命名会话"
+    :title="t('chat.renameSession')"
   >
     <template #body>
       <UInput
         v-model="renameInput"
-        placeholder="输入新名称"
+        :placeholder="t('chat.inputNewName')"
         class="w-full"
         @keydown.enter="confirmRename"
       />
     </template>
     <template #footer>
       <UButton
-        label="取消"
+        :label="t('common.cancel')"
         color="neutral"
         variant="ghost"
         @click="cancelRename"
       />
       <UButton
-        label="确定"
+        :label="t('common.confirm')"
         @click="confirmRename"
       />
     </template>
@@ -238,20 +240,20 @@ defineShortcuts({
 
   <UModal
     v-model:open="isDeletingOpen"
-    title="删除会话"
+    :title="t('chat.deleteSession')"
   >
     <template #body>
-      <p class="text-sm text-muted">确定要删除该会话吗？此操作不可撤销。</p>
+      <p class="text-sm text-muted">{{ t('chat.deleteConfirm') }}</p>
     </template>
     <template #footer>
       <UButton
-        label="取消"
+        :label="t('common.cancel')"
         color="neutral"
         variant="ghost"
         @click="cancelDelete"
       />
       <UButton
-        label="删除"
+        :label="t('common.delete')"
         color="error"
         @click="confirmDelete"
       />
