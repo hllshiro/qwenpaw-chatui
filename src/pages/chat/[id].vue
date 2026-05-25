@@ -2,12 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useSessions } from '../../composables/useSessions'
 import { useChat, type ChatMessage, type MessageBlock } from '../../composables/useChat'
 import Navbar from '../../components/Navbar.vue'
 import ChatComark from '../../components/chat/Comark'
 
 const route = useRoute<'/chat/[id]'>()
+const { t } = useI18n()
 const { updateSession, sessions } = useSessions()
 
 const sessionId = route.params.id as string
@@ -223,7 +225,7 @@ function extractContent(content: any): string {
 
 const sessionName = computed(() => {
   const session = sessions.value.find(s => s.id === sessionId)
-  return session?.name || '新会话'
+  return session?.name || t('chat.newSession')
 })
 
 const {
@@ -377,7 +379,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
       <UContainer class="flex-1 flex flex-col gap-4 sm:gap-6">
         <div class="flex-1 overflow-y-auto pt-(--ui-header-height) pb-4 sm:pb-6 space-y-4 px-4">
           <div v-if="messages.length === 0 && status === 'ready'" class="flex items-center justify-center h-full text-muted text-sm">
-            输入消息开始对话
+            {{ t('chat.emptyState') }}
           </div>
 
           <div v-for="msg in messages" :key="msg.id" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
@@ -397,14 +399,14 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                     @keydown.escape="cancelEdit"
                   />
                   <div class="flex gap-1 mt-1 justify-end">
-                    <UButton size="xs" variant="ghost" @click="cancelEdit">取消</UButton>
-                    <UButton size="xs" @click="saveEdit(msg)">保存</UButton>
+                    <UButton size="xs" variant="ghost" @click="cancelEdit">{{ t('chat.editCancel') }}</UButton>
+                    <UButton size="xs" @click="saveEdit(msg)">{{ t('chat.editSave') }}</UButton>
                   </div>
                 </template>
                 <template v-else>
                   <div class="whitespace-pre-wrap">{{ msg.content }}</div>
                   <div class="flex justify-end mt-1">
-                    <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">编辑</button>
+                    <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">{{ t('chat.edit') }}</button>
                   </div>
                 </template>
               </template>
@@ -421,8 +423,8 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                           @click="toggleReasoning(block.id)"
                         >
                           <UIcon name="i-lucide-brain" class="size-3 text-primary" />
-                          <span v-if="isStreamingBlock(msg, block) && !block.text" class="animate-pulse">思考中...</span>
-                          <span v-else>思考过程</span>
+                          <span v-if="isStreamingBlock(msg, block) && !block.text" class="animate-pulse">{{ t('chat.thinking') }}</span>
+                          <span v-else>{{ t('chat.thinkingProcess') }}</span>
                           <UIcon
                             :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
                             class="size-3 ml-auto"
@@ -460,11 +462,11 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                         </div>
                         <div v-if="expandedToolCalls.has(block.toolCall!.id)" class="px-2 pb-2 border-t border-muted">
                           <div v-if="block.toolCall!.args !== undefined" class="mt-1">
-                            <div class="text-muted font-medium mb-0.5">参数</div>
+                            <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
                             <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.toolCall!.args) }}</pre>
                           </div>
                           <div v-if="block.toolCall!.result !== undefined" class="mt-1">
-                            <div class="text-muted font-medium mb-0.5">结果</div>
+                            <div class="text-muted font-medium mb-0.5">{{ t('chat.result') }}</div>
                             <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(block.toolCall!.result) }}</pre>
                           </div>
                         </div>
@@ -479,32 +481,32 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                     >
                       <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
                         <span>🛡️</span>
-                        <span v-if="block.approval.status === 'pending'">等待审批</span>
-                        <span v-else-if="block.approval.status === 'approved'">✅ 已批准</span>
-                        <span v-else>❌ 已拒绝</span>
+                        <span v-if="block.approval.status === 'pending'">{{ t('chat.waitingApproval') }}</span>
+                        <span v-else-if="block.approval.status === 'approved'">✅ {{ t('chat.approved') }}</span>
+                        <span v-else>❌ {{ t('chat.denied') }}</span>
                         <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
                           {{ block.approval.severity }}
                         </span>
                       </div>
                       <div class="px-3 pb-2 text-xs space-y-1">
                         <div class="flex items-center gap-1.5">
-                          <span class="text-muted">工具:</span>
+                          <span class="text-muted">{{ t('chat.tool') }}:</span>
                           <span class="font-mono">{{ block.approval.toolName }}</span>
                         </div>
                         <div v-if="block.approval.findingsSummary" class="text-muted">
                           {{ block.approval.findingsSummary }}
                         </div>
                         <div v-if="block.approval.toolParams" class="mt-1">
-                          <div class="text-muted font-medium mb-0.5">参数</div>
+                          <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
                           <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
                         </div>
                       </div>
                       <div v-if="block.approval.status === 'pending'" class="px-3 pb-2 flex gap-2">
                         <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
-                          批准
+                          {{ t('chat.approve') }}
                         </UButton>
                         <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
-                          拒绝
+                          {{ t('chat.deny') }}
                         </UButton>
                       </div>
                     </div>
@@ -516,7 +518,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                   <div class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
                     <div class="flex items-center gap-1">
                       <UIcon name="i-lucide-brain" class="size-3" />
-                      <span class="animate-pulse">思考中...</span>
+                      <span class="animate-pulse">{{ t('chat.thinking') }}</span>
                     </div>
                   </div>
                 </template>
@@ -532,7 +534,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
             <input
               v-model="input"
               type="text"
-              placeholder="输入消息..."
+              :placeholder="t('chat.inputPlaceholder')"
               class="flex-1 rounded-lg border border-default bg-default px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               :disabled="status === 'streaming'"
               @keydown.enter.exact.prevent="handleSubmit"
@@ -542,7 +544,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
               class="px-4 py-2 bg-error text-white rounded-lg text-sm"
               @click="stop"
             >
-              停止
+              {{ t('chat.stop') }}
             </button>
             <button
               v-else
@@ -550,7 +552,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
               :disabled="!input.trim()"
               @click="handleSubmit"
             >
-              发送
+              {{ t('chat.send') }}
             </button>
           </div>
         </div>
@@ -563,17 +565,17 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
     class="flex-1 flex flex-col gap-4 sm:gap-6"
   >
     <UError
-      :error="{ statusMessage: '会话未找到', statusCode: 404 }"
+      :error="{ statusMessage: t('chat.sessionNotFound'), statusCode: 404 }"
       class="min-h-full"
     >
       <template #links>
-        <UButton to="/" size="lg" label="返回首页" />
+        <UButton to="/" size="lg" :label="t('chat.backToHome')" />
       </template>
     </UError>
   </UContainer>
 
   <UContainer v-else class="flex-1 flex flex-col items-center justify-center">
     <UIcon name="i-lucide-loader-circle" class="animate-spin size-8 text-primary" />
-    <p class="mt-2 text-muted">加载中...</p>
+    <p class="mt-2 text-muted">{{ t('common.loading') }}</p>
   </UContainer>
 </template>
