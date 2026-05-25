@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 import { setupLayouts } from 'virtual:generated-layouts'
 import { useSessions } from '../composables/useSessions'
-import { useI18n } from '../composables/useI18n'
+import i18n from '../locales'
 
 const router = createRouter({
   routes: setupLayouts(routes as RouteRecordRaw[]),
@@ -14,8 +14,7 @@ router.beforeEach((to) => {
   if ('lang' in to.query) {
     const lang = to.query.lang as string
     if (['zh-CN', 'en'].includes(lang)) {
-      const { setLocale } = useI18n()
-      setLocale(lang)
+      i18n.global.locale.value = lang as 'zh-CN' | 'en'
     }
   }
 
