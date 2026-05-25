@@ -9,6 +9,11 @@ import { useSettings } from './composables/settings'
 
 const { locale } = useI18n()
 const colorMode = useColorMode()
+
+const uiLocale = computed(() => {
+  const key = locale.value.replace('-', '_') as keyof typeof locales
+  return locales[key] ?? locales.en
+})
 const themeColor = computed(() => colorMode.value === 'dark' ? '#09090b' : '#fafafa')
 
 useHead({
@@ -61,7 +66,7 @@ watch(
 
 <template>
   <Suspense>
-    <UApp :locale="locales[locale as keyof typeof locales]" :toaster="{ position: 'top-right' }">
+    <UApp :locale="uiLocale" :toaster="{ position: 'top-right' }">
       <RouterView />
     </UApp>
   </Suspense>
