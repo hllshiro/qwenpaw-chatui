@@ -10,8 +10,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const businessKey = to.query.business_key as string | undefined
-  if (businessKey) {
+  if ('business_key' in to.query) {
+    const businessKey = (to.query.business_key as string) || 'default'
     const { setBusinessKey } = useSessions()
     setBusinessKey(businessKey)
   }
