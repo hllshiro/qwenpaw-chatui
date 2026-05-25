@@ -18,9 +18,16 @@ export function useI18n() {
   )
 
   // 切换语言
-  function setLocale(newLocale: string) {
+  async function setLocale(newLocale: string) {
+    const oldLocale = locale.value
     locale.value = newLocale
-    setValue('appearance.language.locale', newLocale)
+    try {
+      await setValue('appearance.language.locale', newLocale)
+    } catch (error) {
+      // 回滚到旧的语言设置
+      locale.value = oldLocale
+      throw error
+    }
   }
 
   return {
