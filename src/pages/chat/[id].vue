@@ -530,31 +530,26 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
         <!-- Input -->
         <div class="sticky bottom-0 z-10 bg-default/75 backdrop-blur border-t border-default p-4">
           <div v-if="error" class="mb-2 text-xs text-error">{{ error.message }}</div>
-          <div class="flex gap-2">
-            <input
-              v-model="input"
-              type="text"
-              :placeholder="t('chat.inputPlaceholder')"
-              class="flex-1 rounded-lg border border-default bg-default px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              :disabled="status === 'streaming'"
-              @keydown.enter.exact.prevent="handleSubmit"
-            />
-            <button
-              v-if="status === 'streaming'"
-              class="px-4 py-2 bg-error text-white rounded-lg text-sm"
-              @click="stop"
-            >
-              {{ t('chat.stop') }}
-            </button>
-            <button
-              v-else
-              class="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50 text-sm"
-              :disabled="!input.trim()"
-              @click="handleSubmit"
-            >
-              {{ t('chat.send') }}
-            </button>
-          </div>
+          <UChatPrompt
+            v-model="input"
+            :status="status"
+            :maxrows="10"
+            :rows="1"
+            :disabled="status === 'streaming'"
+            :placeholder="t('chat.inputPlaceholder')"
+            variant="subtle"
+            :ui="{ base: 'px-1.5' }"
+            @submit="handleSubmit"
+          >
+            <template #footer>
+              <UChatPromptSubmit
+                color="neutral"
+                size="sm"
+                :status="status"
+                @stop="stop"
+              />
+            </template>
+          </UChatPrompt>
         </div>
       </UContainer>
     </template>

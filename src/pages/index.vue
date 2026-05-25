@@ -57,6 +57,8 @@ async function onSubmit() {
         <UChatPrompt
           v-model="input"
           :status="loading ? 'streaming' : 'ready'"
+          :maxrows="10"
+          :rows="1"
           class="[view-transition-name:chat-prompt]"
           variant="subtle"
           :ui="{ base: 'px-1.5' }"
