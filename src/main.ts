@@ -9,6 +9,7 @@ import { createHead } from '@unhead/vue/client'
 import ui from '@nuxt/ui/vue-plugin'
 
 import App from './App.vue'
+import { useSessions } from './composables/useSessions'
 
 const app = createApp(App)
 
@@ -16,6 +17,14 @@ const head = createHead()
 const router = createRouter({
   routes: setupLayouts(routes as RouteRecordRaw[]),
   history: createWebHistory()
+})
+
+router.beforeEach((to) => {
+  const businessKey = to.query.business_key as string | undefined
+  if (businessKey) {
+    const { setBusinessKey } = useSessions()
+    setBusinessKey(businessKey)
+  }
 })
 
 app.use(head)
