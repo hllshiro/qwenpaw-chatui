@@ -1,0 +1,76 @@
+{
+  "settings": {
+    "title": "设置",
+    "general": {
+      "label": "通用",
+      "behavior": {
+        "label": "行为",
+        "expandReasoning": "默认展开推理摘要",
+        "expandTools": "默认展开工具部分"
+      },
+      "notifications": {
+        "label": "系统通知",
+        "agent": "智能体",
+        "agentDescription": "生成完成后发送通知",
+        "permission": "权限",
+        "permissionDescription": "当需要用户权限审批时发送通知",
+        "error": "错误",
+        "errorDescription": "当发生错误时发送通知"
+      }
+    },
+    "shortcuts": {
+      "label": "快捷键",
+      "bindings": {
+        "label": "快捷键绑定",
+        "newChat": "新建会话",
+        "search": "搜索会话",
+        "openSettings": "打开设置"
+      }
+    },
+    "appearance": {
+      "label": "外观",
+      "brand": {
+        "label": "品牌",
+        "name": "品牌名称",
+        "icon": "品牌图标"
+      },
+      "theme": {
+        "label": "主题",
+        "colorScheme": "配色方案",
+        "light": "浅色",
+        "dark": "深色",
+        "primaryColor": "主题颜色"
+      },
+      "typography": {
+        "label": "字体",
+        "sansFont": "界面字体",
+        "monoFont": "代码字体"
+      },
+      "language": {
+        "label": "语言",
+        "locale": "界面语言",
+        "zhCN": "简体中文",
+        "en": "English"
+      }
+    },
+    "advanced": {
+      "label": "高级",
+      "backup": {
+        "label": "数据备份",
+        "export": "配置导出",
+        "exportDescription": "导出所有配置为 JSON 文件",
+        "import": "配置导入",
+        "importDescription": "从 JSON 文件导入配置"
+      }
+    },
+    "developerMode": "已启用开发者模式",
+    "developerModeDescription": "高级配置选项已显示",
+    "exportSuccess": "导出成功",
+    "exportSuccessDescription": "配置已下载",
+    "exportError": "导出失败",
+    "importSuccess": "导入成功",
+    "importSuccessDescription": "已导入 {count} 项配置",
+    "importError": "导入失败",
+    "invalidConfig": "无效的配置文件"
+  }
+}

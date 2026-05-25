@@ -1,0 +1,17 @@
+{
+  "components": {
+    "navbar": {
+      "newSession": "新建会话"
+    },
+    "settings": {
+      "brandName": "QwenPaw"
+    },
+    "sidebar": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "lastWeek": "最近7天",
+      "lastMonth": "最近30天",
+      "older": "更早"
+    }
+  }
+}

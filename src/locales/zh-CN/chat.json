@@ -1,0 +1,31 @@
+{
+  "chat": {
+    "welcome": "有什么可以帮你的？",
+    "inputPlaceholder": "输入消息...",
+    "send": "发送",
+    "stop": "停止",
+    "thinking": "思考中...",
+    "thinkingProcess": "思考过程",
+    "parameters": "参数",
+    "result": "结果",
+    "waitingApproval": "等待审批",
+    "approved": "已批准",
+    "denied": "已拒绝",
+    "approve": "批准",
+    "deny": "拒绝",
+    "tool": "工具",
+    "emptyState": "输入消息开始对话",
+    "sessionNotFound": "会话未找到",
+    "backToHome": "返回首页",
+    "newSession": "新会话",
+    "renameSession": "重命名会话",
+    "deleteSession": "删除会话",
+    "deleteConfirm": "确定要删除该会话吗？此操作不可撤销。",
+    "inputNewName": "输入新名称",
+    "edit": "编辑",
+    "editing": "编辑中",
+    "editCancel": "取消",
+    "editSave": "保存",
+    "sessionActions": "会话操作"
+  }
+}

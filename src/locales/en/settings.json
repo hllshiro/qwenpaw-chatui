@@ -1,0 +1,76 @@
+{
+  "settings": {
+    "title": "Settings",
+    "general": {
+      "label": "General",
+      "behavior": {
+        "label": "Behavior",
+        "expandReasoning": "Expand reasoning summary by default",
+        "expandTools": "Expand tool sections by default"
+      },
+      "notifications": {
+        "label": "System Notifications",
+        "agent": "Agent",
+        "agentDescription": "Send notification when generation completes",
+        "permission": "Permission",
+        "permissionDescription": "Send notification when user permission is required",
+        "error": "Error",
+        "errorDescription": "Send notification when an error occurs"
+      }
+    },
+    "shortcuts": {
+      "label": "Shortcuts",
+      "bindings": {
+        "label": "Shortcut Bindings",
+        "newChat": "New Chat",
+        "search": "Search Sessions",
+        "openSettings": "Open Settings"
+      }
+    },
+    "appearance": {
+      "label": "Appearance",
+      "brand": {
+        "label": "Brand",
+        "name": "Brand Name",
+        "icon": "Brand Icon"
+      },
+      "theme": {
+        "label": "Theme",
+        "colorScheme": "Color Scheme",
+        "light": "Light",
+        "dark": "Dark",
+        "primaryColor": "Primary Color"
+      },
+      "typography": {
+        "label": "Typography",
+        "sansFont": "UI Font",
+        "monoFont": "Code Font"
+      },
+      "language": {
+        "label": "Language",
+        "locale": "Interface Language",
+        "zhCN": "简体中文",
+        "en": "English"
+      }
+    },
+    "advanced": {
+      "label": "Advanced",
+      "backup": {
+        "label": "Data Backup",
+        "export": "Export Configuration",
+        "exportDescription": "Export all settings as JSON file",
+        "import": "Import Configuration",
+        "importDescription": "Import settings from JSON file"
+      }
+    },
+    "developerMode": "Developer Mode Enabled",
+    "developerModeDescription": "Advanced configuration options are now visible",
+    "exportSuccess": "Export Successful",
+    "exportSuccessDescription": "Configuration has been downloaded",
+    "exportError": "Export Failed",
+    "importSuccess": "Import Successful",
+    "importSuccessDescription": "{count} settings imported",
+    "importError": "Import Failed",
+    "invalidConfig": "Invalid configuration file"
+  }
+}
