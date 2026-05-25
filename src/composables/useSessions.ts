@@ -22,7 +22,9 @@ export const useSessions = createSharedComposable(() => {
 
   function setBusinessKey(key: string) {
     businessKey.value = key || 'default'
-    localStorage.setItem(STORAGE_KEY, businessKey.value)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, businessKey.value)
+    }
   }
 
   async function fetchSessions() {

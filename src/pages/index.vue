@@ -18,16 +18,12 @@ interface QwenPawConfig {
   theme?: Record<string, unknown>
 }
 
-const initialized = ref(false)
 onMounted(() => {
-  if (!initialized.value) {
-    const config = (window as unknown as Record<string, QwenPawConfig>).__QWENPAW_CONFIG__
-    const initKey = new URLSearchParams(window.location.search).get('business_key')
-      || config?.business_key
-      || 'default'
-    setBusinessKey(initKey)
-    initialized.value = true
-  }
+  const config = (window as unknown as Record<string, QwenPawConfig>).__QWENPAW_CONFIG__
+  const initKey = new URLSearchParams(window.location.search).get('business_key')
+    || config?.business_key
+    || 'default'
+  setBusinessKey(initKey)
 })
 
 async function onSubmit() {
