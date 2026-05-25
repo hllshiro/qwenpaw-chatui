@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+</script>
+
 <template>
   <UDashboardNavbar
     class="absolute top-0 inset-x-0 border-b-0 z-10 backdrop-blur lg:backdrop-blur-none pointer-events-none sm:px-4"
@@ -18,7 +24,7 @@
         icon="i-lucide-circle-plus"
         to="/"
         class="lg:hidden"
-        aria-label="新建会话"
+        :aria-label="t('components.navbar.newSession')"
       />
     </template>
   </UDashboardNavbar>
