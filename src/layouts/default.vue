@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useSessions } from '../composables/useSessions'
@@ -10,7 +10,9 @@ const route = useRoute()
 const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
 const { getValue } = useSettings()
 
-await fetchSessions()
+onMounted(() => {
+  fetchSessions()
+})
 
 const sidebarOpen = ref(false)
 const settingsOpen = ref(false)

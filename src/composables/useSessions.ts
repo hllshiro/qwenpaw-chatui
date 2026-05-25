@@ -25,6 +25,7 @@ export const useSessions = createSharedComposable(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, businessKey.value)
     }
+    fetchSessions()
   }
 
   async function fetchSessions() {
