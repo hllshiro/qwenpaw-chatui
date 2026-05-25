@@ -1,0 +1,106 @@
+<h2>i18n 国际化方案设计</h2>
+<p class="subtitle">基于vue-i18n的国际化支持方案</p>
+
+<div class="options">
+  <div class="option" data-choice="architecture" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>架构设计</h3>
+      <p>vue-i18n + 按需加载 + 模块化翻译文件</p>
+    </div>
+  </div>
+  <div class="option" data-choice="settings" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>设置集成</h3>
+      <p>语言设置集成到现有设置系统</p>
+    </div>
+  </div>
+  <div class="option" data-choice="migration" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>迁移策略</h3>
+      <p>渐进式迁移现有组件到i18n</p>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">i18n 架构概览</div>
+  <div class="mockup-body">
+    <div class="split">
+      <div class="mockup">
+        <div class="mockup-header">翻译文件结构</div>
+        <div class="mockup-body">
+          <pre style="font-size: 12px; text-align: left; padding: 10px;">
+locales/
+├── zh-CN/
+│   ├── common.json
+│   ├── settings.json
+│   ├── chat.json
+│   └── components.json
+├── en/
+│   ├── common.json
+│   ├── settings.json
+│   ├── chat.json
+│   └── components.json
+└── index.ts
+          </pre>
+        </div>
+      </div>
+      <div class="mockup">
+        <div class="mockup-header">集成方式</div>
+        <div class="mockup-body">
+          <div style="padding: 10px; text-align: left;">
+            <h4>1. 设置系统集成</h4>
+            <ul style="font-size: 12px;">
+              <li>新增appearance.language分组</li>
+              <li>语言选择下拉框</li>
+              <li>URL参数lang=?支持</li>
+            </ul>
+            <h4>2. 数据库存储</h4>
+            <ul style="font-size: 12px;">
+              <li>设置键: appearance.language.locale</li>
+              <li>值: 'zh-CN' | 'en'</li>
+            </ul>
+            <h4>3. Nuxt UI集成</h4>
+            <ul style="font-size: 12px;">
+              <li>使用@nuxt/ui/locale</li>
+              <li>动态切换locale prop</li>
+              <li>支持50+语言</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>组件迁移策略</h3>
+  <div class="mockup">
+    <div class="mockup-body">
+      <div style="padding: 10px; text-align: left;">
+        <h4>1. 现有组件改造</h4>
+        <pre style="font-size: 12px; text-align: left; padding: 10px;">
+// 改造前
+&lt;button&gt;发送&lt;/button&gt;
+
+// 改造后
+&lt;button&gt;{{ $t('chat.send') }}&lt;/button&gt;
+        </pre>
+        <h4>2. 日期本地化</h4>
+        <pre style="font-size: 12px; text-align: left; padding: 10px;">
+// 使用dayjs处理日期格式
+import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn'
+import 'dayjs/locale/en'
+
+function formatDate(date, locale) {
+  return dayjs(date).locale(locale).format('YYYY-MM-DD')
+}
+        </pre>
+      </div>
+    </div>
+  </div>
+</div>
