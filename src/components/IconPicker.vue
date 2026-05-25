@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   modelValue: string
@@ -8,6 +9,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
+
+const { t } = useI18n()
 
 const open = ref(false)
 const search = ref('')
@@ -83,7 +86,7 @@ function handleUpload() {
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="搜索图标..."
+          :placeholder="t('components.iconPicker.searchPlaceholder')"
           size="sm"
           class="w-full"
         />
@@ -101,7 +104,7 @@ function handleUpload() {
         </div>
 
         <UButton
-          label="上传自定义图片"
+          :label="t('components.iconPicker.uploadCustom')"
           icon="i-lucide-upload"
           variant="outline"
           size="sm"

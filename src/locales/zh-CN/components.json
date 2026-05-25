@@ -12,6 +12,14 @@
       "lastWeek": "最近7天",
       "lastMonth": "最近30天",
       "older": "更早"
+    },
+    "iconPicker": {
+      "searchPlaceholder": "搜索图标...",
+      "uploadCustom": "上传自定义图片"
+    },
+    "shortcutInput": {
+      "pressShortcut": "按下快捷键...",
+      "notSet": "未设置"
     }
   }
 }

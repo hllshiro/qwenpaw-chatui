@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   modelValue: string
@@ -8,6 +9,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
+
+const { t } = useI18n()
 
 const capturing = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
@@ -83,7 +86,7 @@ onUnmounted(() => {
       @keydown="handleKeydown"
     >
       <template v-if="capturing">
-        <span class="text-xs text-primary animate-pulse">按下快捷键...</span>
+        <span class="text-xs text-primary animate-pulse">{{ t('components.shortcutInput.pressShortcut') }}</span>
       </template>
       <template v-else-if="parsedKeys.length">
         <UKbd
@@ -95,7 +98,7 @@ onUnmounted(() => {
         />
       </template>
       <template v-else>
-        <span class="text-xs text-muted">未设置</span>
+        <span class="text-xs text-muted">{{ t('components.shortcutInput.notSet') }}</span>
       </template>
     </div>
   </div>

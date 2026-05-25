@@ -12,6 +12,14 @@
       "lastWeek": "Last 7 Days",
       "lastMonth": "Last 30 Days",
       "older": "Older"
+    },
+    "iconPicker": {
+      "searchPlaceholder": "Search icons...",
+      "uploadCustom": "Upload custom image"
+    },
+    "shortcutInput": {
+      "pressShortcut": "Press shortcut...",
+      "notSet": "Not set"
     }
   }
 }

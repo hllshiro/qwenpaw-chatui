@@ -2,7 +2,7 @@
 import { computed, watch, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useColorMode } from '@vueuse/core'
-import { useI18n } from 'vue-i18n'
+import { useI18n } from './composables/useI18n'
 import * as locales from '@nuxt/ui/locale'
 import { useTheme } from './composables/useTheme'
 import { useSettings } from './composables/settings'
