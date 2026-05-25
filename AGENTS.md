@@ -56,6 +56,37 @@ Copy `.env.example` to `.env`. Key vars:
 | POST | `/api/settings/import` | Import settings from JSON |
 | GET | `/api/config` | Returns `{ qwenpawBackendUrl }` |
 
+## 国际化支持
+
+所有界面实现时必须使用国际化支持的写法：
+
+### 必须使用 $t() 函数
+
+```vue
+<!-- 正确 -->
+<button>{{ $t('chat.send') }}</button>
+
+<!-- 错误 -->
+<button>发送</button>
+```
+
+### 日期格式化使用 dayjs
+
+```typescript
+import { formatDate } from '../utils/date'
+import { useI18n } from 'vue-i18n'
+
+const { locale } = useI18n()
+const formatted = formatDate(new Date(), locale.value)
+```
+
+### 翻译键命名规范
+
+- 通用文本：`common.xxx`
+- 设置文本：`settings.xxx`
+- 聊天文本：`chat.xxx`
+- 组件文本：`components.xxx`
+
 ## Gotchas
 
 - **DB path**: runtime defaults and `drizzle.config.ts` both use `file:.data/qwenpaw.db`. The `.env.example` says `file:./data/qwenpaw.db` (no leading dot) — don't confuse them.

@@ -92,6 +92,15 @@
 - [x] TypeScript 类型检查（`vue-tsc`）
 - [x] CI 集成（GitHub Actions：lint → build → typecheck）
 
+## 国际化支持
+
+- [x] 多语言框架（支持中英文，可扩展）
+- [x] 语言设置集成（外观 > 语言分组）
+- [x] URL 参数支持（lang=?）
+- [x] 100% 文本覆盖
+- [x] 日期本地化（dayjs）
+- [x] 语言切换无需刷新
+
 ## 文档管理
 
 - [x] 文档管理规范（功能实现与文档更新同步）
