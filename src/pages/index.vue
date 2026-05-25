@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
@@ -18,13 +18,13 @@ interface QwenPawConfig {
   theme?: Record<string, unknown>
 }
 
-onMounted(() => {
-  const config = (window as unknown as Record<string, QwenPawConfig>).__QWENPAW_CONFIG__
-  const initKey = new URLSearchParams(window.location.search).get('business_key')
-    || config?.business_key
-    || 'default'
-  setBusinessKey(initKey)
-})
+const config = (window as unknown as Record<string, QwenPawConfig>).__QWENPAW_CONFIG__
+const urlBusinessKey = new URLSearchParams(window.location.search).get('business_key')
+  || config?.business_key
+
+if (urlBusinessKey) {
+  setBusinessKey(urlBusinessKey)
+}
 
 async function onSubmit() {
   if (!input.value.trim()) return
