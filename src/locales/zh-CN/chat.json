@@ -22,10 +22,6 @@
     "deleteSession": "删除会话",
     "deleteConfirm": "确定要删除该会话吗？此操作不可撤销。",
     "inputNewName": "输入新名称",
-    "edit": "编辑",
-    "editing": "编辑中",
-    "editCancel": "取消",
-    "editSave": "保存",
     "sessionActions": "会话操作",
     "generationStopped": "生成已停止",
     "scrollToBottom": "滚动到底部"

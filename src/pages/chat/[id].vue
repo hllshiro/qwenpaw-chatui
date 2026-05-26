@@ -238,8 +238,6 @@ function syncBackendTitle() {
 }
 
 const input = ref('')
-const editingId = ref<string | null>(null)
-const editingText = ref('')
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 
@@ -306,29 +304,27 @@ function handleSubmit() {
   sendMessage(text, { onComplete: syncBackendTitle })
 }
 
-function startEdit(msg: ChatMessage) {
-  editingId.value = msg.id
-  editingText.value = msg.content
-}
-
-function cancelEdit() {
-  editingId.value = null
-  editingText.value = ''
-}
-
-function saveEdit(msg: ChatMessage) {
-  const text = editingText.value
-  editingId.value = null
-  editingText.value = ''
-  const idx = messages.value.findIndex(m => m.id === msg.id)
-  if (idx >= 0) {
-    messages.value.splice(idx + 1)
-  }
-  msg.content = text
-  sendMessage(text, { onComplete: syncBackendTitle })
-}
-
 const approvalLoadingIds = ref(new Set<string>())
+
+function copyMessageText(message: any) {
+  const text = message.parts?.[0]?.text || message.content || ''
+  if (text) {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        useToast().add({
+          title: t('common.copied'),
+          color: 'success',
+        })
+      },
+      () => {
+        useToast().add({
+          title: t('common.copyFailed'),
+          color: 'error',
+        })
+      }
+    )
+  }
+}
 
 async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'approve' | 'deny') {
   if (!block.approval?.requestId || approvalLoadingIds.value.has(block.approval.requestId)) return
@@ -401,33 +397,22 @@ const chatStatus = computed(() => {
           :ui="{ root: 'pt-(--ui-header-height) px-4 sm:px-8' }"
           :user="{
             variant: 'solid',
-            ui: { content: 'text-sm' }
+            ui: { content: 'text-sm' },
+            actions: [
+              { icon: 'i-lucide-copy', variant: 'ghost', size: 'xs', onClick: (_e, msg) => copyMessageText(msg as any) }
+            ]
           }"
           :assistant="{
-            variant: 'naked',
-            ui: { content: 'text-sm' }
+            variant: 'soft',
+            ui: { content: 'text-sm' },
+            actions: [
+              { icon: 'i-lucide-copy', variant: 'ghost', size: 'xs', onClick: (_e, msg) => copyMessageText(msg) }
+            ]
           }"
         >
           <template #content="{ message }">
             <div v-if="message.role === 'user'" class="text-sm leading-relaxed">
-              <template v-if="editingId === (message as any).id">
-                <textarea
-                  v-model="editingText"
-                  class="w-full bg-primary/10 border border-primary/20 rounded-lg p-2 text-sm resize-none placeholder-muted"
-                  rows="3"
-                  @keydown.escape="cancelEdit"
-                />
-                <div class="flex gap-1 mt-1 justify-end">
-                  <UButton size="xs" variant="ghost" @click="cancelEdit">{{ t('chat.editCancel') }}</UButton>
-                  <UButton size="xs" variant="soft" @click="saveEdit(message as any)">{{ t('chat.editSave') }}</UButton>
-                </div>
-              </template>
-              <template v-else>
-                <div class="whitespace-pre-wrap break-words">{{ (message as any).parts[0]?.text }}</div>
-                <div class="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button class="text-xs text-primary/60 hover:text-primary" @click="startEdit(message as any)">{{ t('chat.edit') }}</button>
-                </div>
-              </template>
+              <div class="whitespace-pre-wrap break-words">{{ (message as any).parts[0]?.text }}</div>
             </div>
 
             <template v-else>
