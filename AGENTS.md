@@ -1,60 +1,60 @@
 # AGENTS.md — qwenpaw-chatui
 
-## What this is
+## 项目简介
 
-Vue 3 chat UI that proxies to a separate QwenPaw backend (FastAPI). Not a Nuxt app — uses Nuxt UI as a component library via Vite. Nitro handles server routes.
+基于 Vue 3 的聊天 UI，通过代理连接独立的 QwenPaw 后端（FastAPI）。不是 Nuxt 应用——使用 Nuxt UI 作为组件库（通过 Vite）。Nitro 处理服务端路由。
 
-## Quick commands
+## 常用命令
 
-- `pnpm dev` — Vite dev server on `localhost:3000`
-- `pnpm lint` — ESLint on `src/`
-- `pnpm typecheck` — `vue-tsc -p ./tsconfig.app.json`
-- `pnpm db:generate` — generate Drizzle migrations
-- `pnpm db:migrate` — apply migrations
-- `pnpm build` — runs `db:migrate` then `vite build`
+- `pnpm dev` — 启动 Vite 开发服务器，地址 `localhost:3000`
+- `pnpm lint` — 对 `src/` 执行 ESLint 检查
+- `pnpm typecheck` — 执行 `vue-tsc -p ./tsconfig.app.json` 类型检查
+- `pnpm db:generate` — 生成 Drizzle 迁移文件
+- `pnpm db:migrate` — 执行数据库迁移
+- `pnpm build` — 先执行 `db:migrate`，再执行 `vite build`
 
-CI order: lint → build → typecheck (see `.github/workflows/ci.yml`).
-CI runs `pnpm vite build` directly (skips `db:migrate`), so CI won't catch migration issues.
+CI 执行顺序：lint → build → typecheck（详见 `.github/workflows/ci.yml`）。
+CI 直接执行 `pnpm vite build`（跳过 `db:migrate`），因此 CI 不会捕获迁移相关问题。
 
-## Architecture
+## 项目架构
 
 ```
-src/              — Vue 3 frontend (pages, composables, components)
-server/           — Nitro server routes (API proxy to QwenPaw backend)
-server/routes/api/ — REST endpoints for sessions + approval
-server/utils/qwenpaw.ts — calls QwenPaw backend API
-server/utils/drizzle.ts — DB singleton (re-exports sql, eq, and, or, asc, desc)
-server/database/schema.ts — Drizzle schema (sessions + settings tables)
+src/              — Vue 3 前端（页面、组合式函数、组件）
+server/           — Nitro 服务端路由（代理请求到 QwenPaw 后端）
+server/routes/api/ — 用于会话管理和审批的 REST API 端点
+server/utils/qwenpaw.ts — 调用 QwenPaw 后端 API
+server/utils/drizzle.ts — 数据库单例（重新导出 sql, eq, and, or, asc, desc）
+server/database/schema.ts — Drizzle 数据库模式（sessions + settings 表）
 ```
 
-Frontend → Nitro server → QwenPaw backend (`localhost:8088`). SSE streaming is proxied through Nitro.
+前端 → Nitro 服务端 → QwenPaw 后端（`localhost:8088`）。SSE 流式响应通过 Nitro 代理转发。
 
-## Environment
+## 环境变量
 
-Copy `.env.example` to `.env`. Key vars:
-- `QWENPAW_BACKEND_URL` — QwenPaw backend (default `http://localhost:8088`)
-- `DATABASE_URL` — SQLite path (default `file:.data/qwenpaw.db`)
-- `PORT` — dev server port (default `3000`)
+将 `.env.example` 复制为 `.env`。关键变量：
+- `QWENPAW_BACKEND_URL` — QwenPaw 后端地址（默认 `http://localhost:8088`）
+- `DATABASE_URL` — SQLite 数据库路径（默认 `file:.data/qwenpaw.db`）
+- `PORT` — 开发服务器端口（默认 `3000`）
 
-## Nitro server routes
+## Nitro 服务端路由
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/chats` | List sessions (optional `?business_key=`) |
-| POST | `/api/chats` | Create session |
-| GET | `/api/chats/spec` | Fetch QwenPaw backend chat list (optional `?session_id=`) |
-| GET | `/api/chats/:id` | Session detail |
-| PUT | `/api/chats/:id` | Update session (syncs name to QwenPaw backend) |
-| DELETE | `/api/chats/:id` | Delete session (also deletes from QwenPaw backend) |
-| POST | `/api/chats/:id` | Send message → SSE stream from QwenPaw |
-| GET | `/api/chats/:id/history` | Fetch chat history from QwenPaw backend |
-| POST | `/api/approval/approve` | Approve tool guard request |
-| POST | `/api/approval/deny` | Deny tool guard request |
-| GET | `/api/settings` | List all settings |
-| PUT | `/api/settings/:key` | Update a setting |
-| GET | `/api/settings/export` | Export all settings as JSON |
-| POST | `/api/settings/import` | Import settings from JSON |
-| GET | `/api/config` | Returns `{ qwenpawBackendUrl }` |
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/api/chats` | 获取会话列表（可选参数 `?business_key=`） |
+| POST | `/api/chats` | 创建会话 |
+| GET | `/api/chats/spec` | 从 QwenPaw 后端获取聊天列表（可选参数 `?session_id=`） |
+| GET | `/api/chats/:id` | 获取会话详情 |
+| PUT | `/api/chats/:id` | 更新会话（同步名称到 QwenPaw 后端） |
+| DELETE | `/api/chats/:id` | 删除会话（同时从 QwenPaw 后端删除） |
+| POST | `/api/chats/:id` | 发送消息 → 从 QwenPaw 获取 SSE 流式响应 |
+| GET | `/api/chats/:id/history` | 从 QwenPaw 后端获取聊天历史 |
+| POST | `/api/approval/approve` | 批准工具守卫请求 |
+| POST | `/api/approval/deny` | 拒绝工具守卫请求 |
+| GET | `/api/settings` | 获取所有设置项 |
+| PUT | `/api/settings/:key` | 更新设置项 |
+| GET | `/api/settings/export` | 导出所有设置为 JSON |
+| POST | `/api/settings/import` | 从 JSON 导入设置 |
+| GET | `/api/config` | 返回 `{ qwenpawBackendUrl }` |
 
 ## 国际化支持
 
@@ -87,154 +87,154 @@ const formatted = formatDate(new Date(), locale.value)
 - 聊天文本：`chat.xxx`
 - 组件文本：`components.xxx`
 
-## Gotchas
+## 注意事项
 
-- **DB path**: runtime defaults and `drizzle.config.ts` both use `file:.data/qwenpaw.db`. The `.env.example` says `file:./data/qwenpaw.db` (no leading dot) — don't confuse them.
-- **Auto-imports**: `auto-imports.d.ts` and `components.d.ts` are generated — don't hand-edit.
-- **Nitro plugins** run on server start: `server/plugins/migrations.ts` creates DB directory and runs migrations.
-- **Session messages** are stored server-side in QwenPaw, not in local SQLite — local DB only tracks session metadata.
-- **UI language** is Chinese throughout.
-- **Editorconfig**: 2-space indent, LF line endings.
+- **数据库路径**：运行时默认值和 `drizzle.config.ts` 都使用 `file:.data/qwenpaw.db`。但 `.env.example` 中写的是 `file:./data/qwenpaw.db`（无前导点号）——不要混淆。
+- **自动导入**：`auto-imports.d.ts` 和 `components.d.ts` 是自动生成的——不要手动编辑。
+- **Nitro 插件**：服务器启动时运行：`server/plugins/migrations.ts` 会创建数据库目录并执行迁移。
+- **会话消息**：存储在 QwenPaw 服务端，而非本地 SQLite——本地数据库仅存储会话元数据。
+- **界面语言**：全部使用中文。
+- **编辑器配置**：2 空格缩进，LF 换行符。
 
-## SSE streaming protocol
+## SSE 流式协议
 
-The chat uses a custom SSE event protocol (parsed in `src/composables/useChat.ts`). Events have `object` and `type` fields:
+聊天使用自定义 SSE 事件协议（在 `src/composables/useChat.ts` 中解析）。事件包含 `object` 和 `type` 字段：
 
-| object | type | Meaning |
-|--------|------|---------|
-| `response` | — | Response lifecycle (status=completed means done) |
-| `message` | `reasoning` | Marks a msg_id as reasoning content |
-| `message` | `message` | Marks a msg_id as message content; may carry `metadata` for approval |
-| `content` | `text` | Streams text to a msg_id (reasoning or message, determined by which set it belongs to) |
-| `content` | `data` | Tool call info: `{ call_id, name, arguments }` or output: `{ call_id, output }` |
-| `message` | `plugin_call`/`tool_call` | Informational signal, no content |
-| `message` | `plugin_call_output`/`tool_output` | Informational signal, no content |
+| object | type | 含义 |
+|--------|------|------|
+| `response` | — | 响应生命周期（status=completed 表示完成） |
+| `message` | `reasoning` | 标记 msg_id 为推理内容 |
+| `message` | `message` | 标记 msg_id 为消息内容；可能携带用于审批的 `metadata` |
+| `content` | `text` | 向 msg_id 流式传输文本（推理或消息，由其所属集合决定） |
+| `content` | `data` | 工具调用信息：`{ call_id, name, arguments }` 或输出：`{ call_id, output }` |
+| `message` | `plugin_call`/`tool_call` | 信息信号，无内容 |
+| `message` | `plugin_call_output`/`tool_output` | 信息信号，无内容 |
 
-## QwenPaw backend reference
+## QwenPaw 后端参考
 
-QwenPaw backend source is available at `docs/QwenPaw` (cloned from `https://github.com/agentscope-ai/QwenPaw.git`).
-The `console` directory in that repo contains the official implementation this UI proxies to — use it as reference when modifying server-side proxy logic or SSE streaming.
-If the directory is missing, clone it: `git clone https://github.com/agentscope-ai/QwenPaw.git docs/QwenPaw`.
+QwenPaw 后端源码位于 `docs/QwenPaw`（从 `https://github.com/agentscope-ai/QwenPaw.git` 克隆）。
+该仓库中的 `console` 目录包含此 UI 代理对接的官方实现——修改服务端代理逻辑或 SSE 流式处理时可作为参考。
+如果该目录不存在，请执行克隆：`git clone https://github.com/agentscope-ai/QwenPaw.git docs/QwenPaw`。
 
-## Tool guard approval
+## 工具守卫审批
 
-The backend can pause responses for approval. When a `message(message)` event has `metadata.message_type === 'tool_guard_approval'`, the assistant message gets an `approval` object with `requestId`, `toolName`, `severity`, `findingsSummary`, and `toolParams`. The UI renders approve/deny buttons calling `/api/approval/approve` and `/api/approval/deny`.
+后端可以暂停响应并请求审批。当 `message(message)` 事件的 `metadata.message_type === 'tool_guard_approval'` 时，助手消息会获得一个 `approval` 对象，包含 `requestId`、`toolName`、`severity`、`findingsSummary` 和 `toolParams`。界面会渲染批准/拒绝按钮，调用 `/api/approval/approve` 和 `/api/approval/deny`。
 
-## Documentation Management
+## 文档管理
 
-When implementing features, changes, or deletions, documentation must be updated synchronously to maintain project integrity.
+在实现功能、变更或删除时，必须同步更新文档以保持项目完整性。
 
-### Pre-Implementation Assessment
+### 实现前评估
 
-Before implementing any feature, complete this assessment:
+在实现任何功能前，完成以下评估：
 
-1. **Impact Analysis**
-   - Check `docs/features.md` for related features
-   - Check `docs/modules/` for related module documentation
-   - Check `docs/architecture.md` for architectural implications
-   - Identify potentially affected existing features
+1. **影响分析**
+   - 查阅 `docs/features.md` 中的相关功能
+   - 查阅 `docs/modules/` 中的相关模块文档
+   - 查阅 `docs/architecture.md` 了解架构影响
+   - 识别可能受影响的现有功能
 
-2. **Dependency Analysis**
-   - Determine existing modules the new feature depends on
-   - Determine existing modules that may be affected
-   - Assess whether existing modules need modification
+2. **依赖分析**
+   - 确定新功能依赖的现有模块
+   - 确定可能受影响的现有模块
+   - 评估现有模块是否需要修改
 
-3. **Risk Assessment**
-   - Evaluate impact level on existing features (High/Medium/Low)
-   - Identify potential breaking changes
-   - Determine if additional testing is required
+3. **风险评估**
+   - 评估对现有功能的影响程度（高/中/低）
+   - 识别潜在的破坏性变更
+   - 确定是否需要额外测试
 
-### Documentation Update Steps
+### 文档更新步骤
 
-#### After New Feature Implementation
-1. Update `docs/features.md`:
-   - Add new feature entry
-   - Mark as completed `[x]` or pending `[ ]`
-   - Add feature description and related module links
+#### 新功能实现后
+1. 更新 `docs/features.md`：
+   - 添加新功能条目
+   - 标记为已完成 `[x]` 或待处理 `[ ]`
+   - 添加功能描述和相关模块链接
 
-2. Create or update module documentation:
-   - For new modules: Create `docs/modules/<module-name>.md`
-   - For existing modules: Update corresponding documentation
-   - Include module responsibilities, interfaces, and usage methods
+2. 创建或更新模块文档：
+   - 新模块：创建 `docs/modules/<module-name>.md`
+   - 已有模块：更新相应文档
+   - 包含模块职责、接口和使用方法
 
-3. Update architecture documentation (if needed):
-   - Update architecture diagrams in `docs/architecture.md`
-   - Update module descriptions and data flow
+3. 更新架构文档（如需要）：
+   - 更新 `docs/architecture.md` 中的架构图
+   - 更新模块描述和数据流
 
-#### After Existing Feature Changes
-1. Update `docs/features.md`:
-   - Modify feature description
-   - Update status markers
-   - Add change description
+#### 已有功能变更后
+1. 更新 `docs/features.md`：
+   - 修改功能描述
+   - 更新状态标记
+   - 添加变更描述
 
-2. Update related module documentation:
-   - Update interface descriptions
-   - Update usage methods
-   - Update example code
+2. 更新相关模块文档：
+   - 更新接口描述
+   - 更新使用方法
+   - 更新示例代码
 
-#### After Feature Deletion
-1. Update `docs/features.md`:
-   - Remove feature entry or mark as deprecated
-   - Add deprecation notice
+#### 功能删除后
+1. 更新 `docs/features.md`：
+   - 移除功能条目或标记为已废弃
+   - 添加废弃说明
 
-2. Update related module documentation:
-   - Remove related interface descriptions
-   - Update module responsibility descriptions
+2. 更新相关模块文档：
+   - 移除相关接口描述
+   - 更新模块职责描述
 
-### Scenario Handling
+### 场景处理
 
-#### New Module Development
-1. First add feature list in `docs/features.md`
-2. Create `docs/modules/<module-name>.md` module documentation
-3. Update `docs/architecture.md` architecture documentation
-4. Implement module code
-5. Update implementation details in module documentation
+#### 新模块开发
+1. 先在 `docs/features.md` 中添加功能列表
+2. 创建 `docs/modules/<module-name>.md` 模块文档
+3. 更新 `docs/architecture.md` 架构文档
+4. 实现模块代码
+5. 在模块文档中更新实现细节
 
-#### Existing Module Extension
-1. Check existing module documentation
-2. Assess impact on existing features
-3. Update `docs/features.md` feature list
-4. Update module documentation
-5. Implement extension functionality
-6. Update implementation details in documentation
+#### 已有模块扩展
+1. 查阅现有模块文档
+2. 评估对现有功能的影响
+3. 更新 `docs/features.md` 功能列表
+4. 更新模块文档
+5. 实现扩展功能
+6. 在文档中更新实现细节
 
-#### Feature Refactoring
-1. Document current feature state
-2. Assess refactoring impact scope
-3. Update `docs/features.md` feature list
-4. Update related module documentation
-5. Execute refactoring
-6. Update change description in documentation
+#### 功能重构
+1. 记录当前功能状态
+2. 评估重构影响范围
+3. 更新 `docs/features.md` 功能列表
+4. 更新相关模块文档
+5. 执行重构
+6. 在文档中更新变更描述
 
-#### Feature Deprecation
-1. Mark as deprecated in `docs/features.md`
-2. Update related module documentation
-3. Add deprecation notice and migration guide (if needed)
-4. Execute code cleanup
+#### 功能废弃
+1. 在 `docs/features.md` 中标记为已废弃
+2. 更新相关模块文档
+3. 添加废弃说明和迁移指南（如需要）
+4. 执行代码清理
 
-### Verification Checklists
+### 验证清单
 
-#### Pre-Implementation Checklist
-- [ ] Checked related features in `docs/features.md`
-- [ ] Checked related module documentation in `docs/modules/`
-- [ ] Assessed impact on existing features
-- [ ] Identified documentation that needs updating
+#### 实现前清单
+- [ ] 已查阅 `docs/features.md` 中的相关功能
+- [ ] 已查阅 `docs/modules/` 中的相关模块文档
+- [ ] 已评估对现有功能的影响
+- [ ] 已识别需要更新的文档
 
-#### Post-Implementation Checklist
-- [ ] Updated `docs/features.md` (if needed)
-- [ ] Created or updated module documentation
-- [ ] Updated architecture documentation (if needed)
-- [ ] Documentation content matches implementation
-- [ ] Documentation format complies with standards
+#### 实现后清单
+- [ ] 已更新 `docs/features.md`（如需要）
+- [ ] 已创建或更新模块文档
+- [ ] 已更新架构文档（如需要）
+- [ ] 文档内容与实现一致
+- [ ] 文档格式符合规范
 
-### Documentation Quality Standards
-1. **Completeness**: Covers all related features and interfaces
-2. **Accuracy**: Consistent with actual implementation
-3. **Clarity**: Easy to understand, includes examples
-4. **Timeliness**: Updated promptly, reflects current state
-5. **Format**: Follows Markdown syntax, uses consistent heading levels and list formats
+### 文档质量标准
+1. **完整性**：涵盖所有相关功能和接口
+2. **准确性**：与实际实现保持一致
+3. **清晰性**：易于理解，包含示例
+4. **及时性**：及时更新，反映当前状态
+5. **规范性**：遵循 Markdown 语法，使用一致的标题层级和列表格式
 
-### Enforcement
-- PRs without proper documentation updates should not be merged
-- Code reviews must check documentation updates
-- Regularly verify consistency between documentation and code
+### 执行要求
+- 没有适当文档更新的 PR 不应被合并
+- 代码审查必须检查文档更新
+- 定期验证文档与代码的一致性
