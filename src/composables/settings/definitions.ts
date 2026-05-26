@@ -105,6 +105,19 @@ registerSetting({
   group: 'bindings',
 })
 
+registerSetting({
+  key: 'shortcuts.bindings.resetAll',
+  label: '重置全部',
+  labelKey: 'settings.shortcuts.bindings.resetAll',
+  description: '将所有快捷键恢复为默认值',
+  descriptionKey: 'settings.shortcuts.bindings.resetAllDescription',
+  type: 'button',
+  defaultValue: null,
+  category: 'shortcuts',
+  group: 'bindings',
+  icon: 'i-lucide-rotate-ccw',
+})
+
 // === 注册配置项 - 外观（高级） ===
 registerSetting({
   key: 'appearance.brand.name',

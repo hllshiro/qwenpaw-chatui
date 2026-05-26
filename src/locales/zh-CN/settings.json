@@ -24,7 +24,10 @@
         "label": "快捷键绑定",
         "newChat": "新建会话",
         "search": "搜索会话",
-        "openSettings": "打开设置"
+        "openSettings": "打开设置",
+        "resetAll": "重置全部",
+        "resetAllDescription": "将所有快捷键恢复为默认值",
+        "resetAllSuccess": "快捷键已恢复默认"
       }
     },
     "appearance": {

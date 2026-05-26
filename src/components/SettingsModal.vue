@@ -17,6 +17,7 @@ const { t } = useI18n()
 const {
   getValue,
   setValue,
+  resetToDefault,
   exportSettings,
   importSettings,
   enableDeveloperMode,
@@ -76,7 +77,24 @@ function handleAction(key: string) {
     handleExport()
   } else if (key === 'advanced.backup.import') {
     handleImport()
+  } else if (key === 'shortcuts.bindings.resetAll') {
+    handleResetAllShortcuts()
   }
+}
+
+async function handleResetAllShortcuts() {
+  const shortcutKeys = [
+    'shortcuts.bindings.newChat',
+    'shortcuts.bindings.search',
+    'shortcuts.bindings.openSettings',
+  ]
+  for (const key of shortcutKeys) {
+    await resetToDefault(key)
+  }
+  useToast().add({
+    title: t('settings.shortcuts.bindings.resetAllSuccess'),
+    color: 'success',
+  })
 }
 
 async function handleExport() {

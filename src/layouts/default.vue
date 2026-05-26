@@ -5,6 +5,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
+import { useShortcuts } from '../composables/useShortcuts'
 import SearchModal from '../components/SearchModal.vue'
 
 const router = useRouter()
@@ -12,9 +13,13 @@ const route = useRoute()
 const { t } = useI18n()
 const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
 const { getValue } = useSettings()
+const { registerShortcut } = useShortcuts()
 
 onMounted(() => {
   fetchSessions()
+  registerShortcut('shortcuts.bindings.newChat', () => router.push('/'))
+  registerShortcut('shortcuts.bindings.search', () => { searchOpen.value = true })
+  registerShortcut('shortcuts.bindings.openSettings', () => { settingsOpen.value = true })
 })
 
 const sidebarOpen = ref(false)
@@ -103,15 +108,6 @@ async function confirmDelete() {
 function cancelDelete() {
   deletingId.value = null
 }
-
-defineShortcuts({
-  meta_o: () => {
-    router.push('/')
-  },
-  meta_k: () => {
-    searchOpen.value = true
-  }
-})
 </script>
 
 <template>

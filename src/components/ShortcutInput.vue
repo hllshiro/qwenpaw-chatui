@@ -95,6 +95,7 @@ onUnmounted(() => {
           :value="key"
           size="sm"
           variant="soft"
+          class="pointer-events-none"
         />
       </template>
       <template v-else>

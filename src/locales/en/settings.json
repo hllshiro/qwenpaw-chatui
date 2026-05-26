@@ -24,7 +24,10 @@
         "label": "Shortcut Bindings",
         "newChat": "New Chat",
         "search": "Search Sessions",
-        "openSettings": "Open Settings"
+        "openSettings": "Open Settings",
+        "resetAll": "Reset All",
+        "resetAllDescription": "Reset all shortcuts to default values",
+        "resetAllSuccess": "Shortcuts reset to default"
       }
     },
     "appearance": {
