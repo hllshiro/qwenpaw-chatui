@@ -5,6 +5,7 @@ import type { SettingItem } from '../composables/settings/types'
 defineProps<{
   item: SettingItem
   value: any
+  disabled?: boolean
 }>()
 
 const { t } = useI18n()
@@ -18,7 +19,7 @@ const emit = defineEmits<{
 <template>
   <div
     class="flex items-center justify-between py-2"
-    :class="item.type === 'button' ? 'cursor-pointer' : ''"
+    :class="[item.type === 'button' ? 'cursor-pointer' : '', disabled ? 'opacity-50 pointer-events-none' : '']"
   >
     <div class="flex-1 min-w-0 mr-4">
       <label class="text-sm font-medium text-default">
@@ -33,6 +34,7 @@ const emit = defineEmits<{
       <USwitch
         v-if="item.type === 'switch'"
         :model-value="value"
+        :disabled="disabled"
         @update:model-value="emit('update', $event)"
       />
 

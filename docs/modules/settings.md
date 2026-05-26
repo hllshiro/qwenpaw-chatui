@@ -57,10 +57,11 @@ src/composables/settings/
 
 ### 通用 - 行为
 
-| 键 | 标签 | 类型 | 默认值 |
-|----|------|------|--------|
-| `general.behavior.expandReasoning` | 默认展开推理摘要 | switch | false |
-| `general.behavior.expandTools` | 默认展开工具部分 | switch | false |
+| 键 | 标签 | 类型 | 默认值 | 说明 |
+|----|------|------|--------|------|
+| `general.behavior.autoExpandCollapse` | 自动展开与折叠生成内容 | switch | false | 总开关，开启后下方两项不可设置 |
+| `general.behavior.expandReasoning` | 默认展开推理摘要 | switch | false | 开启后推理块生成时自动展开 |
+| `general.behavior.expandTools` | 默认展开工具部分 | switch | false | 开启后工具调用块生成时自动展开 |
 
 ### 通用 - 系统通知
 

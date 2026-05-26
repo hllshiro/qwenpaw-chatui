@@ -5,6 +5,8 @@
       "label": "General",
       "behavior": {
         "label": "Behavior",
+        "autoExpandCollapse": "Auto expand and collapse generated content",
+        "autoExpandCollapseDescription": "When enabled, the two settings below are ignored. The currently generating block auto-expands and auto-collapses when complete",
         "expandReasoning": "Expand reasoning summary by default",
         "expandTools": "Expand tool sections by default"
       },

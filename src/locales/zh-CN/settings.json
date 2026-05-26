@@ -5,6 +5,8 @@
       "label": "通用",
       "behavior": {
         "label": "行为",
+        "autoExpandCollapse": "自动展开与折叠生成内容",
+        "autoExpandCollapseDescription": "开启后，下方两项设置不再生效。当前生成的块自动展开，完成后自动折叠",
         "expandReasoning": "默认展开推理摘要",
         "expandTools": "默认展开工具部分"
       },

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSessions } from '../../composables/useSessions'
+import { useSettings } from '../../composables/settings'
 import { useChat, type ChatMessage, type MessageBlock } from '../../composables/useChat'
 import Navbar from '../../components/Navbar.vue'
 import ChatComark from '../../components/chat/Comark'
@@ -48,6 +49,7 @@ onMounted(async () => {
 
     if (history?.messages?.length > 0) {
       loadHistoryMessages(history.messages)
+      applyDefaultExpandSettings()
       if (generating) {
         patchPendingUserMessage(true)
       } else {
@@ -237,25 +239,86 @@ function syncBackendTitle() {
   })
 }
 
+const { getValue } = useSettings()
+
 const input = ref('')
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
+const manuallyCollapsed = ref(new Set<string>())
 
 function toggleReasoning(blockId: string) {
   if (expandedReasoning.value.has(blockId)) {
     expandedReasoning.value.delete(blockId)
+    manuallyCollapsed.value.add(blockId)
   } else {
     expandedReasoning.value.add(blockId)
+    manuallyCollapsed.value.delete(blockId)
   }
 }
 
 function toggleToolCall(callId: string) {
   if (expandedToolCalls.value.has(callId)) {
     expandedToolCalls.value.delete(callId)
+    manuallyCollapsed.value.add(callId)
   } else {
     expandedToolCalls.value.add(callId)
+    manuallyCollapsed.value.delete(callId)
   }
 }
+
+// Track the active streaming block to detect new blocks
+const streamingBlockKey = computed(() => {
+  if (status.value !== 'streaming') return null
+  const msg = messages.value.find(m => m.id === currentAssistantId.value && m.role === 'assistant')
+  if (!msg) return null
+  return msg.blocks.length > 0 ? `${msg.blocks.length}:${msg.blocks[msg.blocks.length - 1]!.id}` : '0'
+})
+
+// Auto-expand/collapse based on settings during streaming
+watch(streamingBlockKey, (newKey, oldKey) => {
+  if (status.value !== 'streaming' || !newKey || newKey === oldKey) return
+
+  const msg = messages.value.find(m => m.id === currentAssistantId.value && m.role === 'assistant')
+  if (!msg || msg.blocks.length === 0) return
+
+  const currentBlock = msg.blocks[msg.blocks.length - 1]!
+  const autoEC = getValue('general.behavior.autoExpandCollapse')
+
+  if (autoEC) {
+    // Collapse all previous non-streaming blocks
+    for (const block of msg.blocks) {
+      if (block.id === currentBlock.id) continue
+      if (block.type === 'reasoning') expandedReasoning.value.delete(block.id)
+      if (block.type === 'toolCall' && block.toolCall) expandedToolCalls.value.delete(block.toolCall.id)
+    }
+    // Expand current block if not manually collapsed
+    if (currentBlock.type === 'reasoning' && !manuallyCollapsed.value.has(currentBlock.id)) {
+      expandedReasoning.value.add(currentBlock.id)
+    }
+    if (currentBlock.type === 'toolCall' && currentBlock.toolCall && !manuallyCollapsed.value.has(currentBlock.toolCall.id)) {
+      expandedToolCalls.value.add(currentBlock.toolCall.id)
+    }
+  } else {
+    // Individual settings
+    if (currentBlock.type === 'reasoning' && getValue('general.behavior.expandReasoning') && !manuallyCollapsed.value.has(currentBlock.id)) {
+      expandedReasoning.value.add(currentBlock.id)
+    }
+    if (currentBlock.type === 'toolCall' && currentBlock.toolCall && getValue('general.behavior.expandTools') && !manuallyCollapsed.value.has(currentBlock.toolCall.id)) {
+      expandedToolCalls.value.add(currentBlock.toolCall.id)
+    }
+  }
+})
+
+// Auto-collapse when streaming ends (autoExpandCollapse mode)
+watch(status, (newVal, oldVal) => {
+  if (oldVal === 'streaming' && newVal === 'ready') {
+    if (getValue('general.behavior.autoExpandCollapse')) {
+      expandedReasoning.value.clear()
+      expandedToolCalls.value.clear()
+    }
+    manuallyCollapsed.value.clear()
+  }
+})
 
 function formatToolArgs(args: any): string {
   if (!args) return '{}'
@@ -295,6 +358,25 @@ function isStreamingBlock(msg: ChatMessage, block: MessageBlock): boolean {
   if (!isStreamingMessage(msg)) return false
   const lastBlock = msg.blocks[msg.blocks.length - 1]
   return lastBlock?.id === block.id
+}
+
+function applyDefaultExpandSettings() {
+  const autoEC = getValue('general.behavior.autoExpandCollapse')
+  if (autoEC) return // autoExpandCollapse 不影响历史消息
+
+  const expandReasoning = getValue('general.behavior.expandReasoning')
+  const expandTools = getValue('general.behavior.expandTools')
+
+  for (const msg of messages.value) {
+    for (const block of msg.blocks) {
+      if (block.type === 'reasoning' && expandReasoning) {
+        expandedReasoning.value.add(block.id)
+      }
+      if (block.type === 'toolCall' && block.toolCall && expandTools) {
+        expandedToolCalls.value.add(block.toolCall.id)
+      }
+    }
+  }
 }
 
 function handleSubmit() {

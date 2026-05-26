@@ -72,6 +72,13 @@ function handleBrandClick() {
   }
 }
 
+function isSettingDisabled(item: { key: string }): boolean {
+  if (getValue('general.behavior.autoExpandCollapse')) {
+    return item.key === 'general.behavior.expandReasoning' || item.key === 'general.behavior.expandTools'
+  }
+  return false
+}
+
 function handleAction(key: string) {
   if (key === 'advanced.backup.export') {
     handleExport()
@@ -224,6 +231,7 @@ function handleImport() {
                   :key="item.key"
                   :item="item"
                   :value="getValue(item.key)"
+                  :disabled="isSettingDisabled(item)"
                   @update="(v: any) => setValue(item.key, v)"
                   @action="handleAction"
                 />

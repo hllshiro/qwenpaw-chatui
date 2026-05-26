@@ -18,6 +18,18 @@ registerGroup({ key: 'backup', label: '数据备份', labelKey: 'settings.advanc
 
 // === 注册配置项 - 通用 - 行为 ===
 registerSetting({
+  key: 'general.behavior.autoExpandCollapse',
+  label: '自动展开与折叠生成内容',
+  labelKey: 'settings.general.behavior.autoExpandCollapse',
+  description: '开启后，下方两项设置不再生效。当前生成的块自动展开，完成后自动折叠',
+  descriptionKey: 'settings.general.behavior.autoExpandCollapseDescription',
+  type: 'switch',
+  defaultValue: false,
+  category: 'general',
+  group: 'behavior',
+})
+
+registerSetting({
   key: 'general.behavior.expandReasoning',
   label: '默认展开推理摘要',
   labelKey: 'settings.general.behavior.expandReasoning',
