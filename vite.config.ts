@@ -10,7 +10,13 @@ import ui from '@nuxt/ui/vite'
 export default defineConfig({
   server: {
     watch: {
-      ignored: ['**/docs/**']
+      ignored: [
+        '**/docs/**',
+        '**/*.md',
+        '**/.output/**',
+        '**/.github/**',
+        '**/*.log'
+      ]
     }
   },
   plugins: [
