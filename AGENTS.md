@@ -1,5 +1,7 @@
 # AGENTS.md — qwenpaw-chatui
 
+> **Generated:** 2026-05-26 | **Commit:** `4a121c0` | **Branch:** `master`
+
 ## 项目简介
 
 基于 Vue 3 的聊天 UI，通过代理连接独立的 QwenPaw 后端（FastAPI）。不是 Nuxt 应用——使用 Nuxt UI 作为组件库（通过 Vite）。Nitro 作为 Vite 插件处理服务端路由（非独立进程）。
