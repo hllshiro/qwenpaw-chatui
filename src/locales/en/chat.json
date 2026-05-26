@@ -22,10 +22,6 @@
     "deleteSession": "Delete Session",
     "deleteConfirm": "Are you sure you want to delete this session? This action cannot be undone.",
     "inputNewName": "Enter new name",
-    "edit": "Edit",
-    "editing": "Editing",
-    "editCancel": "Cancel",
-    "editSave": "Save",
     "sessionActions": "Session Actions",
     "generationStopped": "Generation Stopped",
     "scrollToBottom": "Scroll to bottom"

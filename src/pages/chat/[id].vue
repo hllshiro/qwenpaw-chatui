@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -238,8 +238,6 @@ function syncBackendTitle() {
 }
 
 const input = ref('')
-const editingId = ref<string | null>(null)
-const editingText = ref('')
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 
@@ -306,29 +304,27 @@ function handleSubmit() {
   sendMessage(text, { onComplete: syncBackendTitle })
 }
 
-function startEdit(msg: ChatMessage) {
-  editingId.value = msg.id
-  editingText.value = msg.content
-}
-
-function cancelEdit() {
-  editingId.value = null
-  editingText.value = ''
-}
-
-function saveEdit(msg: ChatMessage) {
-  const text = editingText.value
-  editingId.value = null
-  editingText.value = ''
-  const idx = messages.value.findIndex(m => m.id === msg.id)
-  if (idx >= 0) {
-    messages.value.splice(idx + 1)
-  }
-  msg.content = text
-  sendMessage(text, { onComplete: syncBackendTitle })
-}
-
 const approvalLoadingIds = ref(new Set<string>())
+
+function copyMessageText(message: any) {
+  const text = message.parts?.[0]?.text || message.content || ''
+  if (text) {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        useToast().add({
+          title: t('common.copied'),
+          color: 'success',
+        })
+      },
+      () => {
+        useToast().add({
+          title: t('common.copyFailed'),
+          color: 'error',
+        })
+      }
+    )
+  }
+}
 
 async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'approve' | 'deny') {
   if (!block.approval?.requestId || approvalLoadingIds.value.has(block.approval.requestId)) return
@@ -350,113 +346,19 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
   }
 }
 
-const scrollAreaRef = ref<InstanceType<any> | null>(null)
-const inputBarRef = ref<HTMLElement | null>(null)
-const showScrollButton = ref(false)
-const isNearBottom = ref(true)
+const chatMessages = computed(() =>
+  messages.value.map(msg => ({
+    id: msg.id,
+    role: msg.role,
+    parts: [{ type: 'text', text: msg.content }],
+    blocks: msg.blocks,
+  })) as any[]
+)
 
-const NEAR_BOTTOM_THRESHOLD = 100
-const messageCount = computed(() => messages.value.length)
-
-function getScrollElement(): HTMLElement | null {
-  return scrollAreaRef.value?.$el ?? null
-}
-
-function checkScrollPosition() {
-  const el = getScrollElement()
-  if (!el) return
-  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-  const wasNearBottom = isNearBottom.value
-  isNearBottom.value = distanceFromBottom <= NEAR_BOTTOM_THRESHOLD
-  showScrollButton.value = !isNearBottom.value
-  if (wasNearBottom !== isNearBottom.value) {
-    console.log('[Scroll] nearBottom changed:', isNearBottom.value, 'dist:', distanceFromBottom)
-  }
-}
-
-function onScroll() {
-  checkScrollPosition()
-}
-
-async function scrollToBottom(smooth = true) {
-  await nextTick()
-  const el = getScrollElement()
-  if (!el) return
-  console.log('[Scroll] scrollToBottom called, scrollHeight:', el.scrollHeight, 'scrollTop:', el.scrollTop)
-  el.scrollTo({
-    top: el.scrollHeight,
-    behavior: smooth ? 'smooth' : 'instant',
-  })
-  isNearBottom.value = true
-  showScrollButton.value = false
-}
-
-watch(messageCount, async (newCount, oldCount) => {
-  console.log('[Scroll] messageCount changed:', oldCount, '->', newCount)
-  if (newCount > 0 && oldCount === 0) {
-    await nextTick()
-    await nextTick()
-    scrollToBottom(false)
-  }
-})
-
-onMounted(() => {
-  const el = getScrollElement()
-  if (el) {
-    console.log('[Scroll] onMounted: attaching scroll listener')
-    el.addEventListener('scroll', onScroll, { passive: true })
-  }
-})
-
-onUnmounted(() => {
-  const el = getScrollElement()
-  if (el) {
-    console.log('[Scroll] onUnmounted: removing scroll listener')
-    el.removeEventListener('scroll', onScroll)
-  }
-})
-
-watch(scrollAreaRef, (ref, oldRef) => {
-  if (oldRef?.$el) {
-    oldRef.$el.removeEventListener('scroll', onScroll)
-    console.log('[Scroll] watch scrollAreaRef: removed old listener')
-  }
-  if (ref?.$el) {
-    ref.$el.addEventListener('scroll', onScroll, { passive: true })
-    console.log('[Scroll] watch scrollAreaRef: attached new listener')
-  }
-})
-
-let inputBarHeight = 0
-let inputBarObserver: ResizeObserver | null = null
-
-watch(inputBarRef, (el, oldEl) => {
-  if (oldEl && inputBarObserver) {
-    inputBarObserver.disconnect()
-    inputBarObserver = null
-  }
-  if (el) {
-    inputBarHeight = el.offsetHeight
-    inputBarObserver = new ResizeObserver(async (entries) => {
-      const newHeight = entries[0]?.contentBoxSize?.[0]?.blockSize ?? el.offsetHeight
-      if (newHeight !== inputBarHeight) {
-        const wasAtBottom = isNearBottom.value
-        console.log('[Scroll] inputBar height changed:', inputBarHeight, '->', newHeight, 'wasAtBottom:', wasAtBottom)
-        inputBarHeight = newHeight
-        if (wasAtBottom) {
-          await nextTick()
-          scrollToBottom(false)
-        }
-      }
-    })
-    inputBarObserver.observe(el)
-  }
-})
-
-onUnmounted(() => {
-  if (inputBarObserver) {
-    inputBarObserver.disconnect()
-  }
+const chatStatus = computed(() => {
+  if (status.value === 'streaming') return 'streaming'
+  if (status.value === 'error') return 'error'
+  return 'ready'
 })
 </script>
 
@@ -479,203 +381,170 @@ onUnmounted(() => {
 
     <template #body>
       <div class="flex-1 flex flex-col min-h-0">
-        <!-- 消息区 -->
-        <div class="flex-1 relative min-h-0">
-          <div
-            v-if="messages.length === 0 && status === 'ready'"
-            class="flex items-center justify-center h-full text-muted text-sm px-4"
-          >
-            {{ t('chat.emptyState') }}
-          </div>
-
-          <UScrollArea
-            v-if="messages.length > 0"
-            ref="scrollAreaRef"
-            v-slot="{ item }"
-            :items="messages"
-            :virtualize="{
-              estimateSize: 80,
-              overscan: 200,
-            }"
-            class="h-full"
-            :ui="{ root: 'pt-(--ui-header-height)' }"
-          >
-          <div class="flex px-4 my-2" :class="item.role === 'user' ? 'justify-end' : 'justify-start'">
-            <div
-              class="max-w-[80%] rounded-lg px-4 py-2 text-sm"
-              :class="item.role === 'user'
-                ? 'bg-primary text-white'
-                : 'bg-default ring ring-default'"
-            >
-              <template v-if="item.role === 'user'">
-                <template v-if="editingId === item.id">
-                  <textarea
-                    v-model="editingText"
-                    class="w-full bg-transparent border border-default rounded p-1 text-sm resize-none"
-                    rows="3"
-                    @keydown.escape="cancelEdit"
-                  />
-                  <div class="flex gap-1 mt-1 justify-end">
-                    <UButton size="xs" variant="ghost" @click="cancelEdit">{{ t('chat.editCancel') }}</UButton>
-                    <UButton size="xs" @click="saveEdit(item)">{{ t('chat.editSave') }}</UButton>
-                  </div>
-                </template>
-                <template v-else>
-                  <div class="whitespace-pre-wrap">{{ item.content }}</div>
-                  <div class="flex justify-end mt-1">
-                    <button class="text-xs text-muted hover:text-default" @click="startEdit(item)">{{ t('chat.edit') }}</button>
-                  </div>
-                </template>
-              </template>
-
-              <template v-else>
-                <template v-if="item.blocks.length > 0">
-                  <template v-for="block in item.blocks" :key="block.id">
-                    <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted">
-                      <div class="bg-muted/50 rounded overflow-hidden">
-                        <div
-                          class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
-                          @click="toggleReasoning(block.id)"
-                        >
-                          <UIcon name="i-lucide-brain" class="size-3 text-primary" />
-                          <span v-if="isStreamingMessage(item) && isStreamingBlock(item, block) && !block.text" class="animate-pulse">{{ t('chat.thinking') }}</span>
-                          <span v-else>{{ t('chat.thinkingProcess') }}</span>
-                          <UIcon
-                            :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                            class="size-3 ml-auto"
-                          />
-                        </div>
-                        <div v-if="expandedReasoning.has(block.id) && block.text" class="px-2 pb-2 border-t border-muted">
-                          <div class="mt-1 whitespace-pre-wrap italic text-[11px] leading-relaxed">{{ block.text }}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <ChatComark
-                      v-else-if="block.type === 'text' && block.text"
-                      :markdown="block.text"
-                      :streaming="isStreamingMessage(item) && isStreamingBlock(item, block)"
-                      class="prose dark:prose-invert prose-sm max-w-none"
-                    />
-
-                    <div v-else-if="block.type === 'toolCall' && block.toolCall" class="mb-2 space-y-1">
-                      <div class="text-xs bg-muted/50 rounded overflow-hidden">
-                        <div
-                          class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
-                          @click="toggleToolCall(block.toolCall!.id)"
-                        >
-                          <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
-                          <span class="font-mono">{{ block.toolCall!.name || '...' }}</span>
-                          <span v-if="block.toolCall!.result" class="text-green-500">✓</span>
-                          <span v-else-if="block.toolCall!.name" class="text-muted animate-pulse">...</span>
-                          <UIcon
-                            :name="expandedToolCalls.has(block.toolCall!.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                            class="size-3 ml-auto"
-                          />
-                        </div>
-                        <div v-if="expandedToolCalls.has(block.toolCall!.id)" class="px-2 pb-2 border-t border-muted">
-                          <div v-if="block.toolCall!.args !== undefined" class="mt-1">
-                            <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
-                            <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.toolCall!.args) }}</pre>
-                          </div>
-                          <div v-if="block.toolCall!.result !== undefined" class="mt-1">
-                            <div class="text-muted font-medium mb-0.5">{{ t('chat.result') }}</div>
-                            <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(block.toolCall!.result) }}</pre>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      v-else-if="block.type === 'stopped' && block.stopped"
-                      class="mb-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 rounded-lg overflow-hidden"
-                    >
-                      <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                        <UIcon name="i-lucide-square" class="size-3" />
-                        <span>{{ t('chat.generationStopped') }}</span>
-                      </div>
-                      <div v-if="block.stopped.message" class="px-3 pb-2 text-xs text-amber-600 dark:text-amber-400">
-                        {{ block.stopped.message }}
-                      </div>
-                    </div>
-
-                    <div
-                      v-else-if="block.type === 'approval' && block.approval"
-                      class="mb-2 border rounded-lg overflow-hidden"
-                      :class="block.approval.severity === 'HIGH' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30'"
-                    >
-                      <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
-                        <span>🛡️</span>
-                        <span v-if="block.approval.status === 'pending'">{{ t('chat.waitingApproval') }}</span>
-                        <span v-else-if="block.approval.status === 'approved'">✅ {{ t('chat.approved') }}</span>
-                        <span v-else>❌ {{ t('chat.denied') }}</span>
-                        <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
-                          {{ block.approval.severity }}
-                        </span>
-                      </div>
-                      <div class="px-3 pb-2 text-xs space-y-1">
-                        <div class="flex items-center gap-1.5">
-                          <span class="text-muted">{{ t('chat.tool') }}:</span>
-                          <span class="font-mono">{{ block.approval.toolName }}</span>
-                        </div>
-                        <div v-if="block.approval.findingsSummary" class="text-muted">
-                          {{ block.approval.findingsSummary }}
-                        </div>
-                        <div v-if="block.approval.toolParams" class="mt-1">
-                          <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
-                          <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
-                        </div>
-                      </div>
-                      <div v-if="block.approval.status === 'pending'" class="px-3 pb-2 flex gap-2">
-                        <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(item, block, 'approve')">
-                          {{ t('chat.approve') }}
-                        </UButton>
-                        <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(item, block, 'deny')">
-                          {{ t('chat.deny') }}
-                        </UButton>
-                      </div>
-                    </div>
-                  </template>
-                </template>
-
-                <template v-else-if="isStreamingMessage(item)">
-                  <div class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
-                    <div class="flex items-center gap-1">
-                      <UIcon name="i-lucide-brain" class="size-3" />
-                      <span class="animate-pulse">{{ t('chat.thinking') }}</span>
-                    </div>
-                  </div>
-                </template>
-              </template>
-            </div>
-          </div>
-        </UScrollArea>
-
-        <!-- 滚动到底部按钮 - 浮动在消息区上方 -->
-        <Transition
-          enter-active-class="transition ease-out duration-200"
-          enter-from-class="opacity-0 translate-y-2"
-          enter-to-class="opacity-100 translate-y-0"
-          leave-active-class="transition ease-in duration-150"
-          leave-from-class="opacity-100 translate-y-0"
-          leave-to-class="opacity-0 translate-y-2"
+        <div
+          v-if="messages.length === 0 && status === 'ready'"
+          class="flex items-center justify-center h-full text-muted text-sm px-4"
         >
-          <div v-if="showScrollButton" class="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none z-10">
-            <UButton
-              icon="i-lucide-arrow-down"
-              color="neutral"
-              variant="outline"
-              size="sm"
-              class="shadow-lg rounded-full pointer-events-auto"
-              :aria-label="t('chat.scrollToBottom')"
-              @click="() => scrollToBottom()"
-            />
-          </div>
-        </Transition>
+          {{ t('chat.emptyState') }}
         </div>
 
+        <UChatMessages
+          :messages="chatMessages"
+          :status="chatStatus"
+          :should-scroll-to-bottom="true"
+          :should-auto-scroll="true"
+          class="flex-1 min-h-0 overflow-y-auto"
+          :ui="{ root: 'pt-(--ui-header-height) px-4 sm:px-8' }"
+          :user="{
+            variant: 'solid',
+            ui: { content: 'text-sm' },
+            actions: [
+              { icon: 'i-lucide-copy', variant: 'ghost', size: 'xs', onClick: (_e, msg) => copyMessageText(msg as any) }
+            ]
+          }"
+          :assistant="{
+            variant: 'soft',
+            ui: { content: 'text-sm' },
+            actions: [
+              { icon: 'i-lucide-copy', variant: 'ghost', size: 'xs', onClick: (_e, msg) => copyMessageText(msg) }
+            ]
+          }"
+        >
+          <template #content="{ message }">
+            <div v-if="message.role === 'user'" class="text-sm leading-relaxed">
+              <div class="whitespace-pre-wrap break-words">{{ (message as any).parts[0]?.text }}</div>
+            </div>
+
+            <template v-else>
+              <template v-if="(message as any).blocks?.length">
+                <template v-for="block in (message as any).blocks" :key="block.id">
+                  <!-- Reasoning block -->
+                  <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted">
+                    <div class="bg-muted/50 rounded overflow-hidden">
+                      <div
+                        class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
+                        @click="toggleReasoning(block.id)"
+                      >
+                        <UIcon name="i-lucide-brain" class="size-3 text-primary" />
+                        <span v-if="isStreamingMessage(message as any) && isStreamingBlock(message as any, block) && !block.text" class="animate-pulse">{{ t('chat.thinking') }}</span>
+                        <span v-else>{{ t('chat.thinkingProcess') }}</span>
+                        <UIcon
+                          :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                          class="size-3 ml-auto"
+                        />
+                      </div>
+                      <div v-if="expandedReasoning.has(block.id) && block.text" class="px-2 pb-2 border-t border-muted">
+                        <div class="mt-1 whitespace-pre-wrap italic text-[11px] leading-relaxed">{{ block.text }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Text block -->
+                  <ChatComark
+                    v-else-if="block.type === 'text' && block.text"
+                    :markdown="block.text"
+                    :streaming="isStreamingMessage(message as any) && isStreamingBlock(message as any, block)"
+                    class="prose dark:prose-invert prose-sm max-w-none"
+                  />
+
+                  <!-- Tool call block -->
+                  <div v-else-if="block.type === 'toolCall' && block.toolCall" class="mb-2 space-y-1">
+                    <div class="text-xs bg-muted/50 rounded overflow-hidden">
+                      <div
+                        class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
+                        @click="toggleToolCall(block.toolCall!.id)"
+                      >
+                        <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
+                        <span class="font-mono">{{ block.toolCall!.name || '...' }}</span>
+                        <span v-if="block.toolCall!.result" class="text-success">✓</span>
+                        <span v-else-if="block.toolCall!.name" class="text-muted animate-pulse">...</span>
+                        <UIcon
+                          :name="expandedToolCalls.has(block.toolCall!.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                          class="size-3 ml-auto"
+                        />
+                      </div>
+                      <div v-if="expandedToolCalls.has(block.toolCall!.id)" class="px-2 pb-2 border-t border-muted">
+                        <div v-if="block.toolCall!.args !== undefined" class="mt-1">
+                          <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
+                          <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.toolCall!.args) }}</pre>
+                        </div>
+                        <div v-if="block.toolCall!.result !== undefined" class="mt-1">
+                          <div class="text-muted font-medium mb-0.5">{{ t('chat.result') }}</div>
+                          <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(block.toolCall!.result) }}</pre>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Stopped block -->
+                  <div
+                    v-else-if="block.type === 'stopped' && block.stopped"
+                    class="mb-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 rounded-lg overflow-hidden"
+                  >
+                    <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                      <UIcon name="i-lucide-square" class="size-3" />
+                      <span>{{ t('chat.generationStopped') }}</span>
+                    </div>
+                    <div v-if="block.stopped.message" class="px-3 pb-2 text-xs text-amber-600 dark:text-amber-400">
+                      {{ block.stopped.message }}
+                    </div>
+                  </div>
+
+                  <!-- Approval block -->
+                  <div
+                    v-else-if="block.type === 'approval' && block.approval"
+                    class="mb-2 border rounded-lg overflow-hidden"
+                    :class="block.approval.severity === 'HIGH' ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30' : 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30'"
+                  >
+                    <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium">
+                      <span>🛡️</span>
+                      <span v-if="block.approval.status === 'pending'">{{ t('chat.waitingApproval') }}</span>
+                      <span v-else-if="block.approval.status === 'approved'">✅ {{ t('chat.approved') }}</span>
+                      <span v-else>❌ {{ t('chat.denied') }}</span>
+                      <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
+                        {{ block.approval.severity }}
+                      </span>
+                    </div>
+                    <div class="px-3 pb-2 text-xs space-y-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-muted">{{ t('chat.tool') }}:</span>
+                        <span class="font-mono">{{ block.approval.toolName }}</span>
+                      </div>
+                      <div v-if="block.approval.findingsSummary" class="text-muted">
+                        {{ block.approval.findingsSummary }}
+                      </div>
+                      <div v-if="block.approval.toolParams" class="mt-1">
+                        <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
+                        <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
+                      </div>
+                    </div>
+                    <div v-if="block.approval.status === 'pending'" class="px-3 pb-2 flex gap-2">
+                      <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(message as any, block, 'approve')">
+                        {{ t('chat.approve') }}
+                      </UButton>
+                      <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(message as any, block, 'deny')">
+                        {{ t('chat.deny') }}
+                      </UButton>
+                    </div>
+                  </div>
+                </template>
+              </template>
+
+              <!-- Streaming with no blocks yet -->
+              <template v-else-if="isStreamingMessage(message as any)">
+                <div class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
+                  <div class="flex items-center gap-1">
+                    <UIcon name="i-lucide-brain" class="size-3" />
+                    <span class="animate-pulse">{{ t('chat.thinking') }}</span>
+                  </div>
+                </div>
+              </template>
+            </template>
+          </template>
+        </UChatMessages>
+
         <!-- 底部输入栏 -->
-        <div ref="inputBarRef" class="border-t border-default bg-default/75 backdrop-blur p-4">
+        <div class="border-t border-default bg-default/75 backdrop-blur p-4">
           <div v-if="error" class="mb-2 text-xs text-error">{{ error.message }}</div>
           <UChatPrompt
             v-model="input"

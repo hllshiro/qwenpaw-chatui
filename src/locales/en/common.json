@@ -12,6 +12,7 @@
     "success": "Success",
     "copy": "Copy",
     "copied": "Copied",
+    "copyFailed": "Copy failed",
     "close": "Close",
     "back": "Back",
     "next": "Next",
