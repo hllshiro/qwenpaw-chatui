@@ -89,7 +89,7 @@ onUnmounted(() => {
         <span class="text-xs text-primary animate-pulse">{{ t('components.shortcutInput.pressShortcut') }}</span>
       </template>
       <template v-else-if="parsedKeys.length">
-        <UKbd
+      <UKbd
           v-for="(key, idx) in parsedKeys"
           :key="idx"
           :value="key"
