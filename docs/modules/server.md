@@ -1,241 +1,153 @@
-# 服务端模块
+# 服务端 API
 
-## 概述
+Nitro 作为 Vite 插件运行，路由文件位于 `server/routes/api/`，由 Nitro 自动注册。所有端点前缀为 `/api`。
 
-服务端模块基于 Nitro 框架构建，负责 API 路由处理、数据库访问、QwenPaw 后端代理等功能。作为前端与 QwenPaw 后端之间的中间层，提供统一的 API 接口和数据持久化。
+## 会话管理
 
-## 技术栈
+### GET /api/chats
 
-- Nitro (服务端框架)
-- Drizzle ORM (数据库 ORM)
-- SQLite (数据库)
-- ofetch (HTTP 客户端)
+获取会话列表，按 `updatedAt` 降序排列。
 
-## 目录结构
-
-```
-server/
-├── database/                     # 数据库相关
-│   ├── schema.ts                 # Drizzle 表结构定义
-│   └── migrations/               # 迁移文件
-│       ├── 0000_*.sql
-│       ├── 0001_*.sql
-│       ├── 0002_*.sql
-│       └── meta/                 # 迁移元数据
-├── plugins/
-│   └── migrations.ts             # 启动时自动执行迁移
-├── routes/api/                   # API 路由
-│   ├── chats.get.ts              # GET /api/chats
-│   ├── chats.post.ts             # POST /api/chats
-│   ├── chats/
-│   │   ├── spec.get.ts           # GET /api/chats/spec
-│   │   └── [id]/
-│   │       ├── index.get.ts      # GET /api/chats/:id
-│   │       ├── index.put.ts      # PUT /api/chats/:id
-│   │       ├── index.delete.ts   # DELETE /api/chats/:id
-│   │       ├── index.post.ts     # POST /api/chats/:id
-│   │       └── history.get.ts    # GET /api/chats/:id/history
-│   ├── approval/
-│   │   ├── approve.post.ts       # POST /api/approval/approve
-│   │   └── deny.post.ts          # POST /api/approval/deny
-│   ├── settings/
-│   │   ├── index.get.ts          # GET /api/settings
-│   │   ├── [key].put.ts          # PUT /api/settings/:key
-│   │   ├── export.get.ts         # GET /api/settings/export
-│   │   └── import.post.ts        # POST /api/settings/import
-│   └── config.get.ts             # GET /api/config
-└── utils/
-    ├── drizzle.ts                # 数据库单例
-    └── qwenpaw.ts                # QwenPaw 后端客户端
-```
-
-## API 路由
-
-### 会话管理
-
-| 方法 | 路径 | 说明 |
+| 参数 | 类型 | 说明 |
 |------|------|------|
-| GET | `/api/chats` | 获取会话列表，支持 `?business_key=` 过滤 |
-| POST | `/api/chats` | 创建新会话 |
-| GET | `/api/chats/spec` | 获取 QwenPaw 后端会话列表 |
-| GET | `/api/chats/:id` | 获取会话详情 |
-| PUT | `/api/chats/:id` | 更新会话（重命名） |
-| DELETE | `/api/chats/:id` | 删除会话 |
-| POST | `/api/chats/:id` | 发送消息（SSE 流） |
-| GET | `/api/chats/:id/history` | 获取聊天历史 |
+| `business_key` | query (可选) | 按业务键过滤会话 |
 
-### 审批操作
+返回：`Session[]`
 
-| 方法 | 路径 | 说明 |
+### POST /api/chats
+
+创建新会话。
+
+请求体：
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `business_key` | string | `'default'` | 业务键 |
+| `name` | string | `'新会话'` | 会话名称 |
+
+返回：新建的 `Session`
+
+### GET /api/chats/spec
+
+从 QwenPaw 后端获取聊天列表（代理转发）。
+
+| 参数 | 类型 | 说明 |
 |------|------|------|
-| POST | `/api/approval/approve` | 批准工具调用 |
-| POST | `/api/approval/deny` | 拒绝工具调用 |
+| `session_id` | query (可选) | 指定则返回匹配的单个 chat，否则返回全部 |
 
-### 配置管理
+返回：`Chat[]` 或 `Chat | null`
 
-| 方法 | 路径 | 说明 |
+### GET /api/chats/:id
+
+获取单个会话详情。
+
+返回：`Session`
+
+### PUT /api/chats/:id
+
+更新会话。修改 `name` 时会同步到 QwenPaw 后端。
+
+请求体：
+
+| 字段 | 类型 | 说明 |
 |------|------|------|
-| GET | `/api/settings` | 获取所有配置 |
-| PUT | `/api/settings/:key` | 更新配置项 |
-| GET | `/api/settings/export` | 导出配置 JSON |
-| POST | `/api/settings/import` | 导入配置 JSON |
-| GET | `/api/config` | 获取后端配置 |
+| `name` | string (可选) | 新名称（同步至后端） |
+| `business_key` | string (可选) | 新业务键 |
 
-## 核心工具函数
+返回：更新后的 `Session`
 
-### `utils/drizzle.ts`
+### DELETE /api/chats/:id
 
-数据库单例模块，导出：
-- `db` - Drizzle 数据库实例
-- `sql` - SQL 模板标签
-- `eq`, `and`, `or` - 查询操作符
-- `asc`, `desc` - 排序操作符
+删除会话，同时从 QwenPaw 后端删除对应聊天。
 
-```typescript
-import { db, sql, eq, and, or, asc, desc } from '~/server/utils/drizzle'
+返回：被删除的 `Session`
+
+### POST /api/chats/:id
+
+发送消息并获取 SSE 流式响应。请求体中的最后一条消息会被提取为文本内容，转发到 QwenPaw 后端的 `/api/console/chat` 端点。
+
+请求体格式（AI SDK Vue 兼容）：
+
+```json
+{
+  "messages": [
+    {
+      "parts": [{ "type": "text", "text": "用户输入" }],
+      "content": "备选格式",
+      "role": "user"
+    }
+  ]
+}
 ```
 
-### `utils/qwenpaw.ts`
+内容提取优先级：`parts[].text` > `content` > 直接字符串。
 
-QwenPaw 后端客户端，提供：
-- 会话同步（创建/重命名/删除）
-- 消息发送（SSE 流）
-- 历史获取
-- 审批操作
+返回：SSE 流（`text/event-stream`），直接透传 QwenPaw 后端响应。
 
-**主要函数：**
-```typescript
-syncSessionToBackend(session)     // 同步会话到后端
-deleteSessionFromBackend(id)      // 从后端删除会话
-sendMessage(sessionId, content)   // 发送消息，返回 SSE 流
-getHistory(sessionId)             // 获取聊天历史
-approveRequest(requestId)         // 批准请求
-denyRequest(requestId)            // 拒绝请求
+### GET /api/chats/:id/history
+
+从 QwenPaw 后端获取聊天历史。
+
+返回：`{ messages: Message[], status: 'running' | 'idle' }`
+
+## 审批
+
+### POST /api/approval/approve
+
+批准工具守卫请求，代理到 QwenPaw 后端。
+
+请求体：
+
+| 字段 | 类型 | 必需 | 说明 |
+|------|------|------|------|
+| `request_id` | string | 是 | 审批请求 ID |
+| `session_id` | string | 是 | 会话 ID |
+| `user_id` | string | 否 | 用户 ID |
+| `reason` | string | 否 | 批准原因 |
+
+### POST /api/approval/deny
+
+拒绝工具守卫请求，请求体格式同 approve。
+
+## 设置
+
+### GET /api/settings
+
+获取所有设置项，返回 `{ settings: Record<string, any> }`。值会被自动 JSON 反序列化。
+
+### PUT /api/settings/:key
+
+更新单个设置项（upsert）。
+
+请求体：`{ value: any }` — value 会被 JSON 序列化后存储。
+
+### GET /api/settings/export
+
+导出所有设置，返回 `{ settings, exportedAt, version }`。
+
+### POST /api/settings/import
+
+批量导入设置。
+
+请求体：`{ settings: Record<string, any> }` — 逐条 upsert，返回 `{ success: true, imported: number }`。
+
+## 配置
+
+### GET /api/config
+
+返回服务器公开配置：`{ qwenpawBackendUrl: string }`。
+
+## 数据流
+
+```
+前端 (src/)
+  ↓ HTTP / SSE
+Nitro (server/routes/api/)
+  ↓ fetch
+QwenPaw 后端 (localhost:8088)
 ```
 
-## 路由处理器
-
-### 文件命名规范
-
-Nitro 基于文件名自动注册路由：
-- `chats.get.ts` → `GET /api/chats`
-- `chats.post.ts` → `POST /api/chats`
-- `[id]/index.get.ts` → `GET /api/chats/:id`
-
-### 请求处理
-
-每个路由文件导出 `defineEventHandler` 函数：
-
-```typescript
-export default defineEventHandler(async (event) => {
-  // 获取查询参数
-  const query = getQuery(event)
-  
-  // 获取路由参数
-  const id = getRouterParam(event, 'id')
-  
-  // 获取请求体
-  const body = await readBody(event)
-  
-  // 返回响应
-  return { success: true }
-})
-```
-
-### SSE 流响应
-
-发送消息路由 (`chats/[id]/index.post.ts`) 返回 SSE 流：
-
-```typescript
-export default defineEventHandler(async (event) => {
-  setResponseHeaders(event, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive'
-  })
-  
-  // 获取 QwenPaw 后端 SSE 流
-  const stream = await sendMessage(sessionId, content)
-  
-  // 透传到前端
-  return stream
-})
-```
-
-## 插件系统
-
-### `plugins/migrations.ts`
-
-服务器启动时自动执行数据库迁移：
-1. 检查并创建数据库目录
-2. 执行待执行的迁移
-3. 确保数据库 schema 是最新的
-
-## 环境变量
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `QWENPAW_BACKEND_URL` | QwenPaw 后端地址 | `http://localhost:8088` |
-| `DATABASE_URL` | SQLite 数据库路径 | `file:.data/qwenpaw.db` |
-| `PORT` | 服务器端口 | `3000` |
-
-## 错误处理
-
-路由处理器中使用 `createError` 抛出 HTTP 错误：
-
-```typescript
-throw createError({
-  statusCode: 404,
-  message: '会话不存在'
-})
-```
-
-## 开发指南
-
-### 添加新路由
-
-1. 在 `server/routes/api/` 下创建文件
-2. 文件名格式：`[name].[method].ts`
-3. 导出 `defineEventHandler` 函数
-
-示例：
-```typescript
-// server/routes/api/health.get.ts
-export default defineEventHandler(() => {
-  return { status: 'ok' }
-})
-```
-
-### 添加新工具函数
-
-1. 在 `server/utils/` 下创建 `.ts` 文件
-2. 导出函数供路由使用
-3. 使用 `ofetch` 进行 HTTP 请求
-
-### 数据库操作
-
-使用 Drizzle ORM 进行数据库操作：
-
-```typescript
-import { db, eq } from '~/server/utils/drizzle'
-import { sessions } from '~/server/database/schema'
-
-// 查询
-const session = await db.select().from(sessions).where(eq(sessions.id, id))
-
-// 插入
-await db.insert(sessions).values({ id, name, businessKey })
-
-// 更新
-await db.update(sessions).set({ name }).where(eq(sessions.id, id))
-
-// 删除
-await db.delete(sessions).where(eq(sessions.id, id))
-```
-
-## 注意事项
-
-1. **路径别名** - 使用 `~` 代表项目根目录
-2. **自动导入** - Nitro 自动导入 `defineEventHandler`、`getQuery` 等
-3. **数据库单例** - 通过 `utils/drizzle.ts` 获取数据库实例
-4. **SSE 代理** - 流式响应直接透传，不做缓冲
+- 会话元数据存储在本地 SQLite（`server/database/schema.ts`）
+- 聊天消息存储在 QwenPaw 后端，本地不存储
+- `POST /api/chats/:id` 直接透传后端 SSE 流，Nitro 不解析内容
+- 审批和设置操作同时涉及本地数据库和 QwenPaw 后端
