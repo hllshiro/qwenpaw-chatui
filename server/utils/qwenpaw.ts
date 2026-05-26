@@ -34,3 +34,26 @@ export async function callQwenPawChat(
 
   return response
 }
+
+export async function stopQwenPawChat(
+  backendUrl: string,
+  chatId: string
+): Promise<boolean> {
+  const url = `${backendUrl}/api/console/chat/stop?chat_id=${encodeURIComponent(chatId)}`
+
+  console.log('[QwenPaw] Stop chat:', chatId)
+
+  const response = await fetch(url, {
+    method: 'POST'
+  })
+
+  console.log('[QwenPaw] Stop response status:', response.status)
+
+  if (!response.ok) {
+    console.error('[QwenPaw] Stop failed:', response.status)
+    return false
+  }
+
+  const result = await response.json().catch(() => ({ stopped: false }))
+  return result.stopped === true
+}

@@ -26,6 +26,7 @@
     "editing": "编辑中",
     "editCancel": "取消",
     "editSave": "保存",
-    "sessionActions": "会话操作"
+    "sessionActions": "会话操作",
+    "generationStopped": "生成已停止"
   }
 }

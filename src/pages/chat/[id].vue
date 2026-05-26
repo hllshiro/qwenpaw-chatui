@@ -473,6 +473,20 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                       </div>
                     </div>
 
+                    <!-- Stopped block -->
+                    <div
+                      v-else-if="block.type === 'stopped' && block.stopped"
+                      class="mb-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 rounded-lg overflow-hidden"
+                    >
+                      <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                        <UIcon name="i-lucide-square" class="size-3" />
+                        <span>{{ t('chat.generationStopped') }}</span>
+                      </div>
+                      <div v-if="block.stopped.message" class="px-3 pb-2 text-xs text-amber-600 dark:text-amber-400">
+                        {{ block.stopped.message }}
+                      </div>
+                    </div>
+
                     <!-- Approval block -->
                     <div
                       v-else-if="block.type === 'approval' && block.approval"

@@ -17,12 +17,17 @@ export interface ApprovalData {
   text?: string
 }
 
+export interface StoppedData {
+  message: string
+}
+
 export interface MessageBlock {
   id: string
-  type: 'reasoning' | 'text' | 'toolCall' | 'approval'
+  type: 'reasoning' | 'text' | 'toolCall' | 'approval' | 'stopped'
   text?: string
   toolCall?: ToolCall
   approval?: ApprovalData
+  stopped?: StoppedData
 }
 
 export interface ChatMessage {
@@ -73,6 +78,9 @@ export function useChat(sessionId: string) {
 
   const reasoningMsgIds = new Set<string>()
   const messageMsgIds = new Set<string>()
+
+  let abortController: AbortController | null = null
+  let stopRequested = false
 
   function generateBlockId(): string {
     return `blk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -171,13 +179,17 @@ export function useChat(sessionId: string) {
   }
 
   async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void) {
+    abortController = new AbortController()
+    stopRequested = false
+    
     try {
       const response = await fetch(`/api/chats/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [{ role: 'user', content: messageText }]
-        })
+        }),
+        signal: abortController.signal
       })
 
       if (!response.ok) {
@@ -193,6 +205,8 @@ export function useChat(sessionId: string) {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
+
+        if (abortController?.signal.aborted) break
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
@@ -213,7 +227,7 @@ export function useChat(sessionId: string) {
         }
       }
 
-      if (buffer) {
+      if (buffer && !abortController?.signal.aborted) {
         const trimmed = buffer.trim()
         if (trimmed.startsWith('data: ')) {
           const data = trimmed.slice(6)
@@ -227,10 +241,16 @@ export function useChat(sessionId: string) {
 
       clearPendingMessage(sessionId)
     } catch (err) {
-      error.value = err instanceof Error ? err : new Error(String(err))
-      status.value = 'error'
-      clearPendingMessage(sessionId)
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        clearPendingMessage(sessionId)
+      } else {
+        error.value = err instanceof Error ? err : new Error(String(err))
+        status.value = 'error'
+        clearPendingMessage(sessionId)
+      }
     } finally {
+      abortController = null
+      stopRequested = false
       if (status.value === 'streaming') {
         status.value = 'ready'
       }
@@ -263,6 +283,25 @@ export function useChat(sessionId: string) {
     // ── response lifecycle ─────────────────────────────────────────
     if (obj === 'response') {
       if (event.status === 'completed') {
+        if (stopRequested) {
+          stopRequested = false
+        }
+        status.value = 'ready'
+      } else if (event.status === 'failed') {
+        const errorData = (event as any).error
+        if (errorData?.code === 'AGENT_ERROR' && stopRequested) {
+          const msg = getOrCreateAssistantMessage()
+          const block: MessageBlock = {
+            id: generateBlockId(),
+            type: 'stopped',
+            stopped: {
+              message: errorData.message || 'Generation was stopped'
+            }
+          }
+          msg.blocks.push(block)
+          triggerRef(messages)
+          stopRequested = false
+        }
         status.value = 'ready'
       }
       return
@@ -413,7 +452,10 @@ export function useChat(sessionId: string) {
   }
 
   function stop() {
-    status.value = 'ready'
+    stopRequested = true
+    
+    fetch(`/api/chats/${sessionId}/stop`, { method: 'POST' })
+      .catch(err => console.error('[Chat] Failed to stop backend:', err))
   }
 
   function clearMessages() {
