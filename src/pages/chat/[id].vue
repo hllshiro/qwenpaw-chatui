@@ -245,6 +245,7 @@ const input = ref('')
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 const manuallyCollapsed = ref(new Set<string>())
+const autoExpandedBlock = ref<{ id: string; type: 'reasoning' | 'toolCall' } | null>(null)
 
 function toggleReasoning(blockId: string) {
   if (expandedReasoning.value.has(blockId)) {
@@ -266,6 +267,12 @@ function toggleToolCall(callId: string) {
   }
 }
 
+function getBlockId(block: MessageBlock): string | null {
+  if (block.type === 'reasoning') return block.id
+  if (block.type === 'toolCall' && block.toolCall) return block.toolCall.id
+  return null
+}
+
 // Track the active streaming block to detect new blocks
 const streamingBlockKey = computed(() => {
   if (status.value !== 'streaming') return null
@@ -285,18 +292,27 @@ watch(streamingBlockKey, (newKey, oldKey) => {
   const autoEC = getValue('general.behavior.autoExpandCollapse')
 
   if (autoEC) {
-    // Collapse all previous non-streaming blocks
-    for (const block of msg.blocks) {
-      if (block.id === currentBlock.id) continue
-      if (block.type === 'reasoning') expandedReasoning.value.delete(block.id)
-      if (block.type === 'toolCall' && block.toolCall) expandedToolCalls.value.delete(block.toolCall.id)
+    // Auto-collapse the previously auto-expanded block (it's no longer streaming)
+    if (autoExpandedBlock.value && autoExpandedBlock.value.id !== getBlockId(currentBlock)) {
+      if (autoExpandedBlock.value.type === 'reasoning') {
+        expandedReasoning.value.delete(autoExpandedBlock.value.id)
+      } else {
+        expandedToolCalls.value.delete(autoExpandedBlock.value.id)
+      }
+      autoExpandedBlock.value = null
     }
-    // Expand current block if not manually collapsed
-    if (currentBlock.type === 'reasoning' && !manuallyCollapsed.value.has(currentBlock.id)) {
-      expandedReasoning.value.add(currentBlock.id)
-    }
-    if (currentBlock.type === 'toolCall' && currentBlock.toolCall && !manuallyCollapsed.value.has(currentBlock.toolCall.id)) {
-      expandedToolCalls.value.add(currentBlock.toolCall.id)
+
+    // Auto-expand current block if not manually collapsed
+    const blockId = getBlockId(currentBlock)
+    if (blockId && !manuallyCollapsed.value.has(blockId)) {
+      if (currentBlock.type === 'reasoning') {
+        expandedReasoning.value.add(currentBlock.id)
+        autoExpandedBlock.value = { id: currentBlock.id, type: 'reasoning' }
+      }
+      if (currentBlock.type === 'toolCall' && currentBlock.toolCall) {
+        expandedToolCalls.value.add(currentBlock.toolCall.id)
+        autoExpandedBlock.value = { id: currentBlock.toolCall.id, type: 'toolCall' }
+      }
     }
   } else {
     // Individual settings
@@ -309,12 +325,16 @@ watch(streamingBlockKey, (newKey, oldKey) => {
   }
 })
 
-// Auto-collapse when streaming ends (autoExpandCollapse mode)
+// Auto-collapse the auto-expanded block when streaming ends
 watch(status, (newVal, oldVal) => {
   if (oldVal === 'streaming' && newVal === 'ready') {
-    if (getValue('general.behavior.autoExpandCollapse')) {
-      expandedReasoning.value.clear()
-      expandedToolCalls.value.clear()
+    if (getValue('general.behavior.autoExpandCollapse') && autoExpandedBlock.value) {
+      if (autoExpandedBlock.value.type === 'reasoning') {
+        expandedReasoning.value.delete(autoExpandedBlock.value.id)
+      } else {
+        expandedToolCalls.value.delete(autoExpandedBlock.value.id)
+      }
+      autoExpandedBlock.value = null
     }
     manuallyCollapsed.value.clear()
   }
