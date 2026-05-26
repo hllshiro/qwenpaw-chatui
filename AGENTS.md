@@ -81,6 +81,6 @@ QwenPaw 后端源码位于 `docs/QwenPaw`（从 `https://github.com/agentscope-a
 
 后端可以暂停响应并请求审批。当 `message(message)` 事件的 `metadata.message_type === 'tool_guard_approval'` 时，助手消息会获得一个 `approval` 对象，包含 `requestId`、`toolName`、`severity`、`findingsSummary` 和 `toolParams`。界面会渲染批准/拒绝按钮，调用 `/api/approval/approve` 和 `/api/approval/deny`。
 
-## 文档管理
+## 文档管理（必须执行）
 
-修改功能时必须同步更新文档。详见 `docs/CONTRIBUTING.md`。
+每次修改代码后，必须先阅读 `docs/CONTRIBUTING.md`，然后严格按照其中的流程和验证清单完成文档更新。
