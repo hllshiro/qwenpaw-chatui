@@ -3,6 +3,13 @@
     "navbar": {
       "newSession": "新建会话"
     },
+    "search": {
+      "title": "搜索会话",
+      "placeholder": "输入会话名称搜索...",
+      "noResults": "未找到匹配的会话",
+      "searchButton": "搜索会话",
+      "shortcut": "搜索"
+    },
     "settings": {
       "brandName": "QwenPaw"
     },

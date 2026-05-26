@@ -5,6 +5,7 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
+import SearchModal from '../components/SearchModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -18,6 +19,7 @@ onMounted(() => {
 
 const sidebarOpen = ref(false)
 const settingsOpen = ref(false)
+const searchOpen = ref(false)
 const renamingId = ref<string | null>(null)
 const renameInput = ref('')
 const deletingId = ref<string | null>(null)
@@ -105,6 +107,9 @@ function cancelDelete() {
 defineShortcuts({
   meta_o: () => {
     router.push('/')
+  },
+  meta_k: () => {
+    searchOpen.value = true
   }
 })
 </script>
@@ -164,6 +169,17 @@ defineShortcuts({
             </div>
           </template>
         </UNavigationMenu>
+
+        <UButton
+          v-if="!collapsed"
+          :label="t('components.search.searchButton')"
+          icon="i-lucide-search"
+          color="neutral"
+          variant="outline"
+          class="w-full"
+          kbds="['meta', 'k']"
+          @click="searchOpen = true"
+        />
 
         <UNavigationMenu
           v-if="!collapsed"
@@ -263,4 +279,6 @@ defineShortcuts({
   </UModal>
 
   <SettingsModal v-model:open="settingsOpen" />
+
+  <SearchModal v-model:open="searchOpen" />
 </template>

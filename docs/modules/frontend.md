@@ -24,6 +24,7 @@ src/
 │   ├── chat/Comark.ts            # Markdown 渲染组件
 │   ├── IconPicker.vue            # 图标选择器
 │   ├── Navbar.vue                # 顶部导航栏
+│   ├── SearchModal.vue           # 会话搜索弹窗
 │   ├── SettingItem.vue           # 设置项组件
 │   ├── SettingsModal.vue         # 设置弹窗
 │   └── ShortcutInput.vue         # 快捷键输入组件
@@ -53,11 +54,11 @@ src/
 #### `layouts/default.vue`
 
 默认布局采用 Dashboard 风格，包含：
-- 可折叠侧边栏（会话列表）
+- 可折叠侧边栏（会话列表 + 搜索按钮）
 - 顶部导航栏
 - 内容区域
 
-支持响应式设计，移动端自动适配。
+支持响应式设计，移动端自动适配。侧边栏包含搜索按钮，点击后弹出会话搜索弹窗（Cmd/Ctrl + K）。
 
 ### 页面组件
 
@@ -93,6 +94,15 @@ src/
 - 主题切换（亮色/暗色/系统）
 - 配置项管理
 - 设置导入导出
+
+#### `components/SearchModal.vue`
+
+会话搜索弹窗，提供：
+- 按标题关键词搜索会话（大小写不敏感）
+- 实时过滤搜索结果
+- 显示会话最后更新时间
+- 点击搜索结果跳转到对应会话
+- 快捷键 Cmd/Ctrl + K 打开
 
 #### `components/chat/Comark.ts`
 

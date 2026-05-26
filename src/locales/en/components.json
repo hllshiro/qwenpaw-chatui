@@ -3,6 +3,13 @@
     "navbar": {
       "newSession": "New Session"
     },
+    "search": {
+      "title": "Search Sessions",
+      "placeholder": "Search by session name...",
+      "noResults": "No matching sessions found",
+      "searchButton": "Search Sessions",
+      "shortcut": "Search"
+    },
     "settings": {
       "brandName": "QwenPaw"
     },
