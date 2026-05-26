@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -73,7 +73,6 @@ onMounted(async () => {
 })
 
 function loadHistoryMessages(historyMessages: any[]) {
-  // Group consecutive non-user messages into single turns (matches official convertMessages)
   const turns: any[][] = []
   let i = 0
   while (i < historyMessages.length) {
@@ -103,12 +102,10 @@ function loadHistoryMessages(historyMessages: any[]) {
       }
     }
 
-    // Build blocks in order of appearance (preserves backend message order)
     const blocks: MessageBlock[] = []
     const seenApprovalRequestIds = new Set<string>()
 
     for (const msg of msgs) {
-      // Reasoning
       if (msg.type === 'reasoning') {
         const text = extractContent(msg.content)
         if (text) {
@@ -121,7 +118,6 @@ function loadHistoryMessages(historyMessages: any[]) {
         continue
       }
 
-      // Assistant message text (exclude approval messages)
       if (msg.type === 'message' && msg.role === 'assistant'
         && msg.metadata?.message_type !== 'tool_guard_approval') {
         const text = extractContent(msg.content)
@@ -135,14 +131,12 @@ function loadHistoryMessages(historyMessages: any[]) {
         continue
       }
 
-      // Plugin call (tool call request)
       if (msg.type === 'plugin_call') {
         const dataPart = Array.isArray(msg.content)
           ? msg.content.find((p: any) => p.type === 'data')
           : null
         const data = dataPart?.data || {}
 
-        // Find matching output
         const outputMsg = msgs.find((om: any) => {
           if (om.type !== 'plugin_call_output') return false
           const outData = Array.isArray(om.content)
@@ -167,7 +161,6 @@ function loadHistoryMessages(historyMessages: any[]) {
         continue
       }
 
-      // Approval message
       if (msg.metadata?.message_type === 'tool_guard_approval') {
         const meta = msg.metadata
         const requestId = meta?.approval_request_id || ''
@@ -356,6 +349,115 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
     approvalLoadingIds.value.delete(block.approval!.requestId)
   }
 }
+
+const scrollAreaRef = ref<InstanceType<any> | null>(null)
+const inputBarRef = ref<HTMLElement | null>(null)
+const showScrollButton = ref(false)
+const isNearBottom = ref(true)
+
+const NEAR_BOTTOM_THRESHOLD = 100
+const messageCount = computed(() => messages.value.length)
+
+function getScrollElement(): HTMLElement | null {
+  return scrollAreaRef.value?.$el ?? null
+}
+
+function checkScrollPosition() {
+  const el = getScrollElement()
+  if (!el) return
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  const wasNearBottom = isNearBottom.value
+  isNearBottom.value = distanceFromBottom <= NEAR_BOTTOM_THRESHOLD
+  showScrollButton.value = !isNearBottom.value
+  if (wasNearBottom !== isNearBottom.value) {
+    console.log('[Scroll] nearBottom changed:', isNearBottom.value, 'dist:', distanceFromBottom)
+  }
+}
+
+function onScroll() {
+  checkScrollPosition()
+}
+
+async function scrollToBottom(smooth = true) {
+  await nextTick()
+  const el = getScrollElement()
+  if (!el) return
+  console.log('[Scroll] scrollToBottom called, scrollHeight:', el.scrollHeight, 'scrollTop:', el.scrollTop)
+  el.scrollTo({
+    top: el.scrollHeight,
+    behavior: smooth ? 'smooth' : 'instant',
+  })
+  isNearBottom.value = true
+  showScrollButton.value = false
+}
+
+watch(messageCount, async (newCount, oldCount) => {
+  console.log('[Scroll] messageCount changed:', oldCount, '->', newCount)
+  if (newCount > 0 && oldCount === 0) {
+    await nextTick()
+    await nextTick()
+    scrollToBottom(false)
+  }
+})
+
+onMounted(() => {
+  const el = getScrollElement()
+  if (el) {
+    console.log('[Scroll] onMounted: attaching scroll listener')
+    el.addEventListener('scroll', onScroll, { passive: true })
+  }
+})
+
+onUnmounted(() => {
+  const el = getScrollElement()
+  if (el) {
+    console.log('[Scroll] onUnmounted: removing scroll listener')
+    el.removeEventListener('scroll', onScroll)
+  }
+})
+
+watch(scrollAreaRef, (ref, oldRef) => {
+  if (oldRef?.$el) {
+    oldRef.$el.removeEventListener('scroll', onScroll)
+    console.log('[Scroll] watch scrollAreaRef: removed old listener')
+  }
+  if (ref?.$el) {
+    ref.$el.addEventListener('scroll', onScroll, { passive: true })
+    console.log('[Scroll] watch scrollAreaRef: attached new listener')
+  }
+})
+
+let inputBarHeight = 0
+let inputBarObserver: ResizeObserver | null = null
+
+watch(inputBarRef, (el, oldEl) => {
+  if (oldEl && inputBarObserver) {
+    inputBarObserver.disconnect()
+    inputBarObserver = null
+  }
+  if (el) {
+    inputBarHeight = el.offsetHeight
+    inputBarObserver = new ResizeObserver(async (entries) => {
+      const newHeight = entries[0]?.contentBoxSize?.[0]?.blockSize ?? el.offsetHeight
+      if (newHeight !== inputBarHeight) {
+        const wasAtBottom = isNearBottom.value
+        console.log('[Scroll] inputBar height changed:', inputBarHeight, '->', newHeight, 'wasAtBottom:', wasAtBottom)
+        inputBarHeight = newHeight
+        if (wasAtBottom) {
+          await nextTick()
+          scrollToBottom(false)
+        }
+      }
+    })
+    inputBarObserver.observe(el)
+  }
+})
+
+onUnmounted(() => {
+  if (inputBarObserver) {
+    inputBarObserver.disconnect()
+  }
+})
 </script>
 
 <template>
@@ -363,7 +465,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
     v-if="sessionData?.id"
     id="chat"
     class="relative min-h-0"
-    :ui="{ body: 'p-0 sm:p-0 overscroll-none' }"
+    :ui="{ body: 'p-0 sm:p-0 overflow-hidden' }"
   >
     <template #header>
       <Navbar>
@@ -376,22 +478,37 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
     </template>
 
     <template #body>
-      <UContainer class="flex-1 flex flex-col gap-4 sm:gap-6">
-        <div class="flex-1 overflow-y-auto pt-(--ui-header-height) pb-4 sm:pb-6 space-y-4 px-4">
-          <div v-if="messages.length === 0 && status === 'ready'" class="flex items-center justify-center h-full text-muted text-sm">
+      <div class="flex-1 flex flex-col min-h-0">
+        <!-- 消息区 -->
+        <div class="flex-1 relative min-h-0">
+          <div
+            v-if="messages.length === 0 && status === 'ready'"
+            class="flex items-center justify-center h-full text-muted text-sm px-4"
+          >
             {{ t('chat.emptyState') }}
           </div>
 
-          <div v-for="msg in messages" :key="msg.id" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+          <UScrollArea
+            v-if="messages.length > 0"
+            ref="scrollAreaRef"
+            v-slot="{ item }"
+            :items="messages"
+            :virtualize="{
+              estimateSize: 80,
+              overscan: 200,
+            }"
+            class="h-full"
+            :ui="{ root: 'pt-(--ui-header-height)' }"
+          >
+          <div class="flex px-4 my-2" :class="item.role === 'user' ? 'justify-end' : 'justify-start'">
             <div
               class="max-w-[80%] rounded-lg px-4 py-2 text-sm"
-              :class="msg.role === 'user'
+              :class="item.role === 'user'
                 ? 'bg-primary text-white'
                 : 'bg-default ring ring-default'"
             >
-              <!-- User message content -->
-              <template v-if="msg.role === 'user'">
-                <template v-if="editingId === msg.id">
+              <template v-if="item.role === 'user'">
+                <template v-if="editingId === item.id">
                   <textarea
                     v-model="editingText"
                     class="w-full bg-transparent border border-default rounded p-1 text-sm resize-none"
@@ -400,22 +517,20 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                   />
                   <div class="flex gap-1 mt-1 justify-end">
                     <UButton size="xs" variant="ghost" @click="cancelEdit">{{ t('chat.editCancel') }}</UButton>
-                    <UButton size="xs" @click="saveEdit(msg)">{{ t('chat.editSave') }}</UButton>
+                    <UButton size="xs" @click="saveEdit(item)">{{ t('chat.editSave') }}</UButton>
                   </div>
                 </template>
                 <template v-else>
-                  <div class="whitespace-pre-wrap">{{ msg.content }}</div>
+                  <div class="whitespace-pre-wrap">{{ item.content }}</div>
                   <div class="flex justify-end mt-1">
-                    <button class="text-xs text-muted hover:text-default" @click="startEdit(msg)">{{ t('chat.edit') }}</button>
+                    <button class="text-xs text-muted hover:text-default" @click="startEdit(item)">{{ t('chat.edit') }}</button>
                   </div>
                 </template>
               </template>
 
-              <!-- Assistant message: render blocks in order -->
               <template v-else>
-                <template v-if="msg.blocks.length > 0">
-                  <template v-for="block in msg.blocks" :key="block.id">
-                    <!-- Reasoning block -->
+                <template v-if="item.blocks.length > 0">
+                  <template v-for="block in item.blocks" :key="block.id">
                     <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted">
                       <div class="bg-muted/50 rounded overflow-hidden">
                         <div
@@ -423,7 +538,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                           @click="toggleReasoning(block.id)"
                         >
                           <UIcon name="i-lucide-brain" class="size-3 text-primary" />
-                          <span v-if="isStreamingBlock(msg, block) && !block.text" class="animate-pulse">{{ t('chat.thinking') }}</span>
+                          <span v-if="isStreamingMessage(item) && isStreamingBlock(item, block) && !block.text" class="animate-pulse">{{ t('chat.thinking') }}</span>
                           <span v-else>{{ t('chat.thinkingProcess') }}</span>
                           <UIcon
                             :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
@@ -436,15 +551,13 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                       </div>
                     </div>
 
-                    <!-- Text block -->
                     <ChatComark
                       v-else-if="block.type === 'text' && block.text"
                       :markdown="block.text"
-                      :streaming="isStreamingBlock(msg, block)"
+                      :streaming="isStreamingMessage(item) && isStreamingBlock(item, block)"
                       class="prose dark:prose-invert prose-sm max-w-none"
                     />
 
-                    <!-- Tool call block -->
                     <div v-else-if="block.type === 'toolCall' && block.toolCall" class="mb-2 space-y-1">
                       <div class="text-xs bg-muted/50 rounded overflow-hidden">
                         <div
@@ -473,7 +586,6 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                       </div>
                     </div>
 
-                    <!-- Stopped block -->
                     <div
                       v-else-if="block.type === 'stopped' && block.stopped"
                       class="mb-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 rounded-lg overflow-hidden"
@@ -487,7 +599,6 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                       </div>
                     </div>
 
-                    <!-- Approval block -->
                     <div
                       v-else-if="block.type === 'approval' && block.approval"
                       class="mb-2 border rounded-lg overflow-hidden"
@@ -516,10 +627,10 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                         </div>
                       </div>
                       <div v-if="block.approval.status === 'pending'" class="px-3 pb-2 flex gap-2">
-                        <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'approve')">
+                        <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(item, block, 'approve')">
                           {{ t('chat.approve') }}
                         </UButton>
-                        <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(msg, block, 'deny')">
+                        <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(item, block, 'deny')">
                           {{ t('chat.deny') }}
                         </UButton>
                       </div>
@@ -527,8 +638,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
                   </template>
                 </template>
 
-                <!-- Fallback: streaming message with no blocks yet -->
-                <template v-else-if="isStreamingMessage(msg)">
+                <template v-else-if="isStreamingMessage(item)">
                   <div class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
                     <div class="flex items-center gap-1">
                       <UIcon name="i-lucide-brain" class="size-3" />
@@ -539,10 +649,33 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
               </template>
             </div>
           </div>
+        </UScrollArea>
+
+        <!-- 滚动到底部按钮 - 浮动在消息区上方 -->
+        <Transition
+          enter-active-class="transition ease-out duration-200"
+          enter-from-class="opacity-0 translate-y-2"
+          enter-to-class="opacity-100 translate-y-0"
+          leave-active-class="transition ease-in duration-150"
+          leave-from-class="opacity-100 translate-y-0"
+          leave-to-class="opacity-0 translate-y-2"
+        >
+          <div v-if="showScrollButton" class="absolute bottom-2 left-0 right-0 flex justify-center pointer-events-none z-10">
+            <UButton
+              icon="i-lucide-arrow-down"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              class="shadow-lg rounded-full pointer-events-auto"
+              :aria-label="t('chat.scrollToBottom')"
+              @click="() => scrollToBottom()"
+            />
+          </div>
+        </Transition>
         </div>
 
-        <!-- Input -->
-        <div class="sticky bottom-0 z-10 bg-default/75 backdrop-blur border-t border-default p-4">
+        <!-- 底部输入栏 -->
+        <div ref="inputBarRef" class="border-t border-default bg-default/75 backdrop-blur p-4">
           <div v-if="error" class="mb-2 text-xs text-error">{{ error.message }}</div>
           <UChatPrompt
             v-model="input"
@@ -565,7 +698,7 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
             </template>
           </UChatPrompt>
         </div>
-      </UContainer>
+      </div>
     </template>
   </UDashboardPanel>
 

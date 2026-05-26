@@ -27,6 +27,7 @@
     "editCancel": "Cancel",
     "editSave": "Save",
     "sessionActions": "Session Actions",
-    "generationStopped": "Generation Stopped"
+    "generationStopped": "Generation Stopped",
+    "scrollToBottom": "Scroll to bottom"
   }
 }
