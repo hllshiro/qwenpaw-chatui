@@ -84,6 +84,28 @@ QwenPaw 后端源码位于 `docs/QwenPaw`（从 `https://github.com/agentscope-a
 
 后端可以暂停响应并请求审批。当 `message(message)` 事件的 `metadata.message_type === 'tool_guard_approval'` 时，助手消息会获得一个 `approval` 对象，包含 `requestId`、`toolName`、`severity`、`findingsSummary` 和 `toolParams`。界面会渲染批准/拒绝按钮，调用 `/api/approval/approve` 和 `/api/approval/deny`。
 
+## Nuxt UI 参考文档
+
+本项目使用 Nuxt UI 作为组件库。开发涉及 Nuxt UI 组件时，参考以下官方文档获取最新 API 和用法：
+
+- **组件速查**：`https://ui.nuxt.com/llms.txt` — 包含所有组件列表和简介，用于快速查找组件名称和文档链接
+- **完整文档**：`https://ui.nuxt.com/llms-full.txt` — 包含安装指南、配置选项、所有组件的详细文档（含代码示例）
+
+**使用场景**：
+- 使用或修改 Nuxt UI 组件（`UButton`、`UModal`、`UChatMessages` 等）时，查阅对应组件文档确认 props、slots、events
+- 修改主题配置（`vite.config.ts` 中的 `ui` 选项）时，查阅安装文档的 Options 部分
+- 使用 Composables（`useToast`、`useOverlay` 等）时，查阅 Composables 部分
+- 不确定组件是否支持某个功能时，先查文档确认，避免自行实现已有功能
+
+**本项目使用的 Nuxt UI 核心组件**：
+- `UChatMessages` / `UChatPrompt` / `UChatPromptSubmit` — 聊天界面
+- `UDashboardGroup` / `UDashboardSidebar` / `UDashboardPanel` / `UDashboardNavbar` — 仪表盘布局
+- `UNavigationMenu` / `UButton` / `UInput` / `USelect` / `USwitch` — 通用 UI
+- `UModal` / `UPopover` / `UDropdownMenu` — 弹层组件
+- `UApp` — 全局配置包装器（必需，Toast/Tooltip 依赖）
+- `UColorModeButton` — 暗色模式切换
+- `UError` — 错误页面
+
 ## 文档管理（必须执行）
 
 每次修改代码后，必须先阅读 `docs/CONTRIBUTING.md`，然后严格按照其中的流程和验证清单完成文档更新。
