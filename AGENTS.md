@@ -1,6 +1,6 @@
 # AGENTS.md — qwenpaw-chatui
 
-> **Generated:** 2026-05-26 | **Commit:** `4a121c0` | **Branch:** `master`
+> **Generated:** 2026-05-27 | **Commit:** `d1cb79b` | **Branch:** `master`
 
 ## 项目简介
 
