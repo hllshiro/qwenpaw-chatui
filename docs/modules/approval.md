@@ -151,12 +151,14 @@ Content-Type: application/json
 ### approve.post.ts
 
 ```typescript
+import { config } from '../../../config'
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { requestId } = body
   
   // 转发到 QwenPaw 后端
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
   await ofetch(`${backendUrl}/api/approval/approve`, {
     method: 'POST',
     body: { request_id: requestId }
@@ -169,12 +171,14 @@ export default defineEventHandler(async (event) => {
 ### deny.post.ts
 
 ```typescript
+import { config } from '../../../config'
+
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { requestId } = body
   
   // 转发到 QwenPaw 后端
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
   await ofetch(`${backendUrl}/api/approval/deny`, {
     method: 'POST',
     body: { request_id: requestId }

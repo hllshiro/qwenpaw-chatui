@@ -76,6 +76,8 @@ export default defineConfig({
 })
 ```
 
+> **注意：** `drizzle.config.ts` 由 Drizzle CLI 独立运行，不经过 Nitro 自动导入，因此此处仍直接使用 `process.env`。
+
 ### 环境变量
 
 | 变量 | 说明 | 默认值 |
@@ -87,17 +89,12 @@ export default defineConfig({
 
 ## 数据库单例
 
-`server/utils/drizzle.ts` 提供数据库单例实例：
+`server/utils/drizzle.ts` 提供数据库单例实例，通过 `server/config.ts` 读取配置：
 
 ```typescript
-import { drizzle } from 'drizzle-orm/libsql'
-import { createClient } from '@libsql/client'
+import { config } from '../config'
 
-const client = createClient({
-  url: process.env.DATABASE_URL || 'file:.data/qwenpaw.db'
-})
-
-export const db = drizzle(client)
+// 内部使用 config.databaseUrl
 ```
 
 **导出内容：**

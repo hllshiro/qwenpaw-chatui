@@ -1,6 +1,7 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam, readBody } from 'nitro/h3'
 import { useDrizzle, tables, eq, and } from '../../../../utils/drizzle'
+import { config } from '../../../../config'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -10,7 +11,7 @@ export default defineHandler(async (event) => {
 
   const body = await readBody(event)
   const db = useDrizzle()
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
 
   const updateData: Record<string, unknown> = {
     updatedAt: new Date()

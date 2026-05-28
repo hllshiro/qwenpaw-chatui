@@ -1,9 +1,10 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { readBody } from 'nitro/h3'
+import { config } from '../../../config'
 
 export default defineHandler(async (event) => {
   const body = await readBody(event)
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
 
   const { request_id, session_id, user_id, reason } = body || {}
   if (!request_id || !session_id) {

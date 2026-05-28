@@ -1,10 +1,11 @@
 import { defineHandler } from 'nitro'
 import { getQuery } from 'nitro/h3'
+import { config } from '../../../config'
 
 export default defineHandler(async (event) => {
   const query = getQuery(event)
   const sessionId = query.session_id as string | undefined
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
 
   try {
     // Fetch all chats from QwenPaw backend

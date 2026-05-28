@@ -1,7 +1,8 @@
 import { defineHandler } from 'nitro'
+import { config } from '../../../config'
 
 export default defineHandler(() => {
   return {
-    qwenpawBackendUrl: process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+    qwenpawBackendUrl: config.qwenpawBackendUrl
   }
 })

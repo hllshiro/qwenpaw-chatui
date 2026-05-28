@@ -274,9 +274,11 @@ export default defineEventHandler(async (event) => {
 创建、更新、删除操作都会同步到 QwenPaw 后端：
 
 ```typescript
+import { config } from '../../../config'
+
 // 同步会话到后端
 export async function syncSessionToBackend(session: Session) {
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
   await ofetch(`${backendUrl}/api/sessions/${session.id}`, {
     method: 'PUT',
     body: { name: session.name }
@@ -285,7 +287,7 @@ export async function syncSessionToBackend(session: Session) {
 
 // 从后端删除会话
 export async function deleteSessionFromBackend(sessionId: string) {
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
   await ofetch(`${backendUrl}/api/sessions/${sessionId}`, {
     method: 'DELETE'
   })

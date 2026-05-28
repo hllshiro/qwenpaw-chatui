@@ -247,8 +247,10 @@ export default defineEventHandler(async (event) => {
 ### qwenpaw.ts 客户端
 
 ```typescript
+import { config } from '../../../config'
+
 export async function sendMessage(sessionId: string, content: string) {
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
   
   return fetch(`${backendUrl}/api/chat`, {
     method: 'POST',

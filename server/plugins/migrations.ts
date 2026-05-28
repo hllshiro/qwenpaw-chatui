@@ -5,6 +5,7 @@ import { drizzle } from 'drizzle-orm/libsql'
 import { createClient } from '@libsql/client'
 import { sql } from 'drizzle-orm'
 import * as schema from '../database/schema'
+import { config } from '../config'
 
 const migrations = [
   {
@@ -40,7 +41,7 @@ CREATE UNIQUE INDEX \`idx_settings_key\` ON \`settings\` (\`key\`);`
 ]
 
 export default definePlugin(() => {
-  const dbUrl = process.env.DATABASE_URL || 'file:.data/qwenpaw.db'
+  const dbUrl = config.databaseUrl
   const filePath = dbUrl.replace('file:', '')
 
   // Create database directory if needed

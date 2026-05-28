@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/libsql'
 import { createClient } from '@libsql/client'
 
 import * as schema from '../database/schema'
+import { config } from '../config'
 
 export { sql, eq, and, or, asc, desc } from 'drizzle-orm'
 
@@ -12,7 +13,7 @@ let _db: ReturnType<typeof drizzle<typeof schema>>
 export function useDrizzle() {
   if (!_db) {
     _db = drizzle(createClient({
-      url: process.env.DATABASE_URL || 'file:.data/qwenpaw.db'
+      url: config.databaseUrl
     }), { schema })
   }
   return _db

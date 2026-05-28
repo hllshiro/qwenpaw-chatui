@@ -2,6 +2,7 @@ import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam } from 'nitro/h3'
 import { stopQwenPawChat } from '../../../../utils/qwenpaw'
 import { useDrizzle, tables, eq } from '../../../../utils/drizzle'
+import { config } from '../../../../config'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -9,7 +10,7 @@ export default defineHandler(async (event) => {
     throw new HTTPError({ statusCode: 400, statusMessage: 'Missing session id' })
   }
 
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
 
   const db = useDrizzle()
 

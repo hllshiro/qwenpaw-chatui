@@ -1,6 +1,7 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam } from 'nitro/h3'
 import { useDrizzle, tables, eq } from '../../../../utils/drizzle'
+import { config } from '../../../../config'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')
@@ -11,7 +12,7 @@ export default defineHandler(async (event) => {
   const db = useDrizzle()
 
   // Delete from QwenPaw backend
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
   try {
     const listResponse = await fetch(`${backendUrl}/api/chats`, {
       method: 'GET',
