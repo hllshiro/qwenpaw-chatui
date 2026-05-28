@@ -73,8 +73,13 @@ function formatDate(dateString: string): string {
   >
     <template #header>
       <div class="flex items-center gap-2 px-4 pt-4">
-        <UIcon name="i-lucide-search" class="w-5 h-5" />
-        <h2 class="text-lg font-semibold">{{ t('components.search.title') }}</h2>
+        <UIcon
+          name="i-lucide-search"
+          class="w-5 h-5"
+        />
+        <h2 class="text-lg font-semibold">
+          {{ t('components.search.title') }}
+        </h2>
       </div>
     </template>
 
@@ -91,18 +96,27 @@ function formatDate(dateString: string): string {
       </div>
 
       <div class="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
-        <div v-if="filteredSessions.length === 0" class="text-center py-8 text-muted">
+        <div
+          v-if="filteredSessions.length === 0"
+          class="text-center py-8 text-muted"
+        >
           {{ t('components.search.noResults') }}
         </div>
 
-        <div v-else class="space-y-1">
+        <div
+          v-else
+          class="space-y-1"
+        >
           <button
             v-for="session in filteredSessions"
             :key="session.id"
             class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-elevated transition-colors cursor-pointer"
             @click="selectSession(session.id)"
           >
-            <UIcon name="i-lucide-message-circle" class="w-4 h-4 text-muted shrink-0" />
+            <UIcon
+              name="i-lucide-message-circle"
+              class="w-4 h-4 text-muted shrink-0"
+            />
             <div class="flex-1 min-w-0">
               <div class="text-sm font-medium text-default truncate">
                 {{ session.name || t('chat.newSession') }}

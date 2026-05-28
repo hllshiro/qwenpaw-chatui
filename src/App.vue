@@ -66,7 +66,10 @@ watch(
 
 <template>
   <Suspense>
-    <UApp :locale="uiLocale" :toaster="{ position: 'top-right' }">
+    <UApp
+      :locale="uiLocale"
+      :toaster="{ position: 'top-right' }"
+    >
       <RouterView />
     </UApp>
   </Suspense>

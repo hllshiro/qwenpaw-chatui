@@ -25,7 +25,10 @@ const emit = defineEmits<{
       <label class="text-sm font-medium text-default">
         {{ item.labelKey ? t(item.labelKey) : item.label }}
       </label>
-      <p v-if="item.description" class="text-xs text-muted mt-0.5">
+      <p
+        v-if="item.description"
+        class="text-xs text-muted mt-0.5"
+      >
         {{ item.descriptionKey ? t(item.descriptionKey) : item.description }}
       </p>
     </div>

@@ -73,12 +73,23 @@ function handleUpload() {
 </script>
 
 <template>
-  <UPopover v-model:open="open" :content="{ align: 'end' }">
+  <UPopover
+    v-model:open="open"
+    :content="{ align: 'end' }"
+  >
     <div
       class="w-8 h-8 rounded-md border border-default cursor-pointer flex items-center justify-center overflow-hidden"
     >
-      <img v-if="isImage" :src="modelValue" class="w-full h-full object-cover" />
-      <UIcon v-else :name="modelValue || 'i-lucide-sparkles'" class="w-4 h-4" />
+      <img
+        v-if="isImage"
+        :src="modelValue"
+        class="w-full h-full object-cover"
+      >
+      <UIcon
+        v-else
+        :name="modelValue || 'i-lucide-sparkles'"
+        class="w-4 h-4"
+      />
     </div>
 
     <template #content>
@@ -99,7 +110,10 @@ function handleUpload() {
             :class="modelValue === icon ? 'bg-primary/10 text-primary' : 'text-muted'"
             @click="selectIcon(icon)"
           >
-            <UIcon :name="icon" class="w-4 h-4" />
+            <UIcon
+              :name="icon"
+              class="w-4 h-4"
+            />
           </button>
         </div>
 

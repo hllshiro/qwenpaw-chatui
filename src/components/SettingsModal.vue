@@ -167,8 +167,13 @@ function handleImport() {
   >
     <template #header>
       <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-settings" class="w-5 h-5" />
-        <h2 class="text-lg font-semibold">{{ t('settings.title') }}</h2>
+        <UIcon
+          name="i-lucide-settings"
+          class="w-5 h-5"
+        />
+        <h2 class="text-lg font-semibold">
+          {{ t('settings.title') }}
+        </h2>
       </div>
     </template>
 
@@ -194,8 +199,14 @@ function handleImport() {
               :title="!isWide ? (cat.labelKey ? t(cat.labelKey) : cat.label) : undefined"
               @click="activeCategory = cat.key"
             >
-              <UIcon :name="cat.icon" class="w-4 h-4 shrink-0" />
-              <span v-if="isWide" class="truncate">{{ cat.labelKey ? t(cat.labelKey) : cat.label }}</span>
+              <UIcon
+                :name="cat.icon"
+                class="w-4 h-4 shrink-0"
+              />
+              <span
+                v-if="isWide"
+                class="truncate"
+              >{{ cat.labelKey ? t(cat.labelKey) : cat.label }}</span>
             </button>
           </nav>
 
@@ -210,8 +221,16 @@ function handleImport() {
                 class="flex items-center gap-2 text-xs text-muted"
                 :class="isWide ? 'justify-start px-1' : 'justify-center'"
               >
-                <img v-if="isBrandImage" :src="brandIcon" class="w-3 h-3 rounded shrink-0" />
-                <UIcon v-else :name="brandIcon" class="w-3 h-3 shrink-0" />
+                <img
+                  v-if="isBrandImage"
+                  :src="brandIcon"
+                  class="w-3 h-3 rounded shrink-0"
+                >
+                <UIcon
+                  v-else
+                  :name="brandIcon"
+                  class="w-3 h-3 shrink-0"
+                />
                 <span v-if="isWide">{{ brandName }}</span>
               </div>
             </div>
@@ -221,7 +240,10 @@ function handleImport() {
         <!-- 右侧配置内容 -->
         <div class="flex-1 min-h-0 h-full overflow-y-auto p-4">
           <div class="space-y-6">
-            <div v-for="group in groups" :key="group.key">
+            <div
+              v-for="group in groups"
+              :key="group.key"
+            >
               <h3 class="text-sm font-medium text-muted mb-3 px-1">
                 {{ group.labelKey ? t(group.labelKey) : group.label }}
               </h3>

@@ -513,30 +513,52 @@ const chatStatus = computed(() => {
           }"
         >
           <template #content="{ message }">
-            <div v-if="message.role === 'user'" class="text-sm leading-relaxed">
-              <div class="whitespace-pre-wrap break-words">{{ (message as any).parts[0]?.text }}</div>
+            <div
+              v-if="message.role === 'user'"
+              class="text-sm leading-relaxed"
+            >
+              <div class="whitespace-pre-wrap break-words">
+                {{ (message as any).parts[0]?.text }}
+              </div>
             </div>
 
             <template v-else>
               <template v-if="(message as any).blocks?.length">
-                <template v-for="block in (message as any).blocks" :key="block.id">
+                <template
+                  v-for="block in (message as any).blocks"
+                  :key="block.id"
+                >
                   <!-- Reasoning block -->
-                  <div v-if="block.type === 'reasoning'" class="mb-2 text-xs text-muted">
+                  <div
+                    v-if="block.type === 'reasoning'"
+                    class="mb-2 text-xs text-muted"
+                  >
                     <div class="bg-muted/50 rounded overflow-hidden">
                       <div
                         class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
                         @click="toggleReasoning(block.id)"
                       >
-                        <UIcon name="i-lucide-brain" class="size-3 text-primary" />
-                        <span v-if="isStreamingMessage(message as any) && isStreamingBlock(message as any, block) && !block.text" class="animate-pulse">{{ t('chat.thinking') }}</span>
+                        <UIcon
+                          name="i-lucide-brain"
+                          class="size-3 text-primary"
+                        />
+                        <span
+                          v-if="isStreamingMessage(message as any) && isStreamingBlock(message as any, block) && !block.text"
+                          class="animate-pulse"
+                        >{{ t('chat.thinking') }}</span>
                         <span v-else>{{ t('chat.thinkingProcess') }}</span>
                         <UIcon
                           :name="expandedReasoning.has(block.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
                           class="size-3 ml-auto"
                         />
                       </div>
-                      <div v-if="expandedReasoning.has(block.id) && block.text" class="px-2 pb-2 border-t border-muted">
-                        <div class="mt-1 whitespace-pre-wrap italic text-[11px] leading-relaxed">{{ block.text }}</div>
+                      <div
+                        v-if="expandedReasoning.has(block.id) && block.text"
+                        class="px-2 pb-2 border-t border-muted"
+                      >
+                        <div class="mt-1 whitespace-pre-wrap italic text-[11px] leading-relaxed">
+                          {{ block.text }}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -550,28 +572,53 @@ const chatStatus = computed(() => {
                   />
 
                   <!-- Tool call block -->
-                  <div v-else-if="block.type === 'toolCall' && block.toolCall" class="mb-2 space-y-1">
+                  <div
+                    v-else-if="block.type === 'toolCall' && block.toolCall"
+                    class="mb-2 space-y-1"
+                  >
                     <div class="text-xs bg-muted/50 rounded overflow-hidden">
                       <div
                         class="flex items-center gap-2 px-2 py-1 cursor-pointer select-none hover:bg-muted/80 transition-colors"
                         @click="toggleToolCall(block.toolCall!.id)"
                       >
-                        <UIcon name="i-lucide-wrench" class="size-3 text-primary" />
+                        <UIcon
+                          name="i-lucide-wrench"
+                          class="size-3 text-primary"
+                        />
                         <span class="font-mono">{{ block.toolCall!.name || '...' }}</span>
-                        <span v-if="block.toolCall!.result" class="text-success">✓</span>
-                        <span v-else-if="block.toolCall!.name" class="text-muted animate-pulse">...</span>
+                        <span
+                          v-if="block.toolCall!.result"
+                          class="text-success"
+                        >✓</span>
+                        <span
+                          v-else-if="block.toolCall!.name"
+                          class="text-muted animate-pulse"
+                        >...</span>
                         <UIcon
                           :name="expandedToolCalls.has(block.toolCall!.id) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
                           class="size-3 ml-auto"
                         />
                       </div>
-                      <div v-if="expandedToolCalls.has(block.toolCall!.id)" class="px-2 pb-2 border-t border-muted">
-                        <div v-if="block.toolCall!.args !== undefined" class="mt-1">
-                          <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
+                      <div
+                        v-if="expandedToolCalls.has(block.toolCall!.id)"
+                        class="px-2 pb-2 border-t border-muted"
+                      >
+                        <div
+                          v-if="block.toolCall!.args !== undefined"
+                          class="mt-1"
+                        >
+                          <div class="text-muted font-medium mb-0.5">
+                            {{ t('chat.parameters') }}
+                          </div>
                           <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.toolCall!.args) }}</pre>
                         </div>
-                        <div v-if="block.toolCall!.result !== undefined" class="mt-1">
-                          <div class="text-muted font-medium mb-0.5">{{ t('chat.result') }}</div>
+                        <div
+                          v-if="block.toolCall!.result !== undefined"
+                          class="mt-1"
+                        >
+                          <div class="text-muted font-medium mb-0.5">
+                            {{ t('chat.result') }}
+                          </div>
                           <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolResult(block.toolCall!.result) }}</pre>
                         </div>
                       </div>
@@ -584,10 +631,16 @@ const chatStatus = computed(() => {
                     class="mb-2 border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 rounded-lg overflow-hidden"
                   >
                     <div class="px-3 py-2 flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-                      <UIcon name="i-lucide-square" class="size-3" />
+                      <UIcon
+                        name="i-lucide-square"
+                        class="size-3"
+                      />
                       <span>{{ t('chat.generationStopped') }}</span>
                     </div>
-                    <div v-if="block.stopped.message" class="px-3 pb-2 text-xs text-amber-600 dark:text-amber-400">
+                    <div
+                      v-if="block.stopped.message"
+                      class="px-3 pb-2 text-xs text-amber-600 dark:text-amber-400"
+                    >
                       {{ block.stopped.message }}
                     </div>
                   </div>
@@ -603,7 +656,11 @@ const chatStatus = computed(() => {
                       <span v-if="block.approval.status === 'pending'">{{ t('chat.waitingApproval') }}</span>
                       <span v-else-if="block.approval.status === 'approved'">✅ {{ t('chat.approved') }}</span>
                       <span v-else>❌ {{ t('chat.denied') }}</span>
-                      <span v-if="block.approval.severity" class="ml-auto px-1.5 py-0.5 rounded text-[10px]" :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'">
+                      <span
+                        v-if="block.approval.severity"
+                        class="ml-auto px-1.5 py-0.5 rounded text-[10px]"
+                        :class="block.approval.severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'"
+                      >
                         {{ block.approval.severity }}
                       </span>
                     </div>
@@ -612,19 +669,44 @@ const chatStatus = computed(() => {
                         <span class="text-muted">{{ t('chat.tool') }}:</span>
                         <span class="font-mono">{{ block.approval.toolName }}</span>
                       </div>
-                      <div v-if="block.approval.findingsSummary" class="text-muted">
+                      <div
+                        v-if="block.approval.findingsSummary"
+                        class="text-muted"
+                      >
                         {{ block.approval.findingsSummary }}
                       </div>
-                      <div v-if="block.approval.toolParams" class="mt-1">
-                        <div class="text-muted font-medium mb-0.5">{{ t('chat.parameters') }}</div>
+                      <div
+                        v-if="block.approval.toolParams"
+                        class="mt-1"
+                      >
+                        <div class="text-muted font-medium mb-0.5">
+                          {{ t('chat.parameters') }}
+                        </div>
                         <pre class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5">{{ formatToolArgs(block.approval.toolParams) }}</pre>
                       </div>
                     </div>
-                    <div v-if="block.approval.status === 'pending'" class="px-3 pb-2 flex gap-2">
-                      <UButton size="xs" color="success" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(message as any, block, 'approve')">
+                    <div
+                      v-if="block.approval.status === 'pending'"
+                      class="px-3 pb-2 flex gap-2"
+                    >
+                      <UButton
+                        size="xs"
+                        color="success"
+                        variant="soft"
+                        :loading="approvalLoadingIds.has(block.approval!.requestId)"
+                        :disabled="approvalLoadingIds.has(block.approval!.requestId)"
+                        @click="handleApproval(message as any, block, 'approve')"
+                      >
                         {{ t('chat.approve') }}
                       </UButton>
-                      <UButton size="xs" color="error" variant="soft" :loading="approvalLoadingIds.has(block.approval!.requestId)" :disabled="approvalLoadingIds.has(block.approval!.requestId)" @click="handleApproval(message as any, block, 'deny')">
+                      <UButton
+                        size="xs"
+                        color="error"
+                        variant="soft"
+                        :loading="approvalLoadingIds.has(block.approval!.requestId)"
+                        :disabled="approvalLoadingIds.has(block.approval!.requestId)"
+                        @click="handleApproval(message as any, block, 'deny')"
+                      >
                         {{ t('chat.deny') }}
                       </UButton>
                     </div>
@@ -636,7 +718,10 @@ const chatStatus = computed(() => {
               <template v-else-if="isStreamingMessage(message as any)">
                 <div class="mb-2 text-xs text-muted border-l-2 border-primary/30 pl-2">
                   <div class="flex items-center gap-1">
-                    <UIcon name="i-lucide-brain" class="size-3" />
+                    <UIcon
+                      name="i-lucide-brain"
+                      class="size-3"
+                    />
                     <span class="animate-pulse">{{ t('chat.thinking') }}</span>
                   </div>
                 </div>
@@ -647,7 +732,12 @@ const chatStatus = computed(() => {
 
         <!-- 底部输入栏 -->
         <div class="border-t border-default bg-default/75 backdrop-blur p-4">
-          <div v-if="error" class="mb-2 text-xs text-error">{{ error.message }}</div>
+          <div
+            v-if="error"
+            class="mb-2 text-xs text-error"
+          >
+            {{ error.message }}
+          </div>
           <UChatPrompt
             v-model="input"
             :status="status"
@@ -682,13 +772,25 @@ const chatStatus = computed(() => {
       class="min-h-full"
     >
       <template #links>
-        <UButton to="/" size="lg" :label="t('chat.backToHome')" />
+        <UButton
+          to="/"
+          size="lg"
+          :label="t('chat.backToHome')"
+        />
       </template>
     </UError>
   </UContainer>
 
-  <UContainer v-else class="flex-1 flex flex-col items-center justify-center">
-    <UIcon name="i-lucide-loader-circle" class="animate-spin size-8 text-primary" />
-    <p class="mt-2 text-muted">{{ t('common.loading') }}</p>
+  <UContainer
+    v-else
+    class="flex-1 flex flex-col items-center justify-center"
+  >
+    <UIcon
+      name="i-lucide-loader-circle"
+      class="animate-spin size-8 text-primary"
+    />
+    <p class="mt-2 text-muted">
+      {{ t('common.loading') }}
+    </p>
   </UContainer>
 </template>

@@ -126,7 +126,11 @@ function cancelDelete() {
           to="/"
           class="flex items-center gap-0.5"
         >
-          <img v-if="isBrandImage" :src="brandIcon" class="h-5 w-5 shrink-0 rounded" />
+          <img
+            v-if="isBrandImage"
+            :src="brandIcon"
+            class="h-5 w-5 shrink-0 rounded"
+          >
           <UIcon
             v-else
             :name="brandIcon"
@@ -257,7 +261,9 @@ function cancelDelete() {
     :title="t('chat.deleteSession')"
   >
     <template #body>
-      <p class="text-sm text-muted">{{ t('chat.deleteConfirm') }}</p>
+      <p class="text-sm text-muted">
+        {{ t('chat.deleteConfirm') }}
+      </p>
     </template>
     <template #footer>
       <UButton
