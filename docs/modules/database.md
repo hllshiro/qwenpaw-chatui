@@ -81,6 +81,7 @@ export default defineConfig({
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `DATABASE_URL` | SQLite 数据库路径 | `file:.data/qwenpaw.db` |
+| `VITE_BRAND_NAME` | 品牌名称（显示在 UI） | `QwenPaw` |
 
 **注意：** 数据库路径以 `file:` 开头，`.data/` 目录在运行时自动创建。
 
@@ -109,16 +110,7 @@ export const db = drizzle(client)
 
 ### 迁移文件
 
-迁移文件位于 `server/database/migrations/` 目录：
-
-```
-server/database/migrations/
-├── 0000_bitter_hercules.sql
-├── 0001_robust_rumiko_fujikawa.sql
-├── 0002_parallel_famine.sql
-└── meta/
-    └── _journal.json
-```
+迁移 SQL 已内联到 `server/plugins/migrations.ts` 中，不再依赖外部迁移文件目录。
 
 ### 自动生成迁移
 
@@ -141,9 +133,23 @@ pnpm db:migrate
 `server/plugins/migrations.ts` 在服务器启动时自动执行迁移：
 
 ```typescript
-export default defineNitroPlugin(async () => {
-  // 确保数据库目录存在
-  // 执行待处理的迁移
+export default definePlugin(() => {
+  // 内联迁移 SQL 定义
+  const migrations = [
+    { tag: '0000_bitter_hercules', when: 1779096154593, sql: '...' },
+    { tag: '0001_robust_rumiko_fujikawa', when: 1779326822769, sql: '...' },
+    { tag: '0002_parallel_famine', when: 1779417619208, sql: '...' }
+  ]
+
+  // 异步执行迁移
+  const runMigrations = async () => {
+    // 1. 创建 __drizzle_migrations 表
+    // 2. 查询已应用的迁移
+    // 3. 应用新迁移（按 SQL 分割执行）
+    // 4. 记录迁移哈希
+  }
+
+  runMigrations()
 })
 ```
 
@@ -253,13 +259,15 @@ await db.insert(settings)
 
 首次运行时：
 1. `server/plugins/migrations.ts` 自动创建 `.data/` 目录
-2. 自动执行所有待处理的迁移
-3. 数据库就绪
+2. 创建 `__drizzle_migrations` 表（记录已应用的迁移）
+3. 内联迁移 SQL 按顺序执行（按哈希去重）
+4. 数据库就绪
 
 ## 注意事项
 
 1. **数据库路径** - 默认 `file:.data/qwenpaw.db`，注意 `.data/` 前缀的点
 2. **时间戳** - 使用整数存储 Unix 时间戳
-3. **自动迁移** - 服务器启动时自动执行，无需手动干预
+3. **自动迁移** - 服务器启动时异步执行，无需手动干预
 4. **类型安全** - Drizzle 提供完整的 TypeScript 类型支持
 5. **单例模式** - 数据库连接通过单例模块管理
+6. **迁移哈希** - 使用 SHA-256 对 SQL 内容计算哈希，确保幂等性

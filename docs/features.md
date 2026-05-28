@@ -45,7 +45,7 @@
 - [x] 响应式设计（移动端适配）
 - [x] 侧边栏可调整大小
 - [x] 标题背景遮罩（滚动时防止内容与标题重叠）
-- [x] 自动展开与折叠生成内容（设置项，开启后下方所有其他展开项不可设置。功能为自动展开当前正在生成的块，生成完成后，自动折叠。）
+- [x] 自动展开与折叠生成内容（设置项，开启后下方所有其他展开项不可设置。功能为自动展开当前正在生成的块，生成完成后，自动折叠。默认开启。）
 - [x] 默认展开推理摘要（设置项，控制 reasoning 块默认折叠/展开，影响生成时和历史加载）
 - [x] 默认展开工具部分（设置项，控制 toolCall 块默认折叠/展开，影响生成时和历史加载）
 - [ ] 生成完成后提醒（AI 回复结束后系统通知或声音提示）
@@ -77,7 +77,7 @@
 - [x] WebView 嵌入（支持三方程序通过 WebView 集成）
 - [x] URL 参数注入（`business_key` 通过 query 参数传入）
 - [x] 全局配置注入（`window.__QWENPAW_CONFIG__` 支持业务键和主题配置）
-- [x] 环境变量配置（PORT、QWENPAW_BACKEND_URL、DATABASE_URL）
+- [x] 环境变量配置（PORT、QWENPAW_BACKEND_URL、DATABASE_URL、VITE_BRAND_NAME）
 
 ## 知识管理
 
@@ -94,6 +94,7 @@
 - [x] ESLint 代码检查
 - [x] TypeScript 类型检查（`vue-tsc`）
 - [x] CI 集成（GitHub Actions：lint → build → typecheck）
+- [x] Rollup chunk 文件名优化（处理特殊字符，避免构建路径问题）
 
 ## 国际化支持
 

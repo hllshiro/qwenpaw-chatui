@@ -24,7 +24,7 @@ registerSetting({
   description: '开启后，下方两项设置不再生效。当前生成的块自动展开，完成后自动折叠',
   descriptionKey: 'settings.general.behavior.autoExpandCollapseDescription',
   type: 'switch',
-  defaultValue: false,
+  defaultValue: true,
   category: 'general',
   group: 'behavior',
 })
@@ -136,7 +136,7 @@ registerSetting({
   label: '品牌名称',
   labelKey: 'settings.appearance.brand.name',
   type: 'input',
-  defaultValue: 'QwenPaw',
+  defaultValue: import.meta.env.VITE_BRAND_NAME || 'QwenPaw',
   category: 'appearance',
   group: 'brand',
   advanced: true,
