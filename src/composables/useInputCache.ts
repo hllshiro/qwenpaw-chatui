@@ -1,8 +1,9 @@
 import { ref, onUnmounted } from 'vue'
 
 const STORAGE_PREFIX = 'pending_msg_'
+const DEFAULT_SESSION_ID = 'new'
 
-export function useInputCache(sessionId: string) {
+export function useInputCache(sessionId: string = DEFAULT_SESSION_ID) {
   const cachedText = ref('')
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
+import { useInputCache } from '../composables/useInputCache'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -12,8 +13,12 @@ const { getValue } = useSettings()
 
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 
-const input = ref('')
+const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache()
 const loading = ref(false)
+
+onMounted(() => {
+  initInputCache()
+})
 
 async function onSubmit() {
   if (!input.value.trim()) return
@@ -24,6 +29,7 @@ async function onSubmit() {
     console.log('[Home] Session created:', session)
     const msg = input.value
     input.value = ''
+    clearInputCache()
     console.log('[Home] Redirecting to:', `/chat/${session.id}`)
     router.push({ path: `/chat/${session.id}`, query: { msg } })
   } catch (err) {
@@ -63,6 +69,7 @@ async function onSubmit() {
           variant="subtle"
           :ui="{ base: 'px-1.5' }"
           @submit="onSubmit"
+          @input="saveInputCache(input)"
         >
           <template #footer>
             <UChatPromptSubmit

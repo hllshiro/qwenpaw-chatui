@@ -17,7 +17,7 @@ const { t } = useI18n()
 const { sessions } = useSessions()
 
 const searchQuery = ref('')
-const searchInputRef = ref<HTMLInputElement | null>(null)
+const searchInputRef = ref<any>(null)
 
 const isOpen = computed({
   get: () => props.open,
@@ -38,7 +38,7 @@ watch(isOpen, async (newVal) => {
   if (newVal) {
     searchQuery.value = ''
     await nextTick()
-    searchInputRef.value?.focus()
+    searchInputRef.value?.inputRef?.focus()
   }
 })
 
