@@ -199,6 +199,13 @@ export const useSessions = createSharedComposable(() => {
   async function deleteSession(id: string) {
     await $fetch(`/api/chats/${id}`, { method: 'DELETE' })
     sessions.value = sessions.value.filter(s => s.id !== id)
+    
+    // 清除该会话的输入缓存
+    try {
+      localStorage.removeItem(`pending_msg_${id}`)
+    } catch (err) {
+      console.warn('[InputCache] 清除缓存失败:', err)
+    }
   }
   
   return { sessions, fetchSessions, createSession, updateSession, deleteSession }
@@ -367,6 +374,8 @@ if (confirm('确定删除此会话？')) {
 }
 ```
 
+**注意：** 删除会话时会自动清除该会话的输入缓存（`pending_msg_${id}`），防止缓存数据残留。
+
 ## 注意事项
 
 1. **共享状态** - `useSessions` 使用 `createSharedComposable` 确保全局唯一
@@ -374,3 +383,4 @@ if (confirm('确定删除此会话？')) {
 3. **乐观更新** - 删除操作先更新本地状态，再请求后端
 4. **错误处理** - API 请求失败时返回空数组，不影响页面渲染
 5. **时间格式** - 数据库存储时间戳，API 返回 ISO 8601 格式
+6. **缓存清理** - 删除会话时自动清除 `localStorage` 中的输入缓存（`pending_msg_${id}`）
