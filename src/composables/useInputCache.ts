@@ -1,10 +1,17 @@
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 const STORAGE_PREFIX = 'pending_msg_'
 
 export function useInputCache(sessionId: string) {
   const cachedText = ref('')
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  onUnmounted(() => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
+    }
+  })
 
   function save(text: string): void {
     if (debounceTimer) {
