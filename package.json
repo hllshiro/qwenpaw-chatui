@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "pnpm run db:migrate && vite build",
+    "dev": "drizzle-kit generate && vite",
+    "build": "drizzle-kit generate && pnpm run db:migrate && vite build",
     "preview": "vite preview",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",

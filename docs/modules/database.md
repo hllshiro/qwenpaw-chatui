@@ -107,17 +107,22 @@ import { config } from '../config'
 
 ### 迁移文件
 
-迁移 SQL 已内联到 `server/plugins/migrations.ts` 中，不再依赖外部迁移文件目录。
+迁移 SQL 文件存储在 `server/database/migrations/` 目录，由 Drizzle Kit 自动生成。文件命名格式：`{序号}_{标签}.sql`。
 
 ### 自动生成迁移
 
-修改 `schema.ts` 后执行：
+修改 `schema.ts` 后，迁移文件会自动生成：
 
 ```bash
+# 手动生成迁移文件
 pnpm db:generate
+
+# 自动执行：pnpm dev 和 pnpm build 时会自动执行 db:generate
+pnpm dev    # 自动生成迁移文件 + 启动开发服务器
+pnpm build  # 自动生成迁移文件 + 执行迁移 + 构建项目
 ```
 
-Drizzle Kit 会对比 schema 差异，生成新的迁移文件。
+Drizzle Kit 会对比 schema 差异，生成新的迁移文件。如果没有 schema 变更，不会生成新文件。
 
 ### 执行迁移
 
@@ -127,27 +132,75 @@ pnpm db:migrate
 
 ### 自动迁移
 
-`server/plugins/migrations.ts` 在服务器启动时自动执行迁移：
+`server/plugins/migrations.ts` 在服务器启动时自动执行迁移，使用 `server/utils/migration.ts` 提供的迁移工具：
 
 ```typescript
-export default definePlugin(() => {
-  // 内联迁移 SQL 定义
-  const migrations = [
-    { tag: '0000_bitter_hercules', when: 1779096154593, sql: '...' },
-    { tag: '0001_robust_rumiko_fujikawa', when: 1779326822769, sql: '...' },
-    { tag: '0002_parallel_famine', when: 1779417619208, sql: '...' }
-  ]
+// server/utils/migration.ts 提供的核心功能
+export async function runMigrations(): Promise<MigrationResult> {
+  // 1. 备份数据库文件
+  // 2. 动态加载迁移 SQL 文件
+  // 3. 在事务中执行每个迁移
+  // 4. 记录迁移哈希
+  // 5. 成功后清理备份
+  // 6. 失败时恢复备份并返回错误
+}
+```
 
-  // 异步执行迁移
-  const runMigrations = async () => {
-    // 1. 创建 __drizzle_migrations 表
-    // 2. 查询已应用的迁移
-    // 3. 应用新迁移（按 SQL 分割执行）
-    // 4. 记录迁移哈希
+### 备份与回滚
+
+迁移机制支持自动备份和回滚，确保数据安全：
+
+**备份策略：**
+- 迁移前自动备份数据库文件到同目录（`qwenpaw.db.backup.{timestamp}`）
+- 支持备份轮转，默认保留最近 3 个备份
+- 可通过环境变量 `MIGRATION_BACKUP_ENABLED` 禁用备份
+
+**回滚机制：**
+- 迁移失败时自动恢复备份
+- 确保数据库回到迁移前的状态
+- 记录详细错误日志
+
+**环境变量配置：**
+
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `MIGRATION_BACKUP_ENABLED` | `true` | 是否启用备份 |
+| `MIGRATION_MAX_BACKUPS` | `3` | 最大备份数量 |
+| `MIGRATION_EXIT_ON_FAILURE` | `true` | 失败时是否退出程序 |
+
+### 事务迁移
+
+每个迁移在 SQLite 事务中执行，确保原子性：
+
+```typescript
+await db.transaction(async (tx) => {
+  // 执行迁移 SQL
+  const statements = migration.sql.split('--> statement-breakpoint')
+  for (const stmt of statements) {
+    if (stmt.trim()) {
+      await tx.run(sql.raw(stmt.trim()))
+    }
   }
 
-  runMigrations()
+  // 记录迁移
+  await tx.run(sql`INSERT INTO __drizzle_migrations ...`)
 })
+```
+
+### 失败处理
+
+迁移失败时的处理流程：
+
+1. 记录详细错误日志（迁移标签、SQL 语句、错误信息）
+2. 恢复数据库备份
+3. 根据配置决定是否退出程序（`MIGRATION_EXIT_ON_FAILURE`）
+
+```typescript
+// 错误日志示例
+[Migration] 执行迁移 0003_new_feature 失败
+[Migration] 错误详情: SQL syntax error
+[Migration] 数据库已恢复到备份状态
+[Migration] 数据库迁移失败，程序将退出
 ```
 
 ## 常用操作

@@ -11,7 +11,7 @@ const migrations = [
   {
     tag: '0000_bitter_hercules',
     when: 1779096154593,
-    sql: `CREATE TABLE \`sessions\` (
+    sql: `CREATE TABLE IF NOT EXISTS \`sessions\` (
 	\`id\` text PRIMARY KEY NOT NULL,
 	\`business_key\` text DEFAULT 'default' NOT NULL,
 	\`title\` text DEFAULT '新会话' NOT NULL,
@@ -28,15 +28,15 @@ ALTER TABLE \`sessions\` DROP COLUMN \`title\`;`
   {
     tag: '0002_parallel_famine',
     when: 1779417619208,
-    sql: `CREATE TABLE \`settings\` (
+    sql: `CREATE TABLE IF NOT EXISTS \`settings\` (
 	\`id\` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	\`key\` text NOT NULL,
 	\`value\` text NOT NULL,
 	\`updated_at\` integer DEFAULT (unixepoch()) NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX \`settings_key_unique\` ON \`settings\` (\`key\`);--> statement-breakpoint
-CREATE UNIQUE INDEX \`idx_settings_key\` ON \`settings\` (\`key\`);`
+CREATE UNIQUE INDEX IF NOT EXISTS \`settings_key_unique\` ON \`settings\` (\`key\`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS \`idx_settings_key\` ON \`settings\` (\`key\`);`
   }
 ]
 
