@@ -24,7 +24,7 @@ export function useInputCache(sessionId: string = DEFAULT_SESSION_ID) {
       } catch (err) {
         console.warn('[InputCache] 保存失败:', err)
       }
-    }, 500)
+    }, 300)
   }
 
   function load(): string {
