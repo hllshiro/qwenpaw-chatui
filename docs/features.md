@@ -74,6 +74,7 @@
 - [x] 事务迁移（每个迁移在事务中执行，确保原子性）
 - [x] 自动迁移文件生成（`pnpm dev` 和 `pnpm build` 时自动执行 `db:generate`）
 - [x] SessionStorage 持久化（未完成消息刷新后恢复）
+- [x] 输入缓存（localStorage 持久化未发送的输入文本，切换会话后自动恢复）
 
 ## 嵌入式支持
 

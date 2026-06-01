@@ -30,6 +30,7 @@ src/
 │   └── ShortcutInput.vue         # 快捷键输入组件
 ├── composables/                  # 组合式函数
 │   ├── useChat.ts                # 聊天核心逻辑
+│   ├── useInputCache.ts          # 输入缓存（localStorage 持久化）
 │   ├── useSessions.ts            # 会话管理
 │   ├── useShortcuts.ts           # 快捷键管理
 │   ├── useTheme.ts               # 主题管理
@@ -158,6 +159,27 @@ loadSessions()                         // 加载会话列表
 - 系统主题跟随
 - 自定义主题色注入
 - localStorage 持久化
+
+### `useInputCache.ts`
+
+输入缓存管理，提供：
+- localStorage 持久化未发送的输入文本
+- 会话级别的缓存隔离
+- 防抖保存（500ms 延迟）
+- 切换会话时自动恢复缓存内容
+
+**主要方法：**
+```typescript
+init()                    // 初始化缓存（加载已保存的文本）
+save(text: string)        // 保存输入文本（防抖）
+clear()                   // 清除缓存（发送消息后调用）
+load(): string            // 加载缓存文本
+```
+
+**响应式状态：**
+```typescript
+cachedText: Ref<string>   // 当前缓存的文本
+```
 
 ### `useShortcuts.ts`
 
