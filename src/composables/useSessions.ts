@@ -57,6 +57,13 @@ export const useSessions = createSharedComposable(() => {
   async function deleteSession(id: string) {
     await $fetch(`/api/chats/${id}`, { method: 'DELETE' })
     sessions.value = sessions.value.filter(s => s.id !== id)
+    
+    // 清除该会话的输入缓存
+    try {
+      localStorage.removeItem(`pending_msg_${id}`)
+    } catch (err) {
+      console.warn('[InputCache] 清除缓存失败:', err)
+    }
   }
 
   const groupedSessions = computed(() => {
