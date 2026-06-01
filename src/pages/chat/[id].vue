@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useSessions } from '../../composables/useSessions'
 import { useSettings } from '../../composables/settings'
 import { useChat, type ChatMessage, type MessageBlock } from '../../composables/useChat'
+import { useInputCache } from '../../composables/useInputCache'
 import Navbar from '../../components/Navbar.vue'
 import ChatComark from '../../components/chat/Comark'
 
@@ -19,6 +20,7 @@ const sessionData = ref<any>(null)
 const loading = ref(true)
 
 onMounted(async () => {
+  initInputCache()
   try {
     const [data, history, qwenpawChat] = await Promise.all([
       $fetch(`/api/chats/${sessionId}`),
@@ -241,7 +243,7 @@ function syncBackendTitle() {
 
 const { getValue } = useSettings()
 
-const input = ref('')
+const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache(sessionId)
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 const manuallyCollapsed = ref(new Set<string>())
@@ -403,6 +405,7 @@ function handleSubmit() {
   if (!input.value.trim()) return
   const text = input.value
   input.value = ''
+  clearInputCache()
   sendMessage(text, { onComplete: syncBackendTitle })
 }
 
@@ -748,6 +751,7 @@ const chatStatus = computed(() => {
             variant="subtle"
             :ui="{ base: 'px-1.5' }"
             @submit="handleSubmit"
+            @input="saveInputCache(input)"
           >
             <template #footer>
               <UChatPromptSubmit
