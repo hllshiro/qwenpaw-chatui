@@ -60,7 +60,7 @@ export const useSessions = createSharedComposable(() => {
     
     // 清除该会话的输入缓存
     try {
-      localStorage.removeItem(`pending_msg_${id}`)
+      localStorage.removeItem(`pending_msg_${businessKey.value}_${id}`)
     } catch (err) {
       console.warn('[InputCache] 清除缓存失败:', err)
     }

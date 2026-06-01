@@ -8,12 +8,12 @@ import { useInputCache } from '../composables/useInputCache'
 
 const router = useRouter()
 const { t } = useI18n()
-const { createSession } = useSessions()
+const { createSession, businessKey } = useSessions()
 const { getValue } = useSettings()
 
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 
-const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache()
+const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache(undefined, businessKey.value)
 const loading = ref(false)
 
 onMounted(() => {

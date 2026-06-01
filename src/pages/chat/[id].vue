@@ -12,7 +12,7 @@ import ChatComark from '../../components/chat/Comark'
 
 const route = useRoute<'/chat/[id]'>()
 const { t } = useI18n()
-const { updateSession, sessions } = useSessions()
+const { updateSession, sessions, businessKey } = useSessions()
 
 const sessionId = route.params.id as string
 
@@ -243,7 +243,7 @@ function syncBackendTitle() {
 
 const { getValue } = useSettings()
 
-const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache(sessionId)
+const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache(sessionId, businessKey.value)
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 const manuallyCollapsed = ref(new Set<string>())
