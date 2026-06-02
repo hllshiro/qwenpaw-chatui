@@ -86,6 +86,18 @@ registerSetting({
   group: 'notifications',
 })
 
+registerSetting({
+  key: 'general.notifications.sound',
+  label: '通知音效',
+  labelKey: 'settings.general.notifications.sound',
+  description: '收到通知时播放提示音',
+  descriptionKey: 'settings.general.notifications.soundDescription',
+  type: 'switch',
+  defaultValue: true,
+  category: 'general',
+  group: 'notifications',
+})
+
 // === 注册配置项 - 快捷键 ===
 registerSetting({
   key: 'shortcuts.bindings.newChat',

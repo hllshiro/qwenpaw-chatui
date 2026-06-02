@@ -17,7 +17,9 @@
         "permission": "Permission",
         "permissionDescription": "Send notification when user permission is required",
         "error": "Error",
-        "errorDescription": "Send notification when an error occurs"
+        "errorDescription": "Send notification when an error occurs",
+        "sound": "Notification Sound",
+        "soundDescription": "Play a sound when receiving notifications"
       }
     },
     "shortcuts": {

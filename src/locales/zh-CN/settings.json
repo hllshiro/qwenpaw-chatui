@@ -17,7 +17,9 @@
         "permission": "权限",
         "permissionDescription": "当需要用户权限审批时发送通知",
         "error": "错误",
-        "errorDescription": "当发生错误时发送通知"
+        "errorDescription": "当发生错误时发送通知",
+        "sound": "通知音效",
+        "soundDescription": "收到通知时播放提示音"
       }
     },
     "shortcuts": {
