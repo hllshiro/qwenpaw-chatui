@@ -326,6 +326,20 @@ export function useChat(sessionId: string) {
       }
     }
 
+    // 错误通知
+    if (obj === 'response' && event.status === 'failed') {
+      const errorData = (event as any).error
+      addNotification({
+        id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        type: 'error',
+        sessionId,
+        sessionName: '', // 将在组件中填充
+        errorMessage: errorData?.message || 'Unknown error',
+        timestamp: Date.now(),
+        read: false,
+      })
+    }
+
     // ── response lifecycle ─────────────────────────────────────────
     if (obj === 'response') {
       if (event.status === 'completed') {
