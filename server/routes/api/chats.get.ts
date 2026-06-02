@@ -1,6 +1,6 @@
 import { defineHandler } from 'nitro'
 import { getQuery } from 'nitro/h3'
-import { useDrizzle, tables, eq, desc } from '../../utils/drizzle'
+import { useDrizzle, tables, eq, desc } from '@server/utils/drizzle'
 
 export default defineHandler(async (event) => {
   const query = getQuery(event)

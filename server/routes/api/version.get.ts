@@ -1,5 +1,5 @@
 import { defineHandler } from 'nitro'
-import { config } from '../../config'
+import { config } from '@server/config'
 
 export default defineHandler(async () => {
   const backendUrl = config.qwenpawBackendUrl

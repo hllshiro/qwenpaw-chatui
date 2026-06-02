@@ -1,5 +1,5 @@
 import { defineHandler } from 'nitro'
-import { useDrizzle, tables } from '../../../utils/drizzle'
+import { useDrizzle, tables } from '@server/utils/drizzle'
 
 export default defineHandler(async () => {
   const db = useDrizzle()

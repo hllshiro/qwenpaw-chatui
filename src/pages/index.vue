@@ -2,9 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useSessions } from '../composables/useSessions'
-import { useSettings } from '../composables/settings'
-import { useInputCache } from '../composables/useInputCache'
+import { useSessions } from '@/composables/useSessions'
+import { useSettings } from '@/composables/settings'
+import { useInputCache } from '@/composables/useInputCache'
 
 const router = useRouter()
 const { t } = useI18n()

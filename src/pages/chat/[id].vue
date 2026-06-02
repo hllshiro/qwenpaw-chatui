@@ -3,12 +3,12 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useSessions } from '../../composables/useSessions'
-import { useSettings } from '../../composables/settings'
-import { useChat, type ChatMessage, type MessageBlock } from '../../composables/useChat'
-import { useInputCache } from '../../composables/useInputCache'
-import Navbar from '../../components/Navbar.vue'
-import ChatComark from '../../components/chat/Comark'
+import { useSessions } from '@/composables/useSessions'
+import { useSettings } from '@/composables/settings'
+import { useChat, type ChatMessage, type MessageBlock } from '@/composables/useChat'
+import { useInputCache } from '@/composables/useInputCache'
+import Navbar from '@/components/Navbar.vue'
+import ChatComark from '@/components/chat/Comark'
 
 const route = useRoute<'/chat/[id]'>()
 const { t } = useI18n()

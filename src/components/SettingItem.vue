@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { SettingItem } from '../composables/settings/types'
+import type { SettingItem } from '@/composables/settings/types'
 
 defineProps<{
   item: SettingItem

@@ -1,7 +1,7 @@
 import { defineHandler } from 'nitro'
 import { readBody } from 'nitro/h3'
 import { randomUUID } from 'node:crypto'
-import { useDrizzle, tables } from '../../utils/drizzle'
+import { useDrizzle, tables } from '@server/utils/drizzle'
 
 export default defineHandler(async (event) => {
   const body = await readBody(event).catch(() => ({}))

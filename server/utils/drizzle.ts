@@ -1,8 +1,8 @@
 import { drizzle } from 'drizzle-orm/libsql'
 import { createClient } from '@libsql/client'
 
-import * as schema from '../database/schema'
-import { config } from '../config'
+import * as schema from '@server/database/schema'
+import { config } from '@server/config'
 
 export { sql, eq, and, or, asc, desc } from 'drizzle-orm'
 

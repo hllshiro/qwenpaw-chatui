@@ -3,11 +3,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
-import { useSessions } from '../composables/useSessions'
-import { useSettings } from '../composables/settings'
-import { useShortcuts } from '../composables/useShortcuts'
-import { useBackendStatus } from '../composables/useBackendStatus'
-import SearchModal from '../components/SearchModal.vue'
+import { useSessions } from '@/composables/useSessions'
+import { useSettings } from '@/composables/settings'
+import { useShortcuts } from '@/composables/useShortcuts'
+import { useBackendStatus } from '@/composables/useBackendStatus'
+import SearchModal from '@/components/SearchModal.vue'
 
 const router = useRouter()
 const route = useRoute()

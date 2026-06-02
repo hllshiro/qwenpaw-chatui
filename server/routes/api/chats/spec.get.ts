@@ -1,6 +1,6 @@
 import { defineHandler } from 'nitro'
 import { getQuery } from 'nitro/h3'
-import { config } from '../../../config'
+import { config } from '@server/config'
 
 export default defineHandler(async (event) => {
   const query = getQuery(event)

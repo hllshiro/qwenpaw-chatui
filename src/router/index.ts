@@ -2,8 +2,8 @@ import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import { routes, handleHotUpdate } from 'vue-router/auto-routes'
 import { setupLayouts } from 'virtual:generated-layouts'
-import { useSessions } from '../composables/useSessions'
-import i18n from '../locales'
+import { useSessions } from '@/composables/useSessions'
+import i18n from '@/locales'
 
 const router = createRouter({
   routes: setupLayouts(routes as RouteRecordRaw[]),

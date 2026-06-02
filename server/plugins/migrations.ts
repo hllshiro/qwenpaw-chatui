@@ -4,8 +4,8 @@ import { definePlugin } from 'nitro'
 import { drizzle } from 'drizzle-orm/libsql'
 import { createClient } from '@libsql/client'
 import { sql } from 'drizzle-orm'
-import * as schema from '../database/schema'
-import { config } from '../config'
+import * as schema from '@server/database/schema'
+import { config } from '@server/config'
 
 const migrations = [
   {

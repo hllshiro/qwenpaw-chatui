@@ -1,6 +1,6 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam } from 'nitro/h3'
-import { config } from '../../../../config'
+import { config } from '@server/config'
 
 export default defineHandler(async (event) => {
   const id = getRouterParam(event, 'id')

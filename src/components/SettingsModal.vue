@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import { useSettings } from '../composables/settings'
+import { useSettings } from '@/composables/settings'
 
 const props = defineProps<{
   open: boolean

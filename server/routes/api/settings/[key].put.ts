@@ -1,6 +1,6 @@
 import { defineHandler } from 'nitro'
 import { readBody } from 'nitro/h3'
-import { useDrizzle, tables, eq } from '../../../utils/drizzle'
+import { useDrizzle, tables, eq } from '@server/utils/drizzle'
 
 export default defineHandler(async (event) => {
   const key = event.context.params?.key

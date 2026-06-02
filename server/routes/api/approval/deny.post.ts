@@ -1,6 +1,6 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { readBody } from 'nitro/h3'
-import { config } from '../../../config'
+import { config } from '@server/config'
 
 export default defineHandler(async (event) => {
   const body = await readBody(event)
