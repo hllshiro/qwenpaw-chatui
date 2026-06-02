@@ -70,6 +70,18 @@
         "importDescription": "从 JSON 文件导入配置"
       }
     },
+    "debug": {
+      "label": "调试",
+      "notifications": {
+        "label": "通知测试",
+        "agentComplete": "智能体完成",
+        "agentCompleteDescription": "发送一条模拟的智能体完成通知",
+        "error": "错误",
+        "errorDescription": "发送一条模拟的错误通知",
+        "approval": "审批",
+        "approvalDescription": "发送一条模拟的审批通知"
+      }
+    },
     "developerMode": "已启用开发者模式",
     "developerModeDescription": "高级配置选项已显示",
     "exportSuccess": "导出成功",

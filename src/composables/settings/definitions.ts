@@ -5,6 +5,7 @@ registerCategory({ key: 'general', label: '通用', labelKey: 'settings.general.
 registerCategory({ key: 'shortcuts', label: '快捷键', labelKey: 'settings.shortcuts.label', icon: 'i-lucide-keyboard' })
 registerCategory({ key: 'appearance', label: '外观', labelKey: 'settings.appearance.label', icon: 'i-lucide-palette', advanced: true })
 registerCategory({ key: 'advanced', label: '高级', labelKey: 'settings.advanced.label', icon: 'i-lucide-shield', advanced: true })
+registerCategory({ key: 'debug', label: '调试', labelKey: 'settings.debug.label', icon: 'i-lucide-bug', advanced: true })
 
 // === 注册分组 ===
 registerGroup({ key: 'behavior', label: '行为', labelKey: 'settings.general.behavior.label', category: 'general' })
@@ -15,6 +16,7 @@ registerGroup({ key: 'theme', label: '主题', labelKey: 'settings.appearance.th
 registerGroup({ key: 'typography', label: '字体', labelKey: 'settings.appearance.typography.label', category: 'appearance' })
 registerGroup({ key: 'language', label: '语言', labelKey: 'settings.appearance.language.label', category: 'appearance' })
 registerGroup({ key: 'backup', label: '数据备份', labelKey: 'settings.advanced.backup.label', category: 'advanced' })
+registerGroup({ key: 'notifications', label: '通知测试', labelKey: 'settings.debug.notifications.label', category: 'debug' })
 
 // === 注册配置项 - 通用 - 行为 ===
 registerSetting({
@@ -258,4 +260,47 @@ registerSetting({
   group: 'backup',
   advanced: true,
   icon: 'i-lucide-upload',
+})
+
+// === 注册配置项 - 调试 - 通知测试 ===
+registerSetting({
+  key: 'debug.notifications.agentComplete',
+  label: '智能体完成',
+  labelKey: 'settings.debug.notifications.agentComplete',
+  description: '发送一条模拟的智能体完成通知',
+  descriptionKey: 'settings.debug.notifications.agentCompleteDescription',
+  type: 'button',
+  defaultValue: null,
+  category: 'debug',
+  group: 'notifications',
+  advanced: true,
+  icon: 'i-lucide-circle-check',
+})
+
+registerSetting({
+  key: 'debug.notifications.error',
+  label: '错误',
+  labelKey: 'settings.debug.notifications.error',
+  description: '发送一条模拟的错误通知',
+  descriptionKey: 'settings.debug.notifications.errorDescription',
+  type: 'button',
+  defaultValue: null,
+  category: 'debug',
+  group: 'notifications',
+  advanced: true,
+  icon: 'i-lucide-circle-x',
+})
+
+registerSetting({
+  key: 'debug.notifications.approval',
+  label: '审批',
+  labelKey: 'settings.debug.notifications.approval',
+  description: '发送一条模拟的审批通知',
+  descriptionKey: 'settings.debug.notifications.approvalDescription',
+  type: 'button',
+  defaultValue: null,
+  category: 'debug',
+  group: 'notifications',
+  advanced: true,
+  icon: 'i-lucide-shield-check',
 })

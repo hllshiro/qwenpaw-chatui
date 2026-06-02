@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useSettings } from '@/composables/settings'
+import { useNotification } from '@/composables/useNotification'
 
 const props = defineProps<{
   open: boolean
@@ -25,6 +26,8 @@ const {
   getVisibleGroups,
   getVisibleSettings,
 } = useSettings()
+
+const { add: addNotification } = useNotification()
 
 const isWide = useMediaQuery('(min-width: 640px)')
 const activeCategory = ref('general')
@@ -86,7 +89,56 @@ function handleAction(key: string) {
     handleImport()
   } else if (key === 'shortcuts.bindings.resetAll') {
     handleResetAllShortcuts()
+  } else if (key === 'debug.notifications.agentComplete') {
+    handleDebugAgentComplete()
+  } else if (key === 'debug.notifications.error') {
+    handleDebugError()
+  } else if (key === 'debug.notifications.approval') {
+    handleDebugApproval()
   }
+}
+
+function handleDebugAgentComplete() {
+  addNotification({
+    id: `debug-${Date.now()}`,
+    type: 'agent_complete',
+    sessionId: 'debug-session',
+    sessionName: '调试会话',
+    timestamp: Date.now(),
+    read: false,
+    debug: true,
+  })
+}
+
+function handleDebugError() {
+  addNotification({
+    id: `debug-${Date.now()}`,
+    type: 'error',
+    sessionId: 'debug-session',
+    sessionName: '调试会话',
+    errorMessage: '这是一条模拟的错误信息',
+    timestamp: Date.now(),
+    read: false,
+    debug: true,
+  })
+}
+
+function handleDebugApproval() {
+  addNotification({
+    id: `debug-${Date.now()}`,
+    type: 'approval',
+    sessionId: 'debug-session',
+    sessionName: '调试会话',
+    requestId: `debug-req-${Date.now()}`,
+    toolName: 'execute_command',
+    severity: 'HIGH',
+    findingsSummary: '检测到高风险操作，需要用户审批。',
+    toolParams: { command: 'rm -rf /tmp/test' },
+    status: 'pending',
+    timestamp: Date.now(),
+    read: false,
+    debug: true,
+  })
 }
 
 async function handleResetAllShortcuts() {

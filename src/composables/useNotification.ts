@@ -23,6 +23,7 @@ interface NotificationBase {
   sessionName: string
   timestamp: number
   read: boolean
+  debug?: boolean
 }
 
 export interface AgentCompleteNotification extends NotificationBase {

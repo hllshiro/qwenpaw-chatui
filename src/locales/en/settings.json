@@ -70,6 +70,18 @@
         "importDescription": "Import settings from JSON file"
       }
     },
+    "debug": {
+      "label": "Debug",
+      "notifications": {
+        "label": "Notification Tests",
+        "agentComplete": "Agent Complete",
+        "agentCompleteDescription": "Send a mock agent complete notification",
+        "error": "Error",
+        "errorDescription": "Send a mock error notification",
+        "approval": "Approval",
+        "approvalDescription": "Send a mock approval notification"
+      }
+    },
     "developerMode": "Developer Mode Enabled",
     "developerModeDescription": "Advanced configuration options are now visible",
     "exportSuccess": "Export Successful",

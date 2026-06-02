@@ -197,25 +197,36 @@ function formatToolParams(params: any): string {
         <!-- 审批通知按钮 -->
         <template v-else-if="currentNotification.type === 'approval' && (currentNotification as ApprovalNotification).status === 'pending'">
           <UButton
+            v-if="currentNotification.debug"
             size="xs"
-            color="success"
+            color="neutral"
             variant="soft"
-            :loading="approvalLoading"
-            :disabled="approvalLoading"
-            @click="handleApproval('approve')"
+            @click="closeCurrent"
           >
-            {{ t('notification.approve') }}
+            {{ t('notification.close') }}
           </UButton>
-          <UButton
-            size="xs"
-            color="error"
-            variant="soft"
-            :loading="approvalLoading"
-            :disabled="approvalLoading"
-            @click="handleApproval('deny')"
-          >
-            {{ t('notification.reject') }}
-          </UButton>
+          <template v-else>
+            <UButton
+              size="xs"
+              color="success"
+              variant="soft"
+              :loading="approvalLoading"
+              :disabled="approvalLoading"
+              @click="handleApproval('approve')"
+            >
+              {{ t('notification.approve') }}
+            </UButton>
+            <UButton
+              size="xs"
+              color="error"
+              variant="soft"
+              :loading="approvalLoading"
+              :disabled="approvalLoading"
+              @click="handleApproval('deny')"
+            >
+              {{ t('notification.reject') }}
+            </UButton>
+          </template>
         </template>
 
         <!-- 错误通知按钮 -->
