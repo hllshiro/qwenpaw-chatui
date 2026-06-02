@@ -39,7 +39,6 @@ export const config = {
 
 | 文件 | 变更 |
 |------|------|
-| `server/routes/api/config.get.ts` | `process.env.QWENPAW_BACKEND_URL` → `config.qwenpawBackendUrl` |
 | `server/routes/api/chats/[id]/index.post.ts` | 同上 |
 | `server/routes/api/chats/[id]/history.get.ts` | 同上 |
 | `server/routes/api/chats/[id]/index.put.ts` | 同上 |

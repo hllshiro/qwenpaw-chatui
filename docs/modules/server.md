@@ -131,12 +131,6 @@ Nitro 作为 Vite 插件运行，路由文件位于 `server/routes/api/`，由 N
 
 请求体：`{ settings: Record<string, any> }` — 逐条 upsert，返回 `{ success: true, imported: number }`。
 
-## 配置
-
-### GET /api/config
-
-返回服务器公开配置：`{ qwenpawBackendUrl: string }`。
-
 ## 数据流
 
 ```

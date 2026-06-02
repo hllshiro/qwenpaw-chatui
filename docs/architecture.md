@@ -193,7 +193,6 @@ qwenpaw-chatui/
 │   │   ├── chats*.ts             # 会话相关
 │   │   ├── approval*.ts          # 审批相关
 │   │   ├── settings*.ts          # 配置相关
-│   │   └── config.get.ts         # 配置查询
 │   └── utils/
 │       ├── drizzle.ts            # 数据库单例
 │       └── qwenpaw.ts            # QwenPaw 客户端

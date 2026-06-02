@@ -29,7 +29,6 @@ routes/api/
 │   ├── [key].put.ts          # PUT /api/settings/:key — 更新配置
 │   ├── export.get.ts         # GET /api/settings/export — 导出
 │   └── import.post.ts        # POST /api/settings/import — 导入
-└── config.get.ts             # GET /api/config — 后端配置
 ```
 
 ## Where to Look
