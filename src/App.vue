@@ -6,6 +6,7 @@ import { useI18n } from './composables/useI18n'
 import * as locales from '@nuxt/ui/locale'
 import { useTheme } from './composables/useTheme'
 import { useSettings } from './composables/settings'
+import NotificationPanel from './components/NotificationPanel.vue'
 
 const { locale } = useI18n()
 const colorMode = useColorMode()
@@ -71,6 +72,7 @@ watch(
       :toaster="{ position: 'top-right' }"
     >
       <RouterView />
+      <NotificationPanel />
     </UApp>
   </Suspense>
 </template>
