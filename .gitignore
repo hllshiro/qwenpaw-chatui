@@ -49,3 +49,6 @@ docs/QwenPaw
 # AI Agent references
 .opencode
 .omo
+
+# Git worktrees
+.worktrees
