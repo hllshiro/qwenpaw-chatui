@@ -12,6 +12,7 @@
     "approved": "已批准",
     "rejected": "已拒绝",
     "error": "错误",
-    "errorReason": "错误原因"
+    "errorReason": "错误原因",
+    "approvalFailed": "审批操作失败"
   }
 }

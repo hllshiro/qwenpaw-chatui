@@ -43,6 +43,12 @@ async function handleApproval(action: 'approve' | 'deny') {
     notification.status = action === 'approve' ? 'approved' : 'denied'
   } catch (err) {
     console.error('[Notification] Approval failed:', err)
+    const toast = useToast()
+    toast.add({
+      title: t('notification.approvalFailed'),
+      description: err instanceof Error ? err.message : String(err),
+      color: 'error',
+    })
   } finally {
     approvalLoading.value = false
   }

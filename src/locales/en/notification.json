@@ -12,6 +12,7 @@
     "approved": "Approved",
     "rejected": "Rejected",
     "error": "Error",
-    "errorReason": "Error reason"
+    "errorReason": "Error reason",
+    "approvalFailed": "Approval failed"
   }
 }
