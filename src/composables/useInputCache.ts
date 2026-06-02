@@ -72,6 +72,10 @@ export function useInputCache(
   }
 
   function clear(): void {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
+    }
     try {
       localStorage.removeItem(getStorageKey(businessKey, sessionId))
       cachedText.value = ''
