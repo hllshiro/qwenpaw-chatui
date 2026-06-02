@@ -54,6 +54,7 @@ export const useNotification = createSharedComposable(() => {
   const notifications = ref<Notification[]>([])
   const currentIndex = ref(0)
   const isVisible = ref(false)
+  const autoCloseTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   // 计算属性
   const currentNotification = computed(() => {
@@ -110,14 +111,23 @@ export const useNotification = createSharedComposable(() => {
 
     // 智能体完成通知 5 秒后自动关闭
     if (notification.type === 'agent_complete') {
-      setTimeout(() => {
+      const timerId = setTimeout(() => {
         close(notification.id)
+        autoCloseTimers.delete(notification.id)
       }, 5000)
+      autoCloseTimers.set(notification.id, timerId)
     }
   }
 
   // 关闭指定通知
   function close(id: string) {
+    // 清除自动关闭定时器
+    const timerId = autoCloseTimers.get(id)
+    if (timerId) {
+      clearTimeout(timerId)
+      autoCloseTimers.delete(id)
+    }
+
     const index = notifications.value.findIndex(n => n.id === id)
     if (index === -1) return
 
