@@ -20,6 +20,10 @@
     "search": "搜索",
     "noResults": "无结果",
     "required": "必填",
-    "optional": "可选"
+    "optional": "可选",
+    "backendUnavailable": "无法连接到AI服务",
+    "backendUnavailableDescription": "请检查本机配置或联系管理员",
+    "checkingConnection": "正在检查连接...",
+    "retryConnection": "重试连接"
   }
 }

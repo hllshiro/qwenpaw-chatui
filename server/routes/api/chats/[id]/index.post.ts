@@ -35,11 +35,20 @@ export default defineHandler(async (event) => {
     content = lastMessage
   }
 
-  const qwenpawResponse = await callQwenPawChat(backendUrl, {
-    content,
-    session_id: id,
-    business_key: session.businessKey
-  })
+  let qwenpawResponse: Response
+  try {
+    qwenpawResponse = await callQwenPawChat(backendUrl, {
+      content,
+      session_id: id,
+      business_key: session.businessKey
+    })
+  } catch (err) {
+    console.error('[ChatAPI] Failed to connect to backend:', err)
+    throw new HTTPError({
+      statusCode: 503,
+      statusMessage: '无法连接到AI服务，请检查本机配置或联系管理员'
+    })
+  }
 
   if (!qwenpawResponse.ok) {
     const errText = await qwenpawResponse.text().catch(() => '')

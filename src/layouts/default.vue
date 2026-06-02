@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { useSessions } from '../composables/useSessions'
 import { useSettings } from '../composables/settings'
 import { useShortcuts } from '../composables/useShortcuts'
+import { useBackendStatus } from '../composables/useBackendStatus'
 import SearchModal from '../components/SearchModal.vue'
 
 const router = useRouter()
@@ -14,6 +15,10 @@ const { t } = useI18n()
 const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
 const { getValue } = useSettings()
 const { registerShortcut } = useShortcuts()
+const { status: backendStatus, retry: retryBackend } = useBackendStatus()
+
+const isBackendDisconnected = computed(() => backendStatus.value === 'disconnected')
+const isBackendChecking = computed(() => backendStatus.value === 'checking')
 
 onMounted(() => {
   fetchSessions()
@@ -111,6 +116,62 @@ function cancelDelete() {
 </script>
 
 <template>
+  <!-- Backend connection overlay -->
+  <Transition name="fade">
+    <div
+      v-if="isBackendDisconnected || isBackendChecking"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-default/75 backdrop-blur-sm"
+    >
+      <div class="text-center w-[380px] h-[280px] p-8 rounded-xl bg-default/90 shadow-2xl ring ring-default flex flex-col justify-center items-center">
+        <Transition
+          name="fade-fast"
+          mode="out-in"
+        >
+          <div
+            v-if="isBackendChecking"
+            key="checking"
+          >
+            <div class="flex justify-center mb-4">
+              <UIcon
+                name="i-lucide-loader-circle"
+                class="w-12 h-12 text-primary animate-spin"
+              />
+            </div>
+            <p class="text-muted">
+              {{ t('common.checkingConnection') }}
+            </p>
+          </div>
+          <div
+            v-else
+            key="error"
+          >
+            <div class="flex justify-center mb-4">
+              <div class="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+                <UIcon
+                  name="i-lucide-wifi-off"
+                  class="w-8 h-8 text-error"
+                />
+              </div>
+            </div>
+            <h2 class="text-xl font-semibold text-highlighted mb-2">
+              {{ t('common.backendUnavailable') }}
+            </h2>
+            <p class="text-muted mb-6">
+              {{ t('common.backendUnavailableDescription') }}
+            </p>
+            <UButton
+              :label="t('common.retryConnection')"
+              icon="i-lucide-refresh-cw"
+              color="primary"
+              variant="solid"
+              @click="retryBackend"
+            />
+          </div>
+        </Transition>
+      </div>
+    </div>
+  </Transition>
+
   <UDashboardGroup unit="rem">
     <UDashboardSidebar
       id="default"
@@ -284,3 +345,25 @@ function cancelDelete() {
 
   <SearchModal v-model:open="searchOpen" />
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-fast-enter-active,
+.fade-fast-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-fast-enter-from,
+.fade-fast-leave-to {
+  opacity: 0;
+}
+</style>

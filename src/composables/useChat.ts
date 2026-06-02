@@ -1,4 +1,5 @@
 import { ref, computed, triggerRef } from 'vue'
+import { useBackendStatus } from './useBackendStatus'
 
 export interface ToolCall {
   id: string
@@ -75,6 +76,7 @@ export function useChat(sessionId: string) {
   const error = ref<Error | null>(null)
   const currentAssistantId = ref<string | null>(null)
   const streamingPhase = ref<StreamingPhase>('idle')
+  const { status: backendStatus } = useBackendStatus()
 
   const reasoningMsgIds = new Set<string>()
   const messageMsgIds = new Set<string>()
@@ -126,6 +128,14 @@ export function useChat(sessionId: string) {
   function sendMessage(text: string, options?: { onComplete?: () => void }): Promise<void> {
     return new Promise((resolve) => {
       if (!text.trim() || status.value === 'streaming') {
+        resolve()
+        return
+      }
+
+      // Check backend connection status
+      if (backendStatus.value === 'disconnected') {
+        error.value = new Error('无法连接到AI服务，请检查本机配置或联系管理员')
+        status.value = 'error'
         resolve()
         return
       }

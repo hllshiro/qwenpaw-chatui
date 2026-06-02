@@ -20,6 +20,10 @@
     "search": "Search",
     "noResults": "No results",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "backendUnavailable": "Unable to connect to AI service",
+    "backendUnavailableDescription": "Please check your local configuration or contact the administrator",
+    "checkingConnection": "Checking connection...",
+    "retryConnection": "Retry connection"
   }
 }
