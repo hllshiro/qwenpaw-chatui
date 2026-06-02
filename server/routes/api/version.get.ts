@@ -1,7 +1,8 @@
 import { defineHandler } from 'nitro'
+import { config } from '../../config'
 
 export default defineHandler(async () => {
-  const backendUrl = process.env.QWENPAW_BACKEND_URL || 'http://localhost:8088'
+  const backendUrl = config.qwenpawBackendUrl
 
   try {
     const response = await fetch(`${backendUrl}/api/version`, {
