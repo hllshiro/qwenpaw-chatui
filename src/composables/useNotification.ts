@@ -3,6 +3,19 @@ import { createSharedComposable } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useSettings } from './settings'
 
+// 模块级单例 AudioContext
+let audioCtx: AudioContext | null = null
+
+function getAudioContext(): AudioContext {
+  if (!audioCtx || audioCtx.state === 'closed') {
+    audioCtx = new AudioContext()
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume()
+  }
+  return audioCtx
+}
+
 // 通知类型定义
 interface NotificationBase {
   id: string
@@ -67,7 +80,7 @@ export const useNotification = createSharedComposable(() => {
     if (!getValue('general.notifications.sound')) return
     
     try {
-      const ctx = new AudioContext()
+      const ctx = getAudioContext()
       const oscillator = ctx.createOscillator()
       const gainNode = ctx.createGain()
       
