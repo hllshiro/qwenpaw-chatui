@@ -1,5 +1,6 @@
 import { ref, computed, triggerRef } from 'vue'
 import { useBackendStatus } from './useBackendStatus'
+import { useNotification } from './useNotification'
 
 export interface ToolCall {
   id: string
@@ -289,6 +290,41 @@ export function useChat(sessionId: string) {
   function handleEvent(event: Record<string, unknown>) {
     const obj = event.object as string
     const type = event.type as string
+    const { add: addNotification } = useNotification()
+
+    // ── 通知触发 ─────────────────────────────────────────────────
+    // 智能体完成通知
+    if (obj === 'response' && event.status === 'completed') {
+      addNotification({
+        id: `notification-${Date.now()}`,
+        type: 'agent_complete',
+        sessionId,
+        sessionName: '',
+        timestamp: Date.now(),
+        read: false,
+      })
+    }
+
+    // 审批通知
+    if (obj === 'message' && type === 'message') {
+      const metadata = (event as any).metadata
+      if (metadata?.message_type === 'tool_guard_approval') {
+        addNotification({
+          id: `notification-${Date.now()}`,
+          type: 'approval',
+          sessionId,
+          sessionName: '',
+          requestId: metadata.approval_request_id || '',
+          toolName: metadata.tool_name || '',
+          severity: metadata.severity || 'LOW',
+          findingsSummary: metadata.findings_summary || '',
+          toolParams: metadata.tool_params,
+          status: 'pending',
+          timestamp: Date.now(),
+          read: false,
+        })
+      }
+    }
 
     // ── response lifecycle ─────────────────────────────────────────
     if (obj === 'response') {
