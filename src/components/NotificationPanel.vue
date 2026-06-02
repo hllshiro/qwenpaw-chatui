@@ -80,14 +80,14 @@ function formatToolParams(params: any): string {
           <div class="flex gap-1">
             <button
               class="size-6 flex items-center justify-center rounded hover:bg-accent disabled:opacity-50"
-              :disabled="currentIndex >= totalCount - 1"
+              :disabled="currentIndex <= 0"
               @click="prev"
             >
               ◀
             </button>
             <button
               class="size-6 flex items-center justify-center rounded hover:bg-accent disabled:opacity-50"
-              :disabled="currentIndex <= 0"
+              :disabled="currentIndex >= totalCount - 1"
               @click="next"
             >
               ▶
