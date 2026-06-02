@@ -1,6 +1,7 @@
 import { ref, computed, triggerRef } from 'vue'
 import { useBackendStatus } from './useBackendStatus'
 import { useNotification } from './useNotification'
+import { useSessions, type Session } from './useSessions'
 
 export interface ToolCall {
   id: string
@@ -68,6 +69,7 @@ function clearPendingMessage(sessionId: string) {
 const sessionMessages = new Map<string, ChatMessage[]>()
 
 export function useChat(sessionId: string) {
+  const { sessions } = useSessions()
   if (!sessionMessages.has(sessionId)) {
     sessionMessages.set(sessionId, [])
   }
@@ -295,11 +297,12 @@ export function useChat(sessionId: string) {
     // ── 通知触发 ─────────────────────────────────────────────────
     // 智能体完成通知
     if (obj === 'response' && event.status === 'completed') {
+      const session = (sessions.value as Session[]).find((s: Session) => s.id === sessionId)
       addNotification({
-        id: `notification-${Date.now()}`,
+        id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         type: 'agent_complete',
         sessionId,
-        sessionName: '',
+        sessionName: session?.name || sessionId,
         timestamp: Date.now(),
         read: false,
       })
@@ -309,11 +312,12 @@ export function useChat(sessionId: string) {
     if (obj === 'message' && type === 'message') {
       const metadata = (event as any).metadata
       if (metadata?.message_type === 'tool_guard_approval') {
+        const session = (sessions.value as Session[]).find((s: Session) => s.id === sessionId)
         addNotification({
-          id: `notification-${Date.now()}`,
+          id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           type: 'approval',
           sessionId,
-          sessionName: '',
+          sessionName: session?.name || sessionId,
           requestId: metadata.approval_request_id || '',
           toolName: metadata.tool_name || '',
           severity: metadata.severity || 'LOW',
@@ -329,11 +333,12 @@ export function useChat(sessionId: string) {
     // 错误通知
     if (obj === 'response' && event.status === 'failed') {
       const errorData = (event as any).error
+      const session = (sessions.value as Session[]).find((s: Session) => s.id === sessionId)
       addNotification({
         id: `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         type: 'error',
         sessionId,
-        sessionName: '', // 将在组件中填充
+        sessionName: session?.name || sessionId,
         errorMessage: errorData?.message || 'Unknown error',
         timestamp: Date.now(),
         read: false,

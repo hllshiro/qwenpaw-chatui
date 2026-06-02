@@ -2,7 +2,7 @@ import { ref, computed } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { $fetch } from 'ofetch'
 
-interface Session {
+export interface Session {
   id: string
   businessKey: string
   name: string
