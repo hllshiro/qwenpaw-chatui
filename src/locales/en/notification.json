@@ -1,0 +1,17 @@
+{
+  "notification": {
+    "agentComplete": "Agent Complete",
+    "generationComplete": "Generation completed",
+    "session": "Session",
+    "jump": "Jump",
+    "close": "Close",
+    "approvalRequired": "Approval Required",
+    "details": "Details",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "error": "Error",
+    "errorReason": "Error reason"
+  }
+}

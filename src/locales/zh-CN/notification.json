@@ -1,0 +1,17 @@
+{
+  "notification": {
+    "agentComplete": "智能体完成",
+    "generationComplete": "生成已完成",
+    "session": "会话",
+    "jump": "跳转",
+    "close": "关闭",
+    "approvalRequired": "需要审批",
+    "details": "详情",
+    "approve": "批准",
+    "reject": "拒绝",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "error": "错误",
+    "errorReason": "错误原因"
+  }
+}
