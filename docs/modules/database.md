@@ -66,17 +66,31 @@ export const settings = sqliteTable('settings', {
 ### drizzle.config.ts
 
 ```typescript
+import { mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
+import { defineConfig } from 'drizzle-kit'
+
+const dbUrl = process.env.DATABASE_URL || 'file:.data/qwenpaw.db'
+const filePath = dbUrl.replace('file:', '')
+
+// Create database directory if needed
+try {
+  mkdirSync(dirname(filePath), { recursive: true })
+} catch {
+  // directory already exists
+}
+
 export default defineConfig({
+  dialect: 'sqlite',
   schema: './server/database/schema.ts',
   out: './server/database/migrations',
-  dialect: 'sqlite',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'file:.data/qwenpaw.db'
+    url: dbUrl
   }
 })
 ```
 
-> **注意：** `drizzle.config.ts` 由 Drizzle CLI 独立运行，不经过 Nitro 自动导入，因此此处仍直接使用 `process.env`。
+> **注意：** `drizzle.config.ts` 由 Drizzle CLI 独立运行，不经过 Nitro 自动导入，因此此处仍直接使用 `process.env`。配置文件会在执行前自动创建数据库目录，确保全新环境下也能正常运行。
 
 ### 环境变量
 
