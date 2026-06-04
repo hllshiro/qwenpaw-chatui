@@ -76,6 +76,23 @@ export const useNotification = createSharedComposable(() => {
     return getValue(settingMap[type]) !== false
   }
 
+  // 检查是否应该发送智能体完成通知
+  function shouldNotifyAgentComplete(sessionId: string): boolean {
+    // 1. 检查设置开关
+    if (!shouldNotify('agent_complete')) return false
+    
+    // 2. 检查页面可见性
+    if (document.visibilityState !== 'visible') return true
+    
+    // 3. 检查当前路由是否是该会话页面
+    const route = useRouter().currentRoute.value
+    if (route.path === `/chat/${sessionId}`) {
+      return false // 页面可见且在该会话页面，跳过通知
+    }
+    
+    return true
+  }
+
   // 播放提示音
   function playSound() {
     if (!getValue('general.notifications.sound')) return
@@ -102,6 +119,11 @@ export const useNotification = createSharedComposable(() => {
 
   // 添加通知
   function add(notification: Notification) {
+    // 智能体完成通知需要额外检查
+    if (notification.type === 'agent_complete') {
+      if (!shouldNotifyAgentComplete(notification.sessionId)) return
+    }
+    
     if (!shouldNotify(notification.type)) return
 
     notifications.value.unshift(notification)
@@ -178,5 +200,6 @@ export const useNotification = createSharedComposable(() => {
     denyApproval,
     next,
     prev,
+    shouldNotifyAgentComplete,
   }
 })
