@@ -13,8 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "prepare": "husky",
-    "package:linux": "node scripts/package.mjs linux",
-    "package:win": "node scripts/package.mjs win"
+    "package": "node scripts/package.mjs"
   },
   "dependencies": {
     "@ai-sdk/vue": "^3.0.177",
