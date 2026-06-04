@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { $fetch } from 'ofetch'
 import { useI18n } from 'vue-i18n'
 import { useNotification, type ApprovalNotification } from '@/composables/useNotification'
+import { useApprovalState } from '@/composables/useApprovalState'
 
 const { t } = useI18n()
 const {
@@ -17,8 +18,25 @@ const {
   prev,
 } = useNotification()
 
+const { updateApprovalStatus, getApprovalStatus } = useApprovalState()
+
 const detailsExpanded = ref(false)
 const approvalLoading = ref(false)
+
+// 监听共享状态变化，同步到本地通知
+watch(
+  () => currentNotification.value,
+  (newVal) => {
+    if (newVal?.type === 'approval') {
+      const notification = newVal as ApprovalNotification
+      const sharedStatus = getApprovalStatus(notification.requestId)
+      if (sharedStatus && sharedStatus !== notification.status) {
+        notification.status = sharedStatus
+      }
+    }
+  },
+  { immediate: true }
+)
 
 // 审批通知详情切换
 function toggleDetails() {
@@ -40,7 +58,10 @@ async function handleApproval(action: 'approve' | 'deny') {
         session_id: notification.sessionId,
       },
     })
+    // 更新本地状态
     notification.status = action === 'approve' ? 'approved' : 'denied'
+    // 更新共享状态
+    updateApprovalStatus(notification.requestId, notification.status)
   } catch (err) {
     console.error('[Notification] Approval failed:', err)
   } finally {
