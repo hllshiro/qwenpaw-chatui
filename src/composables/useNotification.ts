@@ -142,6 +142,14 @@ export const useNotification = createSharedComposable(() => {
     
     if (!shouldNotify(notification.type)) return
 
+    // 审批通知去重
+    if (notification.type === 'approval') {
+      const existing = notifications.value.find(
+        n => n.type === 'approval' && n.requestId === notification.requestId
+      )
+      if (existing) return
+    }
+
     notifications.value.unshift(notification)
     currentIndex.value = 0
     isVisible.value = true
