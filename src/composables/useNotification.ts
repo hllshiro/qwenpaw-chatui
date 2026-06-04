@@ -101,12 +101,10 @@ export const useNotification = createSharedComposable(() => {
     if (document.visibilityState !== 'visible') return true
     
     // 3. 检查当前路由是否是该会话页面
-    const route = useRouter().currentRoute.value
-    if (route.path === `/chat/${sessionId}`) {
-      return false // 页面可见且在该会话页面，跳过通知
-    }
-    
-    return true
+    const currentPath = router.currentRoute.value.path
+    const expectedPath = `/chat/${sessionId}`
+    const shouldSkip = currentPath === expectedPath
+    return !shouldSkip
   }
 
   // 播放提示音
