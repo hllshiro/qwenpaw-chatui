@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useRouter } from 'vue-router'
 import { useSettings } from './settings'
@@ -55,6 +55,22 @@ export const useNotification = createSharedComposable(() => {
   const notifications = ref<Notification[]>([])
   const currentIndex = ref(0)
   const isVisible = ref(false)
+
+  // 监听路由变化，自动关闭对应会话的智能体完成通知
+  watch(() => router.currentRoute.value, (route) => {
+    if (route.path.startsWith('/chat/')) {
+      const sessionId = route.path.split('/chat/')[1]
+      if (sessionId) {
+        // 关闭该会话的智能体完成通知
+        const notificationToClose = notifications.value.find(
+          n => n.type === 'agent_complete' && n.sessionId === sessionId
+        )
+        if (notificationToClose) {
+          close(notificationToClose.id)
+        }
+      }
+    }
+  })
 
   // 计算属性
   const currentNotification = computed(() => {
