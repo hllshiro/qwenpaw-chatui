@@ -7,6 +7,7 @@ import { useSessions } from '@/composables/useSessions'
 import { useSettings } from '@/composables/settings'
 import { useChat, type ChatMessage, type MessageBlock } from '@/composables/useChat'
 import { useInputCache } from '@/composables/useInputCache'
+import { useApprovalState } from '@/composables/useApprovalState'
 import Navbar from '@/components/Navbar.vue'
 import ChatComark from '@/components/chat/Comark'
 
@@ -244,6 +245,7 @@ function syncBackendTitle() {
 const { getValue } = useSettings()
 
 const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache(sessionId, businessKey.value)
+const { updateApprovalStatus, getApprovalStatus, approvalStates } = useApprovalState()
 const expandedReasoning = ref(new Set<string>())
 const expandedToolCalls = ref(new Set<string>())
 const manuallyCollapsed = ref(new Set<string>())
@@ -341,6 +343,20 @@ watch(status, (newVal, oldVal) => {
     manuallyCollapsed.value.clear()
   }
 })
+
+// 监听共享状态变化，同步到本地审批块
+watch(approvalStates, () => {
+  messages.value.forEach(msg => {
+    msg.blocks?.forEach(block => {
+      if (block.type === 'approval' && block.approval?.requestId) {
+        const sharedStatus = getApprovalStatus(block.approval.requestId)
+        if (sharedStatus && sharedStatus !== block.approval.status) {
+          block.approval.status = sharedStatus
+        }
+      }
+    })
+  })
+}, { deep: true })
 
 function formatToolArgs(args: any): string {
   if (!args) return '{}'
@@ -443,7 +459,10 @@ async function handleApproval(_msg: ChatMessage, block: MessageBlock, action: 'a
         session_id: sessionId
       }
     })
+    // 更新本地状态
     block.approval.status = action === 'approve' ? 'approved' : 'denied'
+    // 更新共享状态
+    updateApprovalStatus(block.approval.requestId, block.approval.status)
   } catch (err) {
     console.error('[ChatPage] Approval failed:', err)
   } finally {
