@@ -23,6 +23,14 @@ const { updateApprovalStatus, getApprovalStatus } = useApprovalState()
 const detailsExpanded = ref(false)
 const approvalLoading = ref(false)
 
+// 监听通知切换，重置展开状态
+watch(
+  () => currentNotification.value?.id,
+  () => {
+    detailsExpanded.value = false
+  }
+)
+
 // 监听共享状态变化，同步到本地通知
 watch(
   () => currentNotification.value,
@@ -62,6 +70,8 @@ async function handleApproval(action: 'approve' | 'deny') {
     notification.status = action === 'approve' ? 'approved' : 'denied'
     // 更新共享状态
     updateApprovalStatus(notification.requestId, notification.status)
+    // 关闭通知
+    closeCurrent()
   } catch (err) {
     console.error('[Notification] Approval failed:', err)
   } finally {
@@ -118,84 +128,92 @@ function formatToolParams(params: any): string {
       </div>
 
       <!-- Content -->
-      <div class="p-3 min-h-[120px] max-h-[200px] overflow-y-auto">
+      <div class="h-[160px] overflow-y-auto">
         <!-- 智能体完成通知 -->
         <template v-if="currentNotification.type === 'agent_complete'">
-          <div class="text-sm">
-            <span class="text-muted">{{ t('notification.session') }}：</span>
-            <span class="font-medium">「{{ currentNotification.sessionName }}」</span>
-          </div>
-          <div class="mt-2 text-sm text-success">
-            {{ t('notification.generationComplete') }}
+          <div class="flex flex-col justify-center h-full p-3">
+            <div class="text-sm">
+              <span class="text-muted">{{ t('notification.session') }}：</span>
+              <span class="font-medium">「{{ currentNotification.sessionName }}」</span>
+            </div>
+            <div class="mt-2 text-sm text-success">
+              {{ t('notification.generationComplete') }}
+            </div>
           </div>
         </template>
 
         <!-- 审批通知 -->
         <template v-else-if="currentNotification.type === 'approval'">
-          <div class="flex items-center gap-2 mb-2">
-            <span
-              class="px-1.5 py-0.5 rounded text-[10px]"
-              :class="(currentNotification as ApprovalNotification).severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'"
-            >
-              {{ (currentNotification as ApprovalNotification).severity }}
-            </span>
-            <span class="font-mono text-sm">{{ (currentNotification as ApprovalNotification).toolName }}</span>
-          </div>
-
-          <button
-            class="flex items-center gap-1 text-xs text-muted hover:text-default mb-2"
-            @click="toggleDetails"
-          >
-            <span>{{ detailsExpanded ? '▼' : '▶' }}</span>
-            <span>{{ t('notification.details') }}</span>
-          </button>
-
-          <div
-            v-if="detailsExpanded"
-            class="text-xs space-y-1 bg-elevated rounded p-2"
-          >
-            <div
-              v-if="(currentNotification as ApprovalNotification).findingsSummary"
-              class="text-muted"
-            >
-              {{ (currentNotification as ApprovalNotification).findingsSummary }}
+          <div class="flex flex-col h-full p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span
+                class="px-1.5 py-0.5 rounded text-[10px]"
+                :class="(currentNotification as ApprovalNotification).severity === 'HIGH' ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-200' : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200'"
+              >
+                {{ (currentNotification as ApprovalNotification).severity }}
+              </span>
+              <span class="font-mono text-sm">{{ (currentNotification as ApprovalNotification).toolName }}</span>
             </div>
-            <pre
-              v-if="(currentNotification as ApprovalNotification).toolParams"
-              class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5"
-            >{{ formatToolParams((currentNotification as ApprovalNotification).toolParams) }}</pre>
-          </div>
 
-          <div
-            v-if="(currentNotification as ApprovalNotification).status !== 'pending'"
-            class="mt-2 text-sm"
-          >
-            <span
-              v-if="(currentNotification as ApprovalNotification).status === 'approved'"
-              class="text-success"
-            >✅ {{ t('notification.approved') }}</span>
-            <span
-              v-else
-              class="text-error"
-            >❌ {{ t('notification.rejected') }}</span>
+            <button
+              class="flex items-center gap-1 text-xs text-muted hover:text-default mb-2"
+              @click="toggleDetails"
+            >
+              <span>{{ detailsExpanded ? '▼' : '▶' }}</span>
+              <span>{{ t('notification.details') }}</span>
+            </button>
+
+            <div class="flex-1 min-h-0 overflow-y-auto">
+              <div
+                v-if="detailsExpanded"
+                class="text-xs space-y-1 bg-elevated rounded p-2"
+              >
+                <div
+                  v-if="(currentNotification as ApprovalNotification).findingsSummary"
+                  class="text-muted"
+                >
+                  {{ (currentNotification as ApprovalNotification).findingsSummary }}
+                </div>
+                <pre
+                  v-if="(currentNotification as ApprovalNotification).toolParams"
+                  class="whitespace-pre-wrap break-all text-[11px] leading-relaxed bg-background/50 rounded p-1.5"
+                >{{ formatToolParams((currentNotification as ApprovalNotification).toolParams) }}</pre>
+              </div>
+            </div>
+
+            <div
+              v-if="(currentNotification as ApprovalNotification).status !== 'pending'"
+              class="mt-2 text-sm"
+            >
+              <span
+                v-if="(currentNotification as ApprovalNotification).status === 'approved'"
+                class="text-success"
+              >✅ {{ t('notification.approved') }}</span>
+              <span
+                v-else
+                class="text-error"
+              >❌ {{ t('notification.rejected') }}</span>
+            </div>
           </div>
         </template>
 
         <!-- 错误通知 -->
         <template v-else-if="currentNotification.type === 'error'">
-          <div class="text-sm">
-            <span class="text-muted">{{ t('notification.session') }}：</span>
-            <span class="font-medium">「{{ currentNotification.sessionName }}」</span>
-          </div>
-          <div class="mt-2 text-sm text-error">
-            <span class="text-muted">{{ t('notification.errorReason') }}：</span>
-            {{ currentNotification.errorMessage }}
+          <div class="flex flex-col justify-center h-full p-3">
+            <div class="text-sm">
+              <span class="text-muted">{{ t('notification.session') }}：</span>
+              <span class="font-medium">「{{ currentNotification.sessionName }}」</span>
+            </div>
+            <div class="mt-2 text-sm text-error">
+              <span class="text-muted">{{ t('notification.errorReason') }}：</span>
+              {{ currentNotification.errorMessage }}
+            </div>
           </div>
         </template>
       </div>
 
       <!-- Footer -->
-      <div class="flex justify-end gap-2 px-3 py-2 bg-elevated border-t border-default">
+      <div class="h-[40px] flex items-center justify-end gap-2 px-3 bg-elevated border-t border-default">
         <!-- 智能体完成通知按钮 -->
         <template v-if="currentNotification.type === 'agent_complete'">
           <UButton
