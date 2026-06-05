@@ -58,6 +58,23 @@ const outName = `star-agent-chatui-v${APP_VERSION}-${platformLabel}-x64`
 const distDir = join(ROOT, 'dist', outName)
 
 async function main() {
+  // 检查 Node.js 版本，--env-file 参数需要 20.6.0+
+  const nodeVersion = process.version
+  const versionMatch = nodeVersion.match(/^v(\d+)\.(\d+)\.(\d+)/)
+  if (versionMatch) {
+    const major = parseInt(versionMatch[1], 10)
+    const minor = parseInt(versionMatch[2], 10)
+    const patch = parseInt(versionMatch[3], 10)
+    if (major < 20 || (major === 20 && minor < 6)) {
+      console.error(`错误: Node.js 版本过低 (当前: ${nodeVersion})`)
+      console.error('--env-file 参数需要 Node.js 20.6.0 或更高版本')
+      console.error('请升级 Node.js 后重试')
+      process.exit(1)
+    }
+  } else {
+    console.warn(`警告: 无法解析 Node.js 版本: ${nodeVersion}，跳过版本检查`)
+  }
+
   console.log(`\n=== 打包 ${outName} ===\n`)
 
   // 1. 执行 build
