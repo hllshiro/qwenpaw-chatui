@@ -81,11 +81,23 @@ async function main() {
   console.log('执行 pnpm build ...')
   execSync('pnpm build', { cwd: ROOT, stdio: 'inherit' })
 
-  // 2. 清理并创建分发目录
+  // 2. 修补 srvx：修复端口占用时静默退出的问题
+  const srvxPath = join(ROOT, '.output/server/_chunks/_libs/srvx.mjs')
+  if (existsSync(srvxPath)) {
+    let srvx = readFileSync(srvxPath, 'utf-8')
+    const target = 'if (!options.manual) this.serve().catch(() => {\n    })'
+    if (srvx.includes(target)) {
+      srvx = srvx.replace(target, 'if (!options.manual) this.serve().catch((err) => {\n      console.error(err)\n      process.exit(1)\n    })')
+      writeFileSync(srvxPath, srvx)
+      console.log('已修补 srvx: 端口占用时将正常报错')
+    }
+  }
+
+  // 3. 清理并创建分发目录
   rmSync(distDir, { recursive: true, force: true })
   mkdirSync(distDir, { recursive: true })
 
-  // 3. 复制 Node.js 二进制
+  // 4. 复制 Node.js 二进制
   const destBinary = join(distDir, config.nodeBinary)
   copyFileSync(process.execPath, destBinary)
   if (PLATFORM !== 'win32') {
@@ -93,20 +105,20 @@ async function main() {
   }
   console.log(`已复制 Node.js: ${config.nodeBinary}`)
 
-  // 4. 复制 .output 目录
+  // 5. 复制 .output 目录
   const outputSrc = join(ROOT, '.output')
   const outputDest = join(distDir, '.output')
   cpSync(outputSrc, outputDest, { recursive: true })
   console.log('已复制 .output/')
 
-  // 5. 复制 .env.example
+  // 6. 复制 .env.example
   const envExample = join(ROOT, '.env.example')
   if (existsSync(envExample)) {
     copyFileSync(envExample, join(distDir, '.env.example'))
     console.log('已复制 .env.example')
   }
 
-  // 6. 创建启动脚本
+  // 7. 创建启动脚本
   for (const script of config.startScripts) {
     const scriptPath = join(distDir, script.name)
     writeFileSync(scriptPath, script.content)
@@ -116,7 +128,7 @@ async function main() {
     console.log(`已创建启动脚本: ${script.name}`)
   }
 
-  // 7. 打包
+  // 8. 打包
   const archiveDir = join(ROOT, 'dist')
   const archivePath = join(archiveDir, `${outName}.tar.gz`)
   execSync(`tar -czf "${archivePath}" -C "${archiveDir}" "${outName}"`, { stdio: 'inherit' })

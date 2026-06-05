@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - 简化打包脚本，移除跨平台 Node.js 下载逻辑，改为使用当前环境的 Node.js 进行打包
 - 合并 `package:linux` 和 `package:win` 命令为统一的 `package` 命令，自动检测当前平台
+- `.env` 文件变为可选：启动时如果文件不存在则使用代码中的默认配置
+
+### Fixed
+
+- 修复服务端口被占用时程序静默退出的问题，现在会显示错误信息并正常退出
 
 ### Removed
 
