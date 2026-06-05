@@ -17,7 +17,11 @@ const PLATFORM_MAP = {
         name: 'start.sh',
         content: `#!/bin/bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
-exec "$DIR/node" --env-file="$DIR/.env" "$DIR/.output/server/index.mjs"
+if [ -f "$DIR/.env" ]; then
+  exec "$DIR/node" --env-file="$DIR/.env" "$DIR/.output/server/index.mjs"
+else
+  exec "$DIR/node" "$DIR/.output/server/index.mjs"
+fi
 `,
         executable: true,
       },
@@ -30,7 +34,11 @@ exec "$DIR/node" --env-file="$DIR/.env" "$DIR/.output/server/index.mjs"
         name: 'start.cmd',
         content: `@echo off
 cd /d "%~dp0"
-node --env-file=.env .output\\server\\index.mjs
+if exist .env (
+  node --env-file=.env .output\\server\\index.mjs
+) else (
+  node .output\\server\\index.mjs
+)
 `,
         executable: false,
       },
