@@ -29,6 +29,7 @@ routes/api/
 │   ├── [key].put.ts          # PUT /api/settings/:key — 更新配置
 │   ├── export.get.ts         # GET /api/settings/export — 导出
 │   └── import.post.ts        # POST /api/settings/import — 导入
+└── version.get.ts            # GET /api/version — 应用版本
 ```
 
 ## Where to Look

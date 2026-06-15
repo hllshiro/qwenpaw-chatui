@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- 完善 AGENTS.md 指令文件，补充遗漏的命令、环境变量和架构说明，帮助 AI 助手更准确地理解项目
 - 提取 BrandIcon 组件，统一品牌图标显示逻辑（支持图片和图标两种形式）
 - 优化导航栏背景透明度，提升视觉效果
 - 聊天消息操作按钮（复制等）现在默认隐藏，鼠标悬停时显示，减少视觉干扰
