@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSessions } from "@/composables/useSessions";
 import { useSettings } from "@/composables/settings";
-import { useInputCache } from "@/composables/useInputCache";
 
 const router = useRouter();
 const { t } = useI18n();
@@ -15,30 +14,13 @@ const brandName = computed(
   () => getValue("appearance.brand.name") || "QwenPaw",
 );
 
-const {
-  cachedText: input,
-  save: saveInputCache,
-  clear: clearInputCache,
-  init: initInputCache,
-} = useInputCache(undefined, businessKey.value);
 const loading = ref(false);
 
-onMounted(() => {
-  initInputCache();
-});
-
-async function onSubmit() {
-  if (!input.value.trim()) return;
+async function onSubmit(text: string) {
   loading.value = true;
   try {
-    console.log("[Home] Creating session...");
     const session = await createSession();
-    console.log("[Home] Session created:", session);
-    const msg = input.value;
-    input.value = "";
-    clearInputCache();
-    console.log("[Home] Redirecting to:", `/chat/${session.id}`);
-    router.push({ path: `/chat/${session.id}`, query: { msg } });
+    router.push({ path: `/chat/${session.id}`, query: { msg: text } });
   } catch (err) {
     console.error("[Home] Error:", err);
   } finally {
@@ -69,21 +51,13 @@ async function onSubmit() {
           {{ t("chat.welcome") }}
         </p>
 
-        <UChatPrompt
-          v-model="input"
+        <ChatInput
+          :business-key="businessKey"
           :status="loading ? 'streaming' : 'ready'"
-          :maxrows="10"
-          :rows="1"
           class="[view-transition-name:chat-prompt]"
-          variant="subtle"
           :ui="{ base: 'px-1.5', footer: 'justify-end' }"
           @submit="onSubmit"
-          @input="saveInputCache($event.target.value)"
-        >
-          <template #footer>
-            <UChatPromptSubmit color="neutral" />
-          </template>
-        </UChatPrompt>
+        />
       </UContainer>
     </template>
   </UDashboardPanel>

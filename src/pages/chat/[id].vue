@@ -10,7 +10,6 @@ import {
   type ChatMessage,
   type MessageBlock,
 } from "@/composables/useChat";
-import { useInputCache } from "@/composables/useInputCache";
 import { useApprovalState } from "@/composables/useApprovalState";
 import Navbar from "@/components/Navbar.vue";
 import ChatComark from "@/components/chat/Comark";
@@ -25,7 +24,6 @@ const sessionData = ref<any>(null);
 const loading = ref(true);
 
 onMounted(async () => {
-  initInputCache();
   try {
     const [data, history, qwenpawChat] = await Promise.all([
       $fetch(`/api/chats/${sessionId}`),
@@ -275,12 +273,6 @@ const brandIcon = computed(
   () => getValue("appearance.brand.icon") || "i-lucide-sparkles",
 );
 
-const {
-  cachedText: input,
-  save: saveInputCache,
-  clear: clearInputCache,
-  init: initInputCache,
-} = useInputCache(sessionId, businessKey.value);
 const { updateApprovalStatus, getApprovalStatus, approvalStates } =
   useApprovalState();
 const expandedReasoning = ref(new Set<string>());
@@ -489,11 +481,7 @@ function applyDefaultExpandSettings() {
   }
 }
 
-function handleSubmit() {
-  if (!input.value.trim()) return;
-  const text = input.value;
-  input.value = "";
-  clearInputCache();
+function handleSubmit(text: string) {
   sendMessage(text, { onComplete: syncBackendTitle });
 }
 
@@ -921,26 +909,15 @@ const chatStatus = computed(() => {
           >
             {{ error.message }}
           </div>
-          <UChatPrompt
-            v-model="input"
+          <ChatInput
+            :session-id="sessionId"
+            :business-key="businessKey"
             :status="status"
-            :maxrows="10"
-            :rows="1"
-            :disabled="status === 'streaming'"
             :placeholder="t('chat.inputPlaceholder')"
-            variant="subtle"
             :ui="{ base: 'px-1.5', footer: 'justify-end' }"
             @submit="handleSubmit"
-            @input="saveInputCache($event.target.value)"
-          >
-            <template #footer>
-              <UChatPromptSubmit
-                color="neutral"
-                :status="status"
-                @stop="stop"
-              />
-            </template>
-          </UChatPrompt>
+            @stop="stop"
+          />
         </div>
       </div>
     </template>
