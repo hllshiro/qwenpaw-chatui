@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - 聊天页面新增消息头像，用户消息显示用户图标，助手消息显示品牌图标，头像带有圆形边框和内边距
+- 设置中新增用户消息样式和助手消息样式选项（设置 > 外观 > 主题），支持实体、轮廓、柔和、软边、无边框五种气泡风格
 
 ### Changed
 
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- 修复清除浏览器缓存后主题设置（明暗模式）丢失的问题
 - 修复侧边栏会话列表中操作菜单（重命名、删除）无法显示和触发的问题
 - 修复服务端口被占用时程序静默退出的问题，现在会显示错误信息并正常退出
 - 修复输入框内容无法正确缓存的问题，刷新页面后输入内容不再丢失

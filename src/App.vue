@@ -29,6 +29,8 @@ const { loadSettings, getValue, setValue } = useSettings()
 
 onMounted(async () => {
   await loadSettings()
+  const saved = getValue('appearance.theme.colorScheme')
+  if (saved && saved !== colorMode.value) colorMode.value = saved
 })
 
 // 监听颜色方案变化（设置 → 界面）

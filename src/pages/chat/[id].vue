@@ -591,7 +591,7 @@ const chatStatus = computed(() => {
           class="flex-1 min-h-0 overflow-y-auto"
           :ui="{ root: 'pt-(--ui-header-height) px-4 sm:px-8' }"
           :user="{
-            variant: 'soft',
+            variant: getValue('appearance.theme.userVariant') || 'soft',
             ui: { content: 'text-sm', actions: 'cursor-pointer' },
             actions: [
               {
@@ -603,7 +603,7 @@ const chatStatus = computed(() => {
             ],
           }"
           :assistant="{
-            variant: 'soft',
+            variant: getValue('appearance.theme.assistantVariant') || 'soft',
             ui: { content: 'text-sm', actions: 'cursor-pointer' },
             actions: [
               {

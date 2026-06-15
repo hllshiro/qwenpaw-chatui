@@ -46,7 +46,14 @@
         "colorScheme": "配色方案",
         "light": "浅色",
         "dark": "深色",
-        "primaryColor": "主题颜色"
+        "primaryColor": "主题颜色",
+        "userVariant": "用户消息样式",
+        "assistantVariant": "助手消息样式",
+        "solid": "实体",
+        "outline": "轮廓",
+        "subtle": "柔和",
+        "soft": "软边",
+        "naked": "无边框"
       },
       "typography": {
         "label": "字体",

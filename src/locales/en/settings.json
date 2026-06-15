@@ -46,7 +46,14 @@
         "colorScheme": "Color Scheme",
         "light": "Light",
         "dark": "Dark",
-        "primaryColor": "Primary Color"
+        "primaryColor": "Primary Color",
+        "userVariant": "User Message Style",
+        "assistantVariant": "Assistant Message Style",
+        "solid": "Solid",
+        "outline": "Outline",
+        "subtle": "Subtle",
+        "soft": "Soft",
+        "naked": "Naked"
       },
       "typography": {
         "label": "Typography",

@@ -219,6 +219,42 @@ registerSetting({
 })
 
 registerSetting({
+  key: 'appearance.theme.userVariant',
+  label: '用户消息样式',
+  labelKey: 'settings.appearance.theme.userVariant',
+  type: 'select',
+  defaultValue: 'soft',
+  category: 'appearance',
+  group: 'theme',
+  advanced: true,
+  options: [
+    { label: '实体', labelKey: 'settings.appearance.theme.solid', value: 'solid' },
+    { label: '轮廓', labelKey: 'settings.appearance.theme.outline', value: 'outline' },
+    { label: '柔和', labelKey: 'settings.appearance.theme.subtle', value: 'subtle' },
+    { label: '软边', labelKey: 'settings.appearance.theme.soft', value: 'soft' },
+    { label: '无边框', labelKey: 'settings.appearance.theme.naked', value: 'naked' },
+  ],
+})
+
+registerSetting({
+  key: 'appearance.theme.assistantVariant',
+  label: '助手消息样式',
+  labelKey: 'settings.appearance.theme.assistantVariant',
+  type: 'select',
+  defaultValue: 'soft',
+  category: 'appearance',
+  group: 'theme',
+  advanced: true,
+  options: [
+    { label: '实体', labelKey: 'settings.appearance.theme.solid', value: 'solid' },
+    { label: '轮廓', labelKey: 'settings.appearance.theme.outline', value: 'outline' },
+    { label: '柔和', labelKey: 'settings.appearance.theme.subtle', value: 'subtle' },
+    { label: '软边', labelKey: 'settings.appearance.theme.soft', value: 'soft' },
+    { label: '无边框', labelKey: 'settings.appearance.theme.naked', value: 'naked' },
+  ],
+})
+
+registerSetting({
   key: 'appearance.language.locale',
   label: '界面语言',
   labelKey: 'settings.appearance.language.locale',
