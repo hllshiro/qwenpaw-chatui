@@ -255,7 +255,7 @@ function cancelDelete() {
                 color="neutral"
                 variant="link"
                 size="sm"
-                class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50"
+                class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50 cursor-pointer"
                 :aria-label="t('chat.sessionActions')"
                 @click.stop
               />
