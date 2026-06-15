@@ -36,3 +36,20 @@ html.dark .shiki span {
   font-weight: var(--shiki-dark-font-weight) !important;
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
+
+/* ChatMessage actions hover behavior */
+[data-slot="root"] {
+  &[data-role="user"],
+  &[data-role="assistant"] {
+    [data-slot="actions"] {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      button {
+        cursor: pointer;
+      }
+    }
+    &:hover [data-slot="actions"] {
+      opacity: 1;
+    }
+  }
+}

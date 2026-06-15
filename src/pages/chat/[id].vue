@@ -604,7 +604,7 @@ const chatStatus = computed(() => {
           :ui="{ root: 'pt-(--ui-header-height) px-4 sm:px-8' }"
           :user="{
             variant: 'soft',
-            ui: { content: 'text-sm' },
+            ui: { content: 'text-sm', actions: 'cursor-pointer' },
             actions: [
               {
                 icon: 'i-lucide-copy',
@@ -616,7 +616,7 @@ const chatStatus = computed(() => {
           }"
           :assistant="{
             variant: 'soft',
-            ui: { content: 'text-sm' },
+            ui: { content: 'text-sm', actions: 'cursor-pointer' },
             actions: [
               {
                 icon: 'i-lucide-copy',
