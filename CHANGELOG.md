@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - 修复服务端口被占用时程序静默退出的问题，现在会显示错误信息并正常退出
+- 修复输入框内容无法正确缓存的问题，刷新页面后输入内容不再丢失
 
 ### Removed
 

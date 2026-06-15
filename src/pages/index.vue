@@ -78,7 +78,7 @@ async function onSubmit() {
           variant="subtle"
           :ui="{ base: 'px-1.5', footer: 'justify-end' }"
           @submit="onSubmit"
-          @input="saveInputCache(input)"
+          @input="saveInputCache($event.target.value)"
         >
           <template #footer>
             <UChatPromptSubmit color="neutral" />

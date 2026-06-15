@@ -931,7 +931,7 @@ const chatStatus = computed(() => {
             variant="subtle"
             :ui="{ base: 'px-1.5', footer: 'justify-end' }"
             @submit="handleSubmit"
-            @input="saveInputCache(input)"
+            @input="saveInputCache($event.target.value)"
           >
             <template #footer>
               <UChatPromptSubmit
