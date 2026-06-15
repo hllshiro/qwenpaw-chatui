@@ -242,7 +242,7 @@ function cancelDelete() {
           orientation="vertical"
           :ui="{
             link: 'overflow-hidden pr-7.5',
-            linkTrailing: 'translate-x-full group-hover:translate-x-0 group-has-data-[state=open]:translate-x-0 transition-transform ms-0 absolute inset-e-px'
+            linkTrailing: 'session-actions ms-0 absolute inset-e-px'
           }"
         >
           <template #chat-trailing="{ item }">
@@ -251,15 +251,13 @@ function cancelDelete() {
               :content="{ align: 'end' }"
             >
               <UButton
-                as="div"
                 icon="i-lucide-ellipsis"
                 color="neutral"
                 variant="link"
                 size="sm"
                 class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50"
                 :aria-label="t('chat.sessionActions')"
-                tabindex="-1"
-                @click.stop.prevent
+                @click.stop
               />
             </UDropdownMenu>
           </template>
@@ -358,5 +356,14 @@ function cancelDelete() {
 .fade-fast-enter-from,
 .fade-fast-leave-to {
   opacity: 0;
+}
+
+:deep(.session-actions) {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+:deep(.group:hover .session-actions) {
+  opacity: 1;
 }
 </style>
