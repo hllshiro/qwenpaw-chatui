@@ -1,41 +1,48 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useSessions } from '@/composables/useSessions'
-import { useSettings } from '@/composables/settings'
-import { useInputCache } from '@/composables/useInputCache'
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { useSessions } from "@/composables/useSessions";
+import { useSettings } from "@/composables/settings";
+import { useInputCache } from "@/composables/useInputCache";
 
-const router = useRouter()
-const { t } = useI18n()
-const { createSession, businessKey } = useSessions()
-const { getValue } = useSettings()
+const router = useRouter();
+const { t } = useI18n();
+const { createSession, businessKey } = useSessions();
+const { getValue } = useSettings();
 
-const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
+const brandName = computed(
+  () => getValue("appearance.brand.name") || "QwenPaw",
+);
 
-const { cachedText: input, save: saveInputCache, clear: clearInputCache, init: initInputCache } = useInputCache(undefined, businessKey.value)
-const loading = ref(false)
+const {
+  cachedText: input,
+  save: saveInputCache,
+  clear: clearInputCache,
+  init: initInputCache,
+} = useInputCache(undefined, businessKey.value);
+const loading = ref(false);
 
 onMounted(() => {
-  initInputCache()
-})
+  initInputCache();
+});
 
 async function onSubmit() {
-  if (!input.value.trim()) return
-  loading.value = true
+  if (!input.value.trim()) return;
+  loading.value = true;
   try {
-    console.log('[Home] Creating session...')
-    const session = await createSession()
-    console.log('[Home] Session created:', session)
-    const msg = input.value
-    input.value = ''
-    clearInputCache()
-    console.log('[Home] Redirecting to:', `/chat/${session.id}`)
-    router.push({ path: `/chat/${session.id}`, query: { msg } })
+    console.log("[Home] Creating session...");
+    const session = await createSession();
+    console.log("[Home] Session created:", session);
+    const msg = input.value;
+    input.value = "";
+    clearInputCache();
+    console.log("[Home] Redirecting to:", `/chat/${session.id}`);
+    router.push({ path: `/chat/${session.id}`, query: { msg } });
   } catch (err) {
-    console.error('[Home] Error:', err)
+    console.error("[Home] Error:", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>
@@ -51,13 +58,15 @@ async function onSubmit() {
     </template>
 
     <template #body>
-      <UContainer class="flex-1 flex flex-col justify-center gap-4 sm:gap-6 py-8">
+      <UContainer
+        class="flex-1 flex flex-col justify-center gap-4 sm:gap-6 py-8"
+      >
         <h1 class="text-3xl sm:text-4xl text-highlighted font-bold">
           {{ brandName }}
         </h1>
 
         <p class="text-muted">
-          {{ t('chat.welcome') }}
+          {{ t("chat.welcome") }}
         </p>
 
         <UChatPrompt
@@ -67,15 +76,12 @@ async function onSubmit() {
           :rows="1"
           class="[view-transition-name:chat-prompt]"
           variant="subtle"
-          :ui="{ base: 'px-1.5' }"
+          :ui="{ base: 'px-1.5', footer: 'justify-end' }"
           @submit="onSubmit"
           @input="saveInputCache(input)"
         >
           <template #footer>
-            <UChatPromptSubmit
-              color="neutral"
-              size="sm"
-            />
+            <UChatPromptSubmit color="neutral" />
           </template>
         </UChatPrompt>
       </UContainer>

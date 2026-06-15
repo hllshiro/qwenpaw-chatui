@@ -929,14 +929,13 @@ const chatStatus = computed(() => {
             :disabled="status === 'streaming'"
             :placeholder="t('chat.inputPlaceholder')"
             variant="subtle"
-            :ui="{ base: 'px-1.5' }"
+            :ui="{ base: 'px-1.5', footer: 'justify-end' }"
             @submit="handleSubmit"
             @input="saveInputCache(input)"
           >
             <template #footer>
               <UChatPromptSubmit
                 color="neutral"
-                size="sm"
                 :status="status"
                 @stop="stop"
               />
