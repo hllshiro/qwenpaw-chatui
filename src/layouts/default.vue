@@ -363,7 +363,8 @@ function cancelDelete() {
   transition: opacity 0.15s ease;
 }
 
-:deep(.group:hover .session-actions) {
+:deep(.group:hover .session-actions),
+:deep(.session-actions:has([data-state="open"])) {
   opacity: 1;
 }
 </style>
