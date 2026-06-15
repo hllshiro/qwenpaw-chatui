@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- 聊天页面新增消息头像，用户消息显示用户图标，助手消息显示品牌图标
+- 聊天页面新增消息头像，用户消息显示用户图标，助手消息显示品牌图标，头像带有圆形边框和内边距
 
 ### Changed
 

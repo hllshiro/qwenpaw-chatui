@@ -628,7 +628,7 @@ const chatStatus = computed(() => {
           }"
         >
           <template #leading="{ message }">
-            <div class="rounded-full ring-1 ring-default overflow-hidden">
+            <div class="rounded-full ring-1 ring-default overflow-hidden p-0.5">
               <UIcon
                 v-if="message.role === 'user'"
                 name="i-lucide-user"
