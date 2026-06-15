@@ -46,7 +46,6 @@ const isDeletingOpen = computed({
 
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 const brandIcon = computed(() => getValue('appearance.brand.icon') || 'i-lucide-sparkles')
-const isBrandImage = computed(() => brandIcon.value && !brandIcon.value.startsWith('i-lucide-'))
 
 const items = computed(() => groupedSessions.value?.flatMap((group) => {
   return [{
@@ -187,15 +186,9 @@ function cancelDelete() {
           to="/"
           class="flex items-center gap-0.5"
         >
-          <img
-            v-if="isBrandImage"
-            :src="brandIcon"
-            class="h-5 w-5 shrink-0 rounded"
-          >
-          <UIcon
-            v-else
-            :name="brandIcon"
-            class="h-5 w-auto shrink-0 text-primary"
+          <BrandIcon
+            :icon="brandIcon"
+            class="h-5 w-5"
           />
           <span class="text-xl font-bold text-highlighted">{{ brandName }}</span>
         </ULink>

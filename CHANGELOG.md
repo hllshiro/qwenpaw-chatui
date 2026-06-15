@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- 聊天页面新增消息头像，用户消息显示用户图标，助手消息显示品牌图标
+
 ### Changed
+
+- 提取 BrandIcon 组件，统一品牌图标显示逻辑（支持图片和图标两种形式）
+- 优化导航栏背景透明度，提升视觉效果
 
 - 简化打包脚本，移除跨平台 Node.js 下载逻辑，改为使用当前环境的 Node.js 进行打包
 - 合并 `package:linux` 和 `package:win` 命令为统一的 `package` 命令，自动检测当前平台

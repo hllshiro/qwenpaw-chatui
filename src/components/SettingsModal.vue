@@ -36,7 +36,6 @@ let brandClickTimer: ReturnType<typeof setTimeout> | null = null
 
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 const brandIcon = computed(() => getValue('appearance.brand.icon') || 'i-lucide-sparkles')
-const isBrandImage = computed(() => brandIcon.value && !brandIcon.value.startsWith('i-lucide-'))
 
 const isOpen = computed({
   get: () => props.open,
@@ -273,15 +272,9 @@ function handleImport() {
                 class="flex items-center gap-2 text-xs text-muted"
                 :class="isWide ? 'justify-start px-1' : 'justify-center'"
               >
-                <img
-                  v-if="isBrandImage"
-                  :src="brandIcon"
-                  class="w-3 h-3 rounded shrink-0"
-                >
-                <UIcon
-                  v-else
-                  :name="brandIcon"
-                  class="w-3 h-3 shrink-0"
+                <BrandIcon
+                  :icon="brandIcon"
+                  class="w-3 h-3"
                 />
                 <span v-if="isWide">{{ brandName }}</span>
               </div>
