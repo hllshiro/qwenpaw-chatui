@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - 聊天页面新增消息头像，区分用户和助手消息
 - 设置中新增消息气泡样式选项，支持多种风格
+- 配色方案新增"跟随系统"选项，自动适配操作系统主题
 
 ### Changed
 
