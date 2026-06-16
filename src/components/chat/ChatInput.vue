@@ -51,6 +51,13 @@ const effectiveStatus = computed(() => {
 
 const isStreaming = computed(() => effectiveStatus.value === "streaming");
 
+const isInputEmpty = computed(() => !input.value.trim());
+
+const isSubmitDisabled = computed(() => {
+  if (effectiveStatus.value !== "ready") return false;
+  return props.disabled || isInputEmpty.value;
+});
+
 function handleSubmit() {
   if (!input.value.trim()) return;
   const text = input.value;
@@ -88,6 +95,8 @@ function handleInput(event: Event) {
         <UChatPromptSubmit
           color="neutral"
           :status="effectiveStatus"
+          :disabled="isSubmitDisabled"
+          class="cursor-pointer"
           @stop="handleStop"
         />
       </slot>
