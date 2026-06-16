@@ -51,6 +51,9 @@ const isDeletingOpen = computed({
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 const brandIcon = computed(() => getValue('appearance.brand.icon') || 'i-lucide-sparkles')
 
+const isNewSession = computed(() => route.path === '/')
+const isChatSession = computed(() => route.path.startsWith('/chat/'))
+
 const items = computed(() => groupedSessions.value?.flatMap((group) => {
   return [{
     label: group[0],
@@ -329,8 +332,8 @@ async function collapseSidebar() {
             
             <UButton
               icon="i-lucide-circle-plus"
-              color="neutral"
-              variant="ghost"
+              :color="isNewSession ? 'primary' : 'neutral'"
+              :variant="isNewSession ? 'soft' : 'ghost'"
               size="sm"
               to="/"
             />
@@ -341,8 +344,8 @@ async function collapseSidebar() {
             >
               <UButton
                 icon="i-lucide-message-circle"
-                color="neutral"
-                variant="ghost"
+                :color="isChatSession ? 'primary' : 'neutral'"
+                :variant="isChatSession ? 'soft' : 'ghost'"
                 size="sm"
                 @mouseenter="sessionListOpen = true"
                 @mouseleave="sessionListOpen = false"
