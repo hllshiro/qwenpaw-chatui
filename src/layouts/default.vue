@@ -422,13 +422,13 @@ async function collapseSidebar() {
 
       <template #footer="{ collapsed }">
         <template v-if="!collapsed">
-          <UNavigationMenu
-            :items="[{
-              label: t('common.settings'),
-              icon: 'i-lucide-settings',
-              onSelect: () => settingsOpen = true,
-            }]"
-            orientation="vertical"
+          <UButton
+            :label="t('common.settings')"
+            icon="i-lucide-settings"
+            color="neutral"
+            variant="ghost"
+            class="w-full cursor-pointer"
+            @click="settingsOpen = true"
           />
         </template>
         <template v-else>
