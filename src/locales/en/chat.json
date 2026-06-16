@@ -23,6 +23,7 @@
     "deleteConfirm": "Are you sure you want to delete this session? This action cannot be undone.",
     "inputNewName": "Enter new name",
     "sessionActions": "Session Actions",
+    "sessions": "Sessions",
     "generationStopped": "Generation Stopped",
     "scrollToBottom": "Scroll to bottom"
   }

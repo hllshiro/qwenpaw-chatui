@@ -23,6 +23,7 @@
     "deleteConfirm": "确定要删除该会话吗？此操作不可撤销。",
     "inputNewName": "输入新名称",
     "sessionActions": "会话操作",
+    "sessions": "会话列表",
     "generationStopped": "生成已停止",
     "scrollToBottom": "滚动到底部"
   }
