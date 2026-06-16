@@ -34,6 +34,22 @@ const sidebarResizable = ref(true)
 const settingsOpen = ref(false)
 const searchOpen = ref(false)
 const sessionListOpen = ref(false)
+let sessionListTimeout: ReturnType<typeof setTimeout> | null = null
+
+function openSessionList() {
+  if (sessionListTimeout) {
+    clearTimeout(sessionListTimeout)
+    sessionListTimeout = null
+  }
+  sessionListOpen.value = true
+}
+
+function closeSessionList() {
+  sessionListTimeout = setTimeout(() => {
+    sessionListOpen.value = false
+  }, 150) // 150ms 延迟，给用户时间移动到菜单
+}
+
 const renamingId = ref<string | null>(null)
 const renameInput = ref('')
 const deletingId = ref<string | null>(null)
@@ -347,15 +363,15 @@ async function collapseSidebar() {
                 :color="isChatSession ? 'primary' : 'neutral'"
                 :variant="isChatSession ? 'soft' : 'ghost'"
                 size="sm"
-                @mouseenter="sessionListOpen = true"
-                @mouseleave="sessionListOpen = false"
+                @mouseenter="openSessionList"
+                @mouseleave="closeSessionList"
               />
               
               <template #content>
                 <div
                   class="w-80 max-h-96 overflow-y-auto p-2"
-                  @mouseenter="sessionListOpen = true"
-                  @mouseleave="sessionListOpen = false"
+                  @mouseenter="openSessionList"
+                  @mouseleave="closeSessionList"
                 >
                   <div class="text-sm font-medium text-muted mb-2 px-2">
                     {{ t('chat.sessions') }}
