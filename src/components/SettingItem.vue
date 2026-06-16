@@ -19,7 +19,7 @@ const emit = defineEmits<{
 <template>
   <div
     class="flex items-center justify-between py-2"
-    :class="[item.type === 'button' ? 'cursor-pointer' : '', disabled ? 'opacity-50 pointer-events-none' : '']"
+    :class="disabled ? 'opacity-50' : ''"
   >
     <div class="flex-1 min-w-0 mr-4">
       <label class="text-sm font-medium text-default">
@@ -38,6 +38,7 @@ const emit = defineEmits<{
         v-if="item.type === 'switch'"
         :model-value="value"
         :disabled="disabled"
+        :ui="{ base: disabled ? '' : 'cursor-pointer' }"
         @update:model-value="emit('update', $event)"
       />
 
@@ -45,7 +46,8 @@ const emit = defineEmits<{
         v-else-if="item.type === 'select'"
         :model-value="value"
         :items="(item.options || []).map(o => ({ ...o, label: o.labelKey ? t(o.labelKey) : o.label }))"
-        class="w-32"
+        :disabled="disabled"
+        class="w-32 cursor-pointer"
         @update:model-value="emit('update', $event)"
       />
 
@@ -53,6 +55,7 @@ const emit = defineEmits<{
         v-else-if="item.type === 'input'"
         :model-value="value"
         :placeholder="item.placeholder"
+        :disabled="disabled"
         class="w-48"
         @update:model-value="emit('update', $event)"
       />
@@ -87,6 +90,7 @@ const emit = defineEmits<{
         :label="item.labelKey ? t(item.labelKey) : item.label"
         variant="soft"
         size="sm"
+        :disabled="disabled"
         class="cursor-pointer"
         @click="emit('action', item.key)"
       />
