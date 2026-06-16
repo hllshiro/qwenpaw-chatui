@@ -242,7 +242,7 @@ async function collapseSidebar() {
             color="neutral"
             variant="ghost"
             size="sm"
-            class="ms-auto"
+            class="ms-auto cursor-pointer"
             @click="collapseSidebar"
           />
         </template>
@@ -257,13 +257,16 @@ async function collapseSidebar() {
               />
             </ULink>
             
-            <UButton
-              icon="i-lucide-panel-left-open"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              @click="expandSidebar"
-            />
+            <UTooltip :text="t('common.expandSidebar')">
+              <UButton
+                icon="i-lucide-panel-left-open"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                class="cursor-pointer"
+                @click="expandSidebar"
+              />
+            </UTooltip>
           </div>
         </template>
       </template>
@@ -276,7 +279,7 @@ async function collapseSidebar() {
             icon="i-lucide-search"
             color="neutral"
             variant="outline"
-            class="w-full"
+            class="w-full cursor-pointer"
             @click="searchOpen = true"
           />
 
@@ -338,34 +341,43 @@ async function collapseSidebar() {
           <div class="flex flex-col items-center gap-2 w-full">
             <!-- Logo 图标已移至 header slot -->
             
-            <UButton
-              icon="i-lucide-search"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              @click="searchOpen = true"
-            />
+            <UTooltip :text="t('components.search.searchButton')">
+              <UButton
+                icon="i-lucide-search"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                class="cursor-pointer"
+                @click="searchOpen = true"
+              />
+            </UTooltip>
             
-            <UButton
-              icon="i-lucide-circle-plus"
-              :color="isNewSession ? 'primary' : 'neutral'"
-              :variant="isNewSession ? 'soft' : 'ghost'"
-              size="sm"
-              to="/"
-            />
+            <UTooltip :text="t('common.newSession')">
+              <UButton
+                icon="i-lucide-circle-plus"
+                :color="isNewSession ? 'primary' : 'neutral'"
+                :variant="isNewSession ? 'soft' : 'ghost'"
+                size="sm"
+                class="cursor-pointer"
+                to="/"
+              />
+            </UTooltip>
             
             <UPopover
               v-model:open="sessionListOpen"
               :popper="{ placement: 'right-start' }"
             >
-              <UButton
-                icon="i-lucide-message-circle"
-                :color="isChatSession ? 'primary' : 'neutral'"
-                :variant="isChatSession ? 'soft' : 'ghost'"
-                size="sm"
-                @mouseenter="openSessionList"
-                @mouseleave="closeSessionList"
-              />
+              <UTooltip :text="t('chat.sessions')">
+                <UButton
+                  icon="i-lucide-message-circle"
+                  :color="isChatSession ? 'primary' : 'neutral'"
+                  :variant="isChatSession ? 'soft' : 'ghost'"
+                  size="sm"
+                  class="cursor-pointer"
+                  @mouseenter="openSessionList"
+                  @mouseleave="closeSessionList"
+                />
+              </UTooltip>
               
               <template #content>
                 <div

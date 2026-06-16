@@ -24,6 +24,7 @@
     "backendUnavailable": "无法连接到AI服务",
     "backendUnavailableDescription": "请检查本机配置或联系管理员",
     "checkingConnection": "正在检查连接...",
-    "retryConnection": "重试连接"
+    "retryConnection": "重试连接",
+    "expandSidebar": "展开侧边栏"
   }
 }
