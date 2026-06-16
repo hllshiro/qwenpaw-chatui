@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
 import { useSessions } from '@/composables/useSessions'
 import { useSettings } from '@/composables/settings'
@@ -12,7 +11,7 @@ import SearchModal from '@/components/SearchModal.vue'
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
-const { groupedSessions, fetchSessions, deleteSession, updateSession } = useSessions()
+const { groupedSessions, fetchSessions } = useSessions()
 const { getValue } = useSettings()
 const { registerShortcut } = useShortcuts()
 const { status: backendStatus, retry: retryBackend } = useBackendStatus()
@@ -50,20 +49,6 @@ function closeSessionList() {
   }, 150) // 150ms 延迟，给用户时间移动到菜单
 }
 
-const renamingId = ref<string | null>(null)
-const renameInput = ref('')
-const deletingId = ref<string | null>(null)
-
-const isRenamingOpen = computed({
-  get: () => renamingId.value !== null,
-  set: (v) => { if (!v) renamingId.value = null },
-})
-
-const isDeletingOpen = computed({
-  get: () => deletingId.value !== null,
-  set: (v) => { if (!v) deletingId.value = null },
-})
-
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 const brandIcon = computed(() => getValue('appearance.brand.icon') || 'i-lucide-sparkles')
 
@@ -82,59 +67,6 @@ const items = computed(() => groupedSessions.value?.flatMap((group) => {
     slot: 'chat' as const
   }))]
 }))
-
-function getChatActions(item: { id: string, label: string }): DropdownMenuItem[][] {
-  return [[
-    {
-      label: t('common.rename'),
-      icon: 'i-lucide-pencil',
-      onSelect: () => startRename(item.id, item.label)
-    }
-  ], [
-    {
-      label: t('common.delete'),
-      icon: 'i-lucide-trash',
-      color: 'error' as const,
-      onSelect: () => handleDelete(item.id)
-    }
-  ]]
-}
-
-function startRename(id: string, currentName: string) {
-  renamingId.value = id
-  // Check for both Chinese and English default names
-  renameInput.value = (currentName === '新会话' || currentName === 'New Session') ? '' : currentName
-}
-
-async function confirmRename() {
-  if (!renamingId.value) return
-  // Store the Chinese default name because the backend expects it
-  const name = renameInput.value.trim() || '新会话'
-  await updateSession(renamingId.value, { name })
-  renamingId.value = null
-}
-
-function cancelRename() {
-  renamingId.value = null
-}
-
-async function handleDelete(id: string) {
-  deletingId.value = id
-}
-
-async function confirmDelete() {
-  if (!deletingId.value) return
-  const id = deletingId.value
-  deletingId.value = null
-  await deleteSession(id)
-  if ((route.params as { id?: string }).id === id) {
-    router.push('/')
-  }
-}
-
-function cancelDelete() {
-  deletingId.value = null
-}
 
 async function expandSidebar() {
   sidebarCollapsible.value = true
@@ -318,10 +250,7 @@ async function collapseSidebar() {
             }"
           >
             <template #chat-trailing="{ item }">
-              <UDropdownMenu
-                :items="getChatActions(item as { id: string, label: string })"
-                :content="{ align: 'end' }"
-              >
+              <SessionMenu :session="{ id: (item as { id: string }).id, name: (item as { label: string }).label }">
                 <UButton
                   icon="i-lucide-ellipsis"
                   color="neutral"
@@ -331,7 +260,7 @@ async function collapseSidebar() {
                   :aria-label="t('chat.sessionActions')"
                   @click.stop
                 />
-              </UDropdownMenu>
+              </SessionMenu>
             </template>
           </UNavigationMenu>
         </template>
@@ -397,10 +326,7 @@ async function collapseSidebar() {
                     }"
                   >
                     <template #chat-trailing="{ item }">
-                      <UDropdownMenu
-                        :items="getChatActions(item as { id: string, label: string })"
-                        :content="{ align: 'end' }"
-                      >
+                      <SessionMenu :session="{ id: (item as { id: string }).id, name: (item as { label: string }).label }">
                         <UButton
                           icon="i-lucide-ellipsis"
                           color="neutral"
@@ -410,7 +336,7 @@ async function collapseSidebar() {
                           :aria-label="t('chat.sessionActions')"
                           @click.stop
                         />
-                      </UDropdownMenu>
+                      </SessionMenu>
                     </template>
                   </UNavigationMenu>
                 </div>
@@ -450,56 +376,6 @@ async function collapseSidebar() {
       <RouterView :key="route.path" />
     </div>
   </UDashboardGroup>
-
-  <UModal
-    v-model:open="isRenamingOpen"
-    :title="t('chat.renameSession')"
-  >
-    <template #body>
-      <UInput
-        v-model="renameInput"
-        :placeholder="t('chat.inputNewName')"
-        class="w-full"
-        @keydown.enter="confirmRename"
-      />
-    </template>
-    <template #footer>
-      <UButton
-        :label="t('common.cancel')"
-        color="neutral"
-        variant="ghost"
-        @click="cancelRename"
-      />
-      <UButton
-        :label="t('common.confirm')"
-        @click="confirmRename"
-      />
-    </template>
-  </UModal>
-
-  <UModal
-    v-model:open="isDeletingOpen"
-    :title="t('chat.deleteSession')"
-  >
-    <template #body>
-      <p class="text-sm text-muted">
-        {{ t('chat.deleteConfirm') }}
-      </p>
-    </template>
-    <template #footer>
-      <UButton
-        :label="t('common.cancel')"
-        color="neutral"
-        variant="ghost"
-        @click="cancelDelete"
-      />
-      <UButton
-        :label="t('common.delete')"
-        color="error"
-        @click="confirmDelete"
-      />
-    </template>
-  </UModal>
 
   <SettingsModal v-model:open="settingsOpen" />
 
