@@ -31,6 +31,7 @@ const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const settingsOpen = ref(false)
 const searchOpen = ref(false)
+const sessionListOpen = ref(false)
 const renamingId = ref<string | null>(null)
 const renameInput = ref('')
 const deletingId = ref<string | null>(null)
@@ -185,37 +186,48 @@ function cancelDelete() {
       class="border-r-0 py-4"
     >
       <template #header="{ collapsed }">
-        <ULink
-          v-if="!collapsed"
-          to="/"
-          class="flex items-center gap-0.5"
-        >
-          <BrandIcon
-            :icon="brandIcon"
-            class="h-5 w-5"
-          />
-          <span class="text-xl font-bold text-highlighted">{{ brandName }}</span>
-        </ULink>
+        <template v-if="!collapsed">
+          <!-- 展开状态：显示品牌名和折叠按钮 -->
+          <ULink
+            to="/"
+            class="flex items-center gap-0.5"
+          >
+            <BrandIcon
+              :icon="brandIcon"
+              class="h-5 w-5"
+            />
+            <span class="text-xl font-bold text-highlighted">{{ brandName }}</span>
+          </ULink>
 
-        <UButton
-          v-if="!collapsed"
-          icon="i-lucide-panel-left-close"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          class="ms-auto"
-          @click="sidebarCollapsed = true"
-        />
+          <UButton
+            icon="i-lucide-panel-left-close"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            class="ms-auto"
+            @click="sidebarCollapsed = true"
+          />
+        </template>
         
-        <UButton
-          v-else
-          icon="i-lucide-panel-left-open"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          class="mx-auto"
-          @click="sidebarCollapsed = false"
-        />
+        <template v-else>
+          <!-- 折叠状态：Logo 图标和展开按钮 -->
+          <div class="flex flex-col items-center gap-2">
+            <ULink to="/">
+              <BrandIcon
+                :icon="brandIcon"
+                class="h-5 w-5"
+              />
+            </ULink>
+            
+            <UButton
+              icon="i-lucide-panel-left-open"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              @click="sidebarCollapsed = false"
+            />
+          </div>
+        </template>
       </template>
 
       <template #default="{ collapsed }">
@@ -286,15 +298,7 @@ function cancelDelete() {
         <template v-else>
           <!-- 折叠状态的内容 -->
           <div class="flex flex-col items-center gap-2">
-            <ULink
-              to="/"
-              class="mb-2"
-            >
-              <BrandIcon
-                :icon="brandIcon"
-                class="h-5 w-5"
-              />
-            </ULink>
+            <!-- Logo 图标已移至 header slot -->
             
             <UButton
               icon="i-lucide-circle-plus"
@@ -312,16 +316,25 @@ function cancelDelete() {
               @click="searchOpen = true"
             />
             
-            <UPopover :popper="{ placement: 'right-start' }">
+            <UPopover
+              v-model:open="sessionListOpen"
+              :popper="{ placement: 'right-start' }"
+            >
               <UButton
                 icon="i-lucide-message-circle"
                 color="neutral"
                 variant="ghost"
                 size="sm"
+                @mouseenter="sessionListOpen = true"
+                @mouseleave="sessionListOpen = false"
               />
               
               <template #content>
-                <div class="w-80 max-h-96 overflow-y-auto p-2">
+                <div
+                  class="w-80 max-h-96 overflow-y-auto p-2"
+                  @mouseenter="sessionListOpen = true"
+                  @mouseleave="sessionListOpen = false"
+                >
                   <div class="text-sm font-medium text-muted mb-2 px-2">
                     {{ t('chat.sessions') }}
                   </div>
