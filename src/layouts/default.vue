@@ -252,6 +252,15 @@ async function collapseSidebar() {
       <template #default="{ collapsed }">
         <template v-if="!collapsed">
           <!-- 展开状态的内容 -->
+          <UButton
+            :label="t('components.search.searchButton')"
+            icon="i-lucide-search"
+            color="neutral"
+            variant="outline"
+            class="w-full"
+            @click="searchOpen = true"
+          />
+
           <UNavigationMenu
             :items="[{
               label: t('common.newSession'),
@@ -277,15 +286,6 @@ async function collapseSidebar() {
               </div>
             </template>
           </UNavigationMenu>
-
-          <UButton
-            :label="t('components.search.searchButton')"
-            icon="i-lucide-search"
-            color="neutral"
-            variant="outline"
-            class="w-full"
-            @click="searchOpen = true"
-          />
 
           <UNavigationMenu
             :items="items"
@@ -320,19 +320,19 @@ async function collapseSidebar() {
             <!-- Logo 图标已移至 header slot -->
             
             <UButton
-              icon="i-lucide-circle-plus"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              to="/"
-            />
-            
-            <UButton
               icon="i-lucide-search"
               color="neutral"
               variant="ghost"
               size="sm"
               @click="searchOpen = true"
+            />
+            
+            <UButton
+              icon="i-lucide-circle-plus"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              to="/"
             />
             
             <UPopover
