@@ -91,6 +91,34 @@ QwenPaw 后端源码位于 `docs/QwenPaw`（从 `https://github.com/agentscope-a
 
 每次修改代码后，必须先阅读 `docs/CONTRIBUTING.md`，然后严格按照其中的流程和验证清单完成文档更新。模块文档位于 `docs/modules/`。
 
+## CHANGELOG 编写规范
+
+遵循 [Keep a Changelog](https://keepachangelog.com/) 格式，分类：Added / Changed / Fixed / Removed。
+
+**风格要求：**
+- 从用户角度描述，说明影响而非技术实现
+- 使用简洁动词开头：新增、优化、修复、移除
+- 避免具体技术细节（如"添加手型光标"→"优化交互体验"）
+- 一行一条，控制在 20 字以内
+
+**示例：**
+- ✅ 优化设置界面控件交互体验
+- ✅ 修复缓存清除后主题设置丢失的问题
+- ❌ 开关和下拉菜单添加手型光标，禁用状态显示正确样式
+- ❌ 修复清除浏览器缓存后主题设置（明暗模式）丢失的问题
+
+## Commit 规范
+
+```
+<type>(<scope>): <简洁描述>
+
+[可选正文]
+```
+
+**type:** feat / fix / refactor / style / docs / chore
+**scope:** 模块或功能范围（如 settings、chat、sidebar）
+**描述：** 与 CHANGELOG 风格一致，简洁概括，不超过 50 字符
+
 ## 子目录 AGENTS.md
 
 - `src/AGENTS.md` — 前端架构与组件指南
