@@ -173,11 +173,12 @@ registerSetting({
   label: '配色方案',
   labelKey: 'settings.appearance.theme.colorScheme',
   type: 'select',
-  defaultValue: 'light',
+  defaultValue: 'auto',
   category: 'appearance',
   group: 'theme',
   advanced: true,
   options: [
+    { label: '跟随系统', labelKey: 'settings.appearance.theme.system', value: 'auto' },
     { label: '浅色', labelKey: 'settings.appearance.theme.light', value: 'light' },
     { label: '深色', labelKey: 'settings.appearance.theme.dark', value: 'dark' },
   ],
