@@ -44,6 +44,7 @@
       "theme": {
         "label": "Theme",
         "colorScheme": "Color Scheme",
+        "system": "Follow System",
         "light": "Light",
         "dark": "Dark",
         "primaryColor": "Primary Color",

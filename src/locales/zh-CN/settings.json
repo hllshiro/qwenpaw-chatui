@@ -44,6 +44,7 @@
       "theme": {
         "label": "主题",
         "colorScheme": "配色方案",
+        "system": "跟随系统",
         "light": "浅色",
         "dark": "深色",
         "primaryColor": "主题颜色",
