@@ -230,7 +230,7 @@ async function collapseSidebar() {
         
         <template v-else>
           <!-- 折叠状态：Logo 图标和展开按钮 -->
-          <div class="flex flex-col items-center gap-2">
+          <div class="flex flex-col items-center gap-2 w-full">
             <ULink to="/">
               <BrandIcon
                 :icon="brandIcon"
@@ -316,7 +316,7 @@ async function collapseSidebar() {
         
         <template v-else>
           <!-- 折叠状态的内容 -->
-          <div class="flex flex-col items-center gap-2">
+          <div class="flex flex-col items-center gap-2 w-full">
             <!-- Logo 图标已移至 header slot -->
             
             <UButton
