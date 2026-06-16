@@ -197,7 +197,25 @@ function cancelDelete() {
           <span class="text-xl font-bold text-highlighted">{{ brandName }}</span>
         </ULink>
 
-        <UDashboardSidebarCollapse class="ms-auto" />
+        <UButton
+          v-if="!collapsed"
+          icon="i-lucide-panel-left-close"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="ms-auto"
+          @click="sidebarCollapsed = true"
+        />
+        
+        <UButton
+          v-else
+          icon="i-lucide-panel-left-open"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          class="mx-auto"
+          @click="sidebarCollapsed = false"
+        />
       </template>
 
       <template #default="{ collapsed }">
