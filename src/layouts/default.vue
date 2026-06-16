@@ -219,71 +219,142 @@ function cancelDelete() {
       </template>
 
       <template #default="{ collapsed }">
-        <UNavigationMenu
-          :items="[{
-            label: t('common.newSession'),
-            to: '/',
-            kbds: ['meta', 'o'],
-            icon: 'i-lucide-circle-plus'
-          }]"
-          :collapsed="collapsed"
-          orientation="vertical"
-        >
-          <template #item-trailing="{ item }">
-            <div
-              v-if="item.kbds?.length"
-              class="flex items-center gap-px opacity-0 group-hover:opacity-100 transition-opacity"
+        <template v-if="!collapsed">
+          <!-- 展开状态的内容 -->
+          <UNavigationMenu
+            :items="[{
+              label: t('common.newSession'),
+              to: '/',
+              kbds: ['meta', 'o'],
+              icon: 'i-lucide-circle-plus'
+            }]"
+            orientation="vertical"
+          >
+            <template #item-trailing="{ item }">
+              <div
+                v-if="item.kbds?.length"
+                class="flex items-center gap-px opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <UKbd
+                  v-for="kbd in item.kbds"
+                  :key="kbd"
+                  :value="kbd"
+                  size="sm"
+                  variant="soft"
+                  class="bg-accented/50"
+                />
+              </div>
+            </template>
+          </UNavigationMenu>
+
+          <UButton
+            :label="t('components.search.searchButton')"
+            icon="i-lucide-search"
+            color="neutral"
+            variant="outline"
+            class="w-full"
+            @click="searchOpen = true"
+          />
+
+          <UNavigationMenu
+            :items="items"
+            orientation="vertical"
+            :ui="{
+              link: 'overflow-hidden pr-7.5',
+              linkTrailing: 'session-actions ms-0 absolute inset-e-px'
+            }"
+          >
+            <template #chat-trailing="{ item }">
+              <UDropdownMenu
+                :items="getChatActions(item as { id: string, label: string })"
+                :content="{ align: 'end' }"
+              >
+                <UButton
+                  icon="i-lucide-ellipsis"
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50 cursor-pointer"
+                  :aria-label="t('chat.sessionActions')"
+                  @click.stop
+                />
+              </UDropdownMenu>
+            </template>
+          </UNavigationMenu>
+        </template>
+        
+        <template v-else>
+          <!-- 折叠状态的内容 -->
+          <div class="flex flex-col items-center gap-2">
+            <ULink
+              to="/"
+              class="mb-2"
             >
-              <UKbd
-                v-for="kbd in item.kbds"
-                :key="kbd"
-                :value="kbd"
-                size="sm"
-                variant="soft"
-                class="bg-accented/50"
+              <BrandIcon
+                :icon="brandIcon"
+                class="h-5 w-5"
               />
-            </div>
-          </template>
-        </UNavigationMenu>
-
-        <UButton
-          v-if="!collapsed"
-          :label="t('components.search.searchButton')"
-          icon="i-lucide-search"
-          color="neutral"
-          variant="outline"
-          class="w-full"
-          kbds="['meta', 'k']"
-          @click="searchOpen = true"
-        />
-
-        <UNavigationMenu
-          v-if="!collapsed"
-          :items="items"
-          :collapsed="collapsed"
-          orientation="vertical"
-          :ui="{
-            link: 'overflow-hidden pr-7.5',
-            linkTrailing: 'session-actions ms-0 absolute inset-e-px'
-          }"
-        >
-          <template #chat-trailing="{ item }">
-            <UDropdownMenu
-              :items="getChatActions(item as { id: string, label: string })"
-              :content="{ align: 'end' }"
-            >
+            </ULink>
+            
+            <UButton
+              icon="i-lucide-circle-plus"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              to="/"
+            />
+            
+            <UButton
+              icon="i-lucide-search"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              @click="searchOpen = true"
+            />
+            
+            <UPopover :popper="{ placement: 'right-start' }">
               <UButton
-                icon="i-lucide-ellipsis"
+                icon="i-lucide-message-circle"
                 color="neutral"
-                variant="link"
+                variant="ghost"
                 size="sm"
-                class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50 cursor-pointer"
-                :aria-label="t('chat.sessionActions')"
-                @click.stop
               />
-            </UDropdownMenu>
-          </template>
-        </UNavigationMenu>
+              
+              <template #content>
+                <div class="w-80 max-h-96 overflow-y-auto p-2">
+                  <div class="text-sm font-medium text-muted mb-2 px-2">
+                    {{ t('chat.sessions') }}
+                  </div>
+                  <UNavigationMenu
+                    :items="items"
+                    orientation="vertical"
+                    :ui="{
+                      link: 'overflow-hidden pr-7.5',
+                      linkTrailing: 'session-actions ms-0 absolute inset-e-px'
+                    }"
+                  >
+                    <template #chat-trailing="{ item }">
+                      <UDropdownMenu
+                        :items="getChatActions(item as { id: string, label: string })"
+                        :content="{ align: 'end' }"
+                      >
+                        <UButton
+                          icon="i-lucide-ellipsis"
+                          color="neutral"
+                          variant="link"
+                          size="sm"
+                          class="rounded-[5px] hover:bg-accented/50 focus-visible:bg-accented/50 data-[state=open]:bg-accented/50 cursor-pointer"
+                          :aria-label="t('chat.sessionActions')"
+                          @click.stop
+                        />
+                      </UDropdownMenu>
+                    </template>
+                  </UNavigationMenu>
+                </div>
+              </template>
+            </UPopover>
+          </div>
+        </template>
       </template>
 
       <template #footer="{ collapsed }">
