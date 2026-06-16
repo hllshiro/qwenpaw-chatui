@@ -37,7 +37,13 @@ onMounted(async () => {
 watch(
   () => getValue('appearance.theme.colorScheme'),
   (scheme) => {
-    if (scheme && scheme !== colorMode.value) colorMode.value = scheme
+    if (scheme === 'auto') {
+      // 跟随系统模式：使用 useColorMode 的 auto 模式
+      colorMode.value = 'auto'
+    } else if (scheme && scheme !== colorMode.value) {
+      // 手动模式：直接设置
+      colorMode.value = scheme
+    }
   }
 )
 
@@ -46,7 +52,10 @@ watch(
   () => colorMode.value,
   (mode) => {
     const saved = getValue('appearance.theme.colorScheme')
-    if (mode !== saved) setValue('appearance.theme.colorScheme', mode)
+    // 只有在非 auto 模式下才同步到设置
+    if (saved !== 'auto' && mode !== saved) {
+      setValue('appearance.theme.colorScheme', mode)
+    }
   }
 )
 
