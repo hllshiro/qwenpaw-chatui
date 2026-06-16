@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useI18n } from 'vue-i18n'
@@ -116,6 +116,22 @@ async function confirmDelete() {
 function cancelDelete() {
   deletingId.value = null
 }
+
+async function expandSidebar() {
+  sidebarCollapsible.value = true
+  await nextTick()
+  sidebarCollapsed.value = false
+  await nextTick()
+  sidebarCollapsible.value = false
+  sidebarResizable.value = true
+}
+
+async function collapseSidebar() {
+  sidebarCollapsible.value = true
+  sidebarResizable.value = false
+  await nextTick()
+  sidebarCollapsed.value = true
+}
 </script>
 
 <template>
@@ -208,7 +224,7 @@ function cancelDelete() {
             variant="ghost"
             size="sm"
             class="ms-auto"
-            @click="sidebarCollapsible = true; sidebarResizable = false; sidebarCollapsed = true"
+            @click="collapseSidebar"
           />
         </template>
         
@@ -227,7 +243,7 @@ function cancelDelete() {
               color="neutral"
               variant="ghost"
               size="sm"
-              @click="sidebarCollapsible = false; sidebarResizable = true; sidebarCollapsed = false"
+              @click="expandSidebar"
             />
           </div>
         </template>
