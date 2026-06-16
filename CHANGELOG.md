@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 侧边栏改进：支持手动折叠切换，优化按钮交互体验
 - 优化搜索和新建会话按钮布局
 - 优化设置界面控件交互体验
+- 会话页标题栏新增会话菜单，支持重命名和删除
 
 ### Fixed
 

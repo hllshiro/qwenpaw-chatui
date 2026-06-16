@@ -563,7 +563,7 @@ const chatStatus = computed(() => {
     :ui="{ body: 'p-0 sm:p-0 overflow-hidden' }"
   >
     <template #header>
-      <Navbar>
+      <Navbar :session="{ id: sessionId, name: sessionName }">
         <template #title>
           <span
             class="text-sm font-medium text-highlighted truncate min-w-0 max-w-3xs"
