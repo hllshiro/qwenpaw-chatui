@@ -28,6 +28,7 @@ onMounted(() => {
 })
 
 const sidebarOpen = ref(false)
+const sidebarCollapsed = ref(false)
 const settingsOpen = ref(false)
 const searchOpen = ref(false)
 const renamingId = ref<string | null>(null)
@@ -175,8 +176,11 @@ function cancelDelete() {
     <UDashboardSidebar
       id="default"
       v-model:open="sidebarOpen"
+      v-model:collapsed="sidebarCollapsed"
       :min-size="12"
-      collapsible
+      :max-size="25"
+      :default-size="18"
+      :collapsed-size="4"
       resizable
       class="border-r-0 py-4"
     >
