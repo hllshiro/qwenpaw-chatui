@@ -421,15 +421,28 @@ async function collapseSidebar() {
       </template>
 
       <template #footer="{ collapsed }">
-        <UNavigationMenu
-          :items="[{
-            label: t('common.settings'),
-            icon: 'i-lucide-settings',
-            onSelect: () => settingsOpen = true,
-          }]"
-          :collapsed="collapsed"
-          orientation="vertical"
-        />
+        <template v-if="!collapsed">
+          <UNavigationMenu
+            :items="[{
+              label: t('common.settings'),
+              icon: 'i-lucide-settings',
+              onSelect: () => settingsOpen = true,
+            }]"
+            orientation="vertical"
+          />
+        </template>
+        <template v-else>
+          <UTooltip :text="t('common.settings')">
+            <UButton
+              icon="i-lucide-settings"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="cursor-pointer"
+              @click="settingsOpen = true"
+            />
+          </UTooltip>
+        </template>
       </template>
     </UDashboardSidebar>
 
