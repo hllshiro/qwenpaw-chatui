@@ -29,6 +29,8 @@ onMounted(() => {
 
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
+const sidebarCollapsible = ref(false)
+const sidebarResizable = ref(true)
 const settingsOpen = ref(false)
 const searchOpen = ref(false)
 const sessionListOpen = ref(false)
@@ -178,11 +180,12 @@ function cancelDelete() {
       id="default"
       v-model:open="sidebarOpen"
       v-model:collapsed="sidebarCollapsed"
+      :collapsible="sidebarCollapsible"
+      :resizable="sidebarResizable"
       :min-size="12"
       :max-size="25"
       :default-size="18"
       :collapsed-size="4"
-      resizable
       class="border-r-0 py-4"
     >
       <template #header="{ collapsed }">
@@ -205,7 +208,7 @@ function cancelDelete() {
             variant="ghost"
             size="sm"
             class="ms-auto"
-            @click="sidebarCollapsed = true"
+            @click="sidebarCollapsible = true; sidebarResizable = false; sidebarCollapsed = true"
           />
         </template>
         
@@ -224,7 +227,7 @@ function cancelDelete() {
               color="neutral"
               variant="ghost"
               size="sm"
-              @click="sidebarCollapsed = false"
+              @click="sidebarCollapsible = false; sidebarResizable = true; sidebarCollapsed = false"
             />
           </div>
         </template>
