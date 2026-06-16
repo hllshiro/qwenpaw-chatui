@@ -22,8 +22,14 @@ export function useTheme() {
 
     const theme = config.theme
 
-    if (theme.colorMode) {
-      colorMode.value = theme.colorMode
+    // 只有当用户没有手动设置过主题时，才应用外部配置
+    // 检查 localStorage 中是否有用户设置
+    const userSetting = localStorage.getItem('vueuse-color-scheme')
+    if (!userSetting || userSetting === 'auto') {
+      // 用户没有手动设置过，或者是 auto 模式，可以应用外部配置
+      if (theme.colorMode) {
+        colorMode.value = theme.colorMode
+      }
     }
 
     if (theme.primaryColor) {
