@@ -1,9 +1,5 @@
 import { defineComponent, h } from 'vue'
-import MarkdownRender, { enableMermaid, enableKatex } from 'markstream-vue'
-import 'markstream-vue/index.css'
-
-enableMermaid()
-enableKatex()
+import MarkdownRender from 'markstream-vue'
 
 export default defineComponent({
   name: 'ChatComark',
