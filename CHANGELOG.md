@@ -31,3 +31,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 修复输入框内容缓存问题
 - 修复设置按钮点击区域问题
 - 修复侧边栏折叠状态的细节问题
+- 修复消息生成过程中切换会话后状态不同步的问题

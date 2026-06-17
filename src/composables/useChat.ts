@@ -1,4 +1,4 @@
-import { ref, computed, triggerRef } from 'vue'
+import { ref, computed, triggerRef, reactive } from 'vue'
 import { useBackendStatus } from './useBackendStatus'
 import { useNotification } from './useNotification'
 import { useSessions, type Session } from './useSessions'
@@ -68,6 +68,35 @@ function clearPendingMessage(sessionId: string) {
 
 const sessionMessages = new Map<string, ChatMessage[]>()
 
+interface SessionState {
+  status: ChatStatus
+  error: Error | null
+  currentAssistantId: string | null
+  streamingPhase: StreamingPhase
+  abortController: AbortController | null
+  stopRequested: boolean
+  reasoningMsgIds: Set<string>
+  messageMsgIds: Set<string>
+}
+
+const sessionStates = new Map<string, SessionState>()
+
+function getOrCreateSessionState(sessionId: string): SessionState {
+  if (!sessionStates.has(sessionId)) {
+    sessionStates.set(sessionId, reactive({
+      status: 'ready',
+      error: null,
+      currentAssistantId: null,
+      streamingPhase: 'idle',
+      abortController: null,
+      stopRequested: false,
+      reasoningMsgIds: new Set(),
+      messageMsgIds: new Set()
+    }))
+  }
+  return sessionStates.get(sessionId)!
+}
+
 export function useChat(sessionId: string) {
   const { sessions } = useSessions()
   if (!sessionMessages.has(sessionId)) {
@@ -75,17 +104,8 @@ export function useChat(sessionId: string) {
   }
 
   const messages = ref<ChatMessage[]>(sessionMessages.get(sessionId)!)
-  const status = ref<ChatStatus>('ready')
-  const error = ref<Error | null>(null)
-  const currentAssistantId = ref<string | null>(null)
-  const streamingPhase = ref<StreamingPhase>('idle')
+  const state = getOrCreateSessionState(sessionId)
   const { status: backendStatus } = useBackendStatus()
-
-  const reasoningMsgIds = new Set<string>()
-  const messageMsgIds = new Set<string>()
-
-  let abortController: AbortController | null = null
-  let stopRequested = false
 
   function generateBlockId(): string {
     return `blk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -93,7 +113,7 @@ export function useChat(sessionId: string) {
 
   function getOrCreateAssistantMessage(): ChatMessage {
     const existing = messages.value.find(
-      m => m.id === currentAssistantId.value && m.role === 'assistant'
+      m => m.id === state.currentAssistantId && m.role === 'assistant'
     )
     if (existing) return existing
 
@@ -106,7 +126,7 @@ export function useChat(sessionId: string) {
       timestamp: Date.now()
     }
     messages.value.push(msg)
-    currentAssistantId.value = id
+    state.currentAssistantId = id
     return msg
   }
 
@@ -130,15 +150,15 @@ export function useChat(sessionId: string) {
 
   function sendMessage(text: string, options?: { onComplete?: () => void }): Promise<void> {
     return new Promise((resolve) => {
-      if (!text.trim() || status.value === 'streaming') {
+      if (!text.trim() || state.status === 'streaming') {
         resolve()
         return
       }
 
       // Check backend connection status
       if (backendStatus.value === 'disconnected') {
-        error.value = new Error('无法连接到AI服务，请检查本机配置或联系管理员')
-        status.value = 'error'
+        state.error = new Error('无法连接到AI服务，请检查本机配置或联系管理员')
+        state.status = 'error'
         resolve()
         return
       }
@@ -160,13 +180,13 @@ export function useChat(sessionId: string) {
         blocks: [],
         timestamp: Date.now()
       })
-      currentAssistantId.value = assistantId
+      state.currentAssistantId = assistantId
 
-      status.value = 'streaming'
-      error.value = null
-      streamingPhase.value = 'waiting'
-      reasoningMsgIds.clear()
-      messageMsgIds.clear()
+      state.status = 'streaming'
+      state.error = null
+      state.streamingPhase = 'waiting'
+      state.reasoningMsgIds.clear()
+      state.messageMsgIds.clear()
 
       savePendingMessage(sessionId, text)
 
@@ -176,24 +196,24 @@ export function useChat(sessionId: string) {
 
   function reconnect(options?: { onComplete?: () => void }): Promise<void> {
     return new Promise((resolve) => {
-      if (status.value === 'streaming') {
+      if (state.status === 'streaming') {
         resolve()
         return
       }
 
-      status.value = 'streaming'
-      error.value = null
-      streamingPhase.value = 'waiting'
-      reasoningMsgIds.clear()
-      messageMsgIds.clear()
+      state.status = 'streaming'
+      state.error = null
+      state.streamingPhase = 'waiting'
+      state.reasoningMsgIds.clear()
+      state.messageMsgIds.clear()
 
       doFetch('', options?.onComplete, resolve)
     })
   }
 
   async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void) {
-    abortController = new AbortController()
-    stopRequested = false
+    state.abortController = new AbortController()
+    state.stopRequested = false
     
     try {
       const response = await fetch(`/api/chats/${sessionId}`, {
@@ -202,7 +222,7 @@ export function useChat(sessionId: string) {
         body: JSON.stringify({
           messages: [{ role: 'user', content: messageText }]
         }),
-        signal: abortController.signal
+        signal: state.abortController.signal
       })
 
       if (!response.ok) {
@@ -219,7 +239,7 @@ export function useChat(sessionId: string) {
         const { done, value } = await reader.read()
         if (done) break
 
-        if (abortController?.signal.aborted) break
+        if (state.abortController?.signal.aborted) break
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
@@ -240,7 +260,7 @@ export function useChat(sessionId: string) {
         }
       }
 
-      if (buffer && !abortController?.signal.aborted) {
+      if (buffer && !state.abortController?.signal.aborted) {
         const trimmed = buffer.trim()
         if (trimmed.startsWith('data: ')) {
           const data = trimmed.slice(6)
@@ -257,17 +277,17 @@ export function useChat(sessionId: string) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         clearPendingMessage(sessionId)
       } else {
-        error.value = err instanceof Error ? err : new Error(String(err))
-        status.value = 'error'
+        state.error = err instanceof Error ? err : new Error(String(err))
+        state.status = 'error'
         clearPendingMessage(sessionId)
       }
     } finally {
-      abortController = null
-      stopRequested = false
-      if (status.value === 'streaming') {
-        status.value = 'ready'
+      state.abortController = null
+      state.stopRequested = false
+      if (state.status === 'streaming') {
+        state.status = 'ready'
       }
-      streamingPhase.value = 'idle'
+      state.streamingPhase = 'idle'
       onComplete?.()
       onDone?.()
     }
@@ -348,13 +368,13 @@ export function useChat(sessionId: string) {
     // ── response lifecycle ─────────────────────────────────────────
     if (obj === 'response') {
       if (event.status === 'completed') {
-        if (stopRequested) {
-          stopRequested = false
+        if (state.stopRequested) {
+          state.stopRequested = false
         }
-        status.value = 'ready'
+        state.status = 'ready'
       } else if (event.status === 'failed') {
         const errorData = (event as any).error
-        if (errorData?.code === 'AGENT_ERROR' && stopRequested) {
+        if (errorData?.code === 'AGENT_ERROR' && state.stopRequested) {
           const msg = getOrCreateAssistantMessage()
           const block: MessageBlock = {
             id: generateBlockId(),
@@ -365,9 +385,9 @@ export function useChat(sessionId: string) {
           }
           msg.blocks.push(block)
           triggerRef(messages)
-          stopRequested = false
+          state.stopRequested = false
         }
-        status.value = 'ready'
+        state.status = 'ready'
       }
       return
     }
@@ -375,9 +395,9 @@ export function useChat(sessionId: string) {
     // ── message + reasoning ────────────────────────────────────────
     if (obj === 'message' && type === 'reasoning') {
       const msgId = event.id as string
-      reasoningMsgIds.add(msgId)
-      if (streamingPhase.value === 'waiting') {
-        streamingPhase.value = 'reasoning'
+      state.reasoningMsgIds.add(msgId)
+      if (state.streamingPhase === 'waiting') {
+        state.streamingPhase = 'reasoning'
       }
       return
     }
@@ -385,7 +405,7 @@ export function useChat(sessionId: string) {
     // ── message + message ──────────────────────────────────────────
     if (obj === 'message' && type === 'message') {
       const msgId = event.id as string
-      messageMsgIds.add(msgId)
+      state.messageMsgIds.add(msgId)
 
       const metadata = (event as any).metadata
       if (metadata?.message_type === 'tool_guard_approval') {
@@ -413,8 +433,8 @@ export function useChat(sessionId: string) {
         }
       }
 
-      if (streamingPhase.value !== 'message') {
-        streamingPhase.value = 'message'
+      if (state.streamingPhase !== 'message') {
+        state.streamingPhase = 'message'
       }
       return
     }
@@ -454,14 +474,14 @@ export function useChat(sessionId: string) {
           .join('')
       }
 
-      if (reasoningMsgIds.has(msgId)) {
-        if (streamingPhase.value === 'waiting') {
-          streamingPhase.value = 'reasoning'
+      if (state.reasoningMsgIds.has(msgId)) {
+        if (state.streamingPhase === 'waiting') {
+          state.streamingPhase = 'reasoning'
         }
         const block = findBlockByMsgId(msg, msgId)
           || findOrCreateBlock(msg, 'reasoning', msgId)
         applyText(block)
-      } else if (messageMsgIds.has(msgId)) {
+      } else if (state.messageMsgIds.has(msgId)) {
         const approvalBlock = msg.blocks.find(
           b => b.type === 'approval' && b.id === msgId
         )
@@ -517,7 +537,7 @@ export function useChat(sessionId: string) {
   }
 
   function stop() {
-    stopRequested = true
+    state.stopRequested = true
     
     fetch(`/api/chats/${sessionId}/stop`, { method: 'POST' })
       .catch(err => console.error('[Chat] Failed to stop backend:', err))
@@ -559,10 +579,10 @@ export function useChat(sessionId: string) {
 
   return {
     messages: computed(() => messages.value),
-    status: computed(() => status.value),
-    error: computed(() => error.value),
-    streamingPhase: computed(() => streamingPhase.value),
-    currentAssistantId: computed(() => currentAssistantId.value),
+    status: computed(() => state.status),
+    error: computed(() => state.error),
+    streamingPhase: computed(() => state.streamingPhase),
+    currentAssistantId: computed(() => state.currentAssistantId),
     sendMessage,
     reconnect,
     stop,
