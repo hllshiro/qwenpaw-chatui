@@ -1,8 +1,6 @@
 import { defineComponent, h } from 'vue'
-import MarkdownRender, { MarkdownCodeBlockNode, setCustomComponents } from 'markstream-vue'
+import MarkdownRender from 'markstream-vue'
 import 'markstream-vue/index.css'
-
-setCustomComponents({ code_block: MarkdownCodeBlockNode })
 
 export default defineComponent({
   name: 'ChatComark',

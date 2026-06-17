@@ -25,6 +25,13 @@
     "backendUnavailableDescription": "Please check your local configuration or contact the administrator",
     "checkingConnection": "Checking connection...",
     "retryConnection": "Retry connection",
-    "expandSidebar": "Expand Sidebar"
+    "expandSidebar": "Expand Sidebar",
+    "fontSmaller": "Font size −",
+    "fontReset": "Font size reset",
+    "fontLarger": "Font size +",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "more": "More",
+    "preview": "Preview"
   }
 }

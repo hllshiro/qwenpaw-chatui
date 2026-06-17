@@ -25,6 +25,13 @@
     "backendUnavailableDescription": "请检查本机配置或联系管理员",
     "checkingConnection": "正在检查连接...",
     "retryConnection": "重试连接",
-    "expandSidebar": "展开侧边栏"
+    "expandSidebar": "展开侧边栏",
+    "fontSmaller": "缩小字号",
+    "fontReset": "重置字号",
+    "fontLarger": "放大字号",
+    "expand": "展开",
+    "collapse": "折叠",
+    "more": "更多",
+    "preview": "预览"
   }
 }
