@@ -1,0 +1,8 @@
+{
+  "command": {
+    "release": {
+      "description": "发布新版本（自动分析变更、推荐版本号、更新 CHANGELOG、创建 git tag）",
+      "template": "1. 读取 CHANGELOG.md 的 [Unreleased] 部分\n2. 分析变更内容，判断发版类型：\n   - MAJOR：存在 BREAKING CHANGE 或重大功能变更\n   - MINOR：新增功能、较大优化\n   - PATCH：仅 Bug 修复、小幅优化\n3. 向用户展示分析结果，给出明确的发版建议（包含推荐的版本号），由用户确认\n4. 用户确认后，执行以下操作：\n   a. 更新 package.json 中的 version 字段\n   b. 整理 CHANGELOG.md：\n      - 将 [Unreleased] 内容移到新版本标题下（如 ## [1.2.0] - 2026-06-17）\n      - 添加版本号和发布日期\n      - 在顶部创建新的空 [Unreleased] 部分\n   c. 提交变更：git add . && git commit -m \"chore(release): vX.Y.Z\"\n   d. 创建 git tag：git tag vX.Y.Z\n   e. 推送：git push && git push --tags\n5. 展示发版完成信息，包含版本号和变更摘要"
+    }
+  }
+}
