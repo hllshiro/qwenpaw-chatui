@@ -1,4 +1,4 @@
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, computed } from 'vue'
 import MarkdownRender from 'markstream-vue'
 
 export default defineComponent({
@@ -7,15 +7,33 @@ export default defineComponent({
     markdown: {
       type: String,
       required: true
+    },
+    streaming: {
+      type: Boolean,
+      default: false
     }
   },
   setup(props) {
-    return () => h(MarkdownRender, {
-      content: props.markdown,
-      mode: 'chat',
-      final: true,
-      smoothStreaming: 'auto',
-      fade: false
+    const renderProps = computed(() => {
+      if (props.streaming) {
+        return {
+          content: props.markdown,
+          final: false,
+          smoothStreaming: 'auto' as const,
+          fade: false,
+          typewriter: true,
+          maxLiveNodes: 0
+        }
+      }
+      return {
+        content: props.markdown,
+        final: true,
+        smoothStreaming: false,
+        fade: true,
+        typewriter: false
+      }
     })
+
+    return () => h(MarkdownRender, renderProps.value)
   }
 })
