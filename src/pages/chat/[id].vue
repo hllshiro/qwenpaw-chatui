@@ -12,7 +12,7 @@ import {
 } from "@/composables/useChat";
 import { useApprovalState } from "@/composables/useApprovalState";
 import Navbar from "@/components/Navbar.vue";
-import ChatComark from "@/components/chat/Comark";
+import ChatMarkdownRenderer from "@/components/chat/MarkdownRenderer";
 
 const route = useRoute<"/chat/[id]">();
 const { t } = useI18n();
@@ -692,7 +692,7 @@ const chatStatus = computed(() => {
                   </div>
 
                   <!-- Text block -->
-                  <ChatComark
+                  <ChatMarkdownRenderer
                     v-else-if="block.type === 'text' && block.text"
                     :markdown="block.text"
                     :streaming="

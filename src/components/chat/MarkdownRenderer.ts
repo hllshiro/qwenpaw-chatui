@@ -2,7 +2,7 @@ import { defineComponent, h, computed } from 'vue'
 import MarkdownRender from 'markstream-vue'
 
 export default defineComponent({
-  name: 'ChatComark',
+  name: 'ChatMarkdownRenderer',
   props: {
     markdown: {
       type: String,
