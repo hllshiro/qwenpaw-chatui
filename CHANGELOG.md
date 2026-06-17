@@ -35,3 +35,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 修复侧边栏折叠状态的细节问题
 - 修复消息生成过程中切换会话后状态不同步的问题
 - 修复以水平线开头的消息内容无法渲染的问题
+- 修复会话页面顶部消息边框被遮挡的问题

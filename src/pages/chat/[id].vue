@@ -589,7 +589,7 @@ const chatStatus = computed(() => {
           :should-scroll-to-bottom="true"
           :should-auto-scroll="true"
           class="flex-1 min-h-0 overflow-y-auto"
-          :ui="{ root: 'pt-(--ui-header-height) px-4 sm:px-8' }"
+          :ui="{ root: 'pt-[calc(var(--ui-header-height)+1px)] px-4 sm:px-8' }"
           :user="{
             variant: getValue('appearance.theme.userVariant') || 'soft',
             ui: { content: 'text-sm', actions: 'cursor-pointer' },
