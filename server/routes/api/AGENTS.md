@@ -20,16 +20,16 @@ routes/api/
 │   │   ├── index.post.ts     # POST /api/chats/:id — 发送消息（SSE）
 │   │   ├── history.get.ts    # GET /api/chats/:id/history — 历史记录
 │   │   └── stop.post.ts      # POST /api/chats/:id/stop — 停止生成
-│   └── spec.get.ts           # GET /api/chats/spec — 规格
+│   └── spec.get.ts           # GET /api/chats/spec — QwenPaw 后端会话列表
 ├── approval/
-│   ├── approve.post.ts       # POST /api/approval/approve — 批准
+│   ├── approve.post.ts       # POST /api/approval/approve — 批准（需 request_id + session_id）
 │   └── deny.post.ts          # POST /api/approval/deny — 拒绝
 ├── settings/
 │   ├── index.get.ts          # GET /api/settings — 获取所有配置
 │   ├── [key].put.ts          # PUT /api/settings/:key — 更新配置
 │   ├── export.get.ts         # GET /api/settings/export — 导出
 │   └── import.post.ts        # POST /api/settings/import — 导入
-└── version.get.ts            # GET /api/version — 应用版本
+└── version.get.ts            # GET /api/version — 后端版本检测
 ```
 
 ## Where to Look

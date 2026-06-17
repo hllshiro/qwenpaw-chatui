@@ -40,6 +40,7 @@ src/composables/settings/
 | shortcuts | 快捷键 | i-lucide-keyboard | 否 |
 | appearance | 外观 | i-lucide-palette | 是 |
 | advanced | 高级 | i-lucide-shield | 是 |
+| debug | 调试 | i-lucide-bug | 是 |
 
 ## 配置分组
 
@@ -51,7 +52,9 @@ src/composables/settings/
 | brand | appearance | 品牌设置 |
 | theme | appearance | 主题设置 |
 | typography | appearance | 字体设置 |
+| language | appearance | 语言设置 |
 | backup | advanced | 数据备份 |
+| notifications | debug | 通知测试 |
 
 ## 配置项定义
 
@@ -70,6 +73,7 @@ src/composables/settings/
 | `general.notifications.onAgentComplete` | 智能体 | switch | true |
 | `general.notifications.onApprovalRequired` | 权限 | switch | true |
 | `general.notifications.onError` | 错误 | switch | true |
+| `general.notifications.sound` | 通知音效 | switch | true |
 
 ### 快捷键 - 绑定
 
@@ -78,6 +82,7 @@ src/composables/settings/
 | `shortcuts.bindings.newChat` | 新建会话 | shortcut | meta_o |
 | `shortcuts.bindings.search` | 搜索会话 | shortcut | meta_k |
 | `shortcuts.bindings.openSettings` | 打开设置 | shortcut | meta_comma |
+| `shortcuts.bindings.resetAll` | 重置全部 | button | — |
 
 ### 外观 - 品牌
 
@@ -90,8 +95,22 @@ src/composables/settings/
 
 | 键 | 标签 | 类型 | 默认值 |
 |----|------|------|--------|
-| `appearance.theme.colorScheme` | 配色方案 | select | light |
+| `appearance.theme.colorScheme` | 配色方案 | select | auto |
 | `appearance.theme.primaryColor` | 主题颜色 | color | #3b82f6 |
+| `appearance.theme.userVariant` | 用户消息样式 | select | soft |
+| `appearance.theme.assistantVariant` | 助手消息样式 | select | soft |
+
+**消息样式选项：** 实体(solid) / 轮廓(outline) / 柔和(subtle) / 软边(soft) / 无边框(naked)
+
+**配色方案选项：** 跟随系统(auto) / 浅色(light) / 深色(dark)
+
+### 外观 - 语言
+
+| 键 | 标签 | 类型 | 默认值 |
+|----|------|------|--------|
+| `appearance.language.locale` | 界面语言 | select | zh-CN |
+
+**语言选项：** 简体中文(zh-CN) / English(en)
 
 ### 外观 - 字体
 
@@ -106,6 +125,14 @@ src/composables/settings/
 |----|------|------|------|
 | `advanced.backup.export` | 配置导出 | button | 导出所有配置为 JSON |
 | `advanced.backup.import` | 配置导入 | button | 从 JSON 导入配置 |
+
+### 调试 - 通知测试
+
+| 键 | 标签 | 类型 | 说明 |
+|----|------|------|------|
+| `debug.notifications.agentComplete` | 智能体完成 | button | 模拟智能体完成通知 |
+| `debug.notifications.error` | 错误 | button | 模拟错误通知 |
+| `debug.notifications.approval` | 审批 | button | 模拟审批通知 |
 
 ## 配置类型
 

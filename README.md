@@ -31,8 +31,8 @@ QwenPaw ChatUI 是一个功能完整的 AI 聊天前端应用，专为对接 [Qw
 
 ### 环境要求
 
-- Node.js >= 18
-- pnpm >= 8
+- Node.js 22
+- pnpm 10.33.4
 
 ### 安装依赖
 
@@ -55,6 +55,7 @@ cp .env.example .env
 | `QWENPAW_BACKEND_URL` | QwenPaw 后端地址 | `http://localhost:8088` |
 | `DATABASE_URL` | SQLite 数据库路径 | `file:.data/qwenpaw.db` |
 | `PORT` | 开发服务器端口 | `3000` |
+| `VITE_BRAND_NAME` | UI 品牌名称 | `QwenPaw` |
 
 ### 初始化数据库
 
@@ -74,12 +75,14 @@ pnpm dev
 
 ```bash
 # 开发
-pnpm dev              # 启动开发服务器
-pnpm build            # 构建生产版本
+pnpm dev              # 启动开发服务器（自动生成迁移）
+pnpm build            # 构建生产版本（自动迁移 + 构建）
 pnpm preview          # 预览生产构建
+pnpm package          # 构建并打包为可分发的 tar.gz
 
 # 代码质量
 pnpm lint             # ESLint 检查
+pnpm lint:fix         # ESLint 自动修复
 pnpm typecheck        # TypeScript 类型检查
 
 # 数据库
@@ -95,6 +98,7 @@ qwenpaw-chatui/
 │   ├── components/         # 组件
 │   ├── composables/        # 组合式函数
 │   ├── layouts/            # 布局
+│   ├── locales/            # 国际化翻译
 │   ├── pages/              # 页面
 │   └── utils/              # 工具函数
 ├── server/                 # Nitro 服务端
@@ -102,6 +106,7 @@ qwenpaw-chatui/
 │   ├── routes/api/         # API 路由
 │   └── utils/              # 服务端工具函数
 ├── docs/                   # 项目文档
+├── scripts/                # 构建脚本
 └── public/                 # 静态资源
 ```
 
@@ -111,6 +116,7 @@ qwenpaw-chatui/
 
 - [架构设计](./docs/architecture.md) - 系统整体架构
 - [功能清单](./docs/features.md) - 功能完成状态
+- [贡献指南](./docs/CONTRIBUTING.md) - 文档管理规范
 - 模块文档
   - [前端模块](./docs/modules/frontend.md)
   - [服务端模块](./docs/modules/server.md)
@@ -119,20 +125,22 @@ qwenpaw-chatui/
   - [会话管理](./docs/modules/sessions.md)
   - [配置管理](./docs/modules/settings.md)
   - [审批系统](./docs/modules/approval.md)
+  - [国际化](./docs/modules/i18n.md)
 
 ## 部署
 
-### 构建
+### 打包
+
+```bash
+pnpm package
+```
+
+生成 `dist/star-agent-chatui-v{version}-{platform}-x64.tar.gz`，解压后运行 `start.sh`（Linux）或 `start.cmd`（Windows）即可。
+
+### 手动部署
 
 ```bash
 pnpm build
-```
-
-构建产物位于 `.output/` 目录，是一个自包含的 Node.js 应用。
-
-### 运行
-
-```bash
 node .output/server/index.mjs
 ```
 
@@ -141,7 +149,7 @@ node .output/server/index.mjs
 生产环境需要配置：
 
 - `QWENPAW_BACKEND_URL` - QwenPaw 后端地址
-- `DATABASE_URL` - 数据库连接路径
+- `DATABASE_URL` - 数据库连接路径（可选，默认 `file:.data/qwenpaw.db`）
 
 ## 开发指南
 

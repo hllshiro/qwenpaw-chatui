@@ -10,7 +10,7 @@
 - Vue Router (文件路由)
 - Nuxt UI (组件库)
 - Tailwind CSS (样式)
-- @comark/vue (Markdown 渲染)
+- markstream-vue (Markdown 渲染)
 - Shiki (代码高亮)
 
 ## 目录结构
@@ -21,16 +21,24 @@ src/
 ├── main.ts                       # 应用入口
 ├── assets/css/main.css           # 全局样式
 ├── components/                   # UI 组件
-│   ├── chat/Comark.ts            # Markdown 渲染组件
+│   ├── chat/
+│   │   ├── ChatInput.vue         # 聊天输入框
+│   │   └── MarkdownRenderer.ts   # Markdown 渲染组件（markstream-vue）
+│   ├── BrandIcon.vue             # 品牌图标
 │   ├── IconPicker.vue            # 图标选择器
 │   ├── Navbar.vue                # 顶部导航栏
+│   ├── NotificationPanel.vue     # 通知面板
 │   ├── SearchModal.vue           # 会话搜索弹窗
+│   ├── SessionMenu.vue           # 会话菜单（重命名/删除）
 │   ├── SettingItem.vue           # 设置项组件
 │   ├── SettingsModal.vue         # 设置弹窗
 │   └── ShortcutInput.vue         # 快捷键输入组件
 ├── composables/                  # 组合式函数
-│   ├── useChat.ts                # 聊天核心逻辑
+│   ├── useApprovalState.ts       # 审批状态管理
+│   ├── useBackendStatus.ts       # 后端连接状态检测
+│   ├── useChat.ts                # 聊天核心逻辑（592行）
 │   ├── useInputCache.ts          # 输入缓存（localStorage 持久化）
+│   ├── useNotification.ts        # 通知系统（音效、聚合）
 │   ├── useSessions.ts            # 会话管理
 │   ├── useShortcuts.ts           # 快捷键管理
 │   ├── useTheme.ts               # 主题管理
@@ -45,7 +53,8 @@ src/
 │   ├── index.vue                 # 首页
 │   └── chat/[id].vue             # 聊天页
 └── utils/
-    └── ai.ts                     # AI 工具函数
+    ├── ai.ts                     # AI 工具函数
+    └── date.ts                   # 日期格式化工具
 ```
 
 ## 核心组件
@@ -105,12 +114,34 @@ src/
 - 点击搜索结果跳转到对应会话
 - 快捷键 Cmd/Ctrl + K 打开
 
-#### `components/chat/Comark.ts`
+#### `components/SessionMenu.vue`
 
-Markdown 渲染组件，基于 `@comark/vue`：
-- 流式内容渲染
+会话菜单组件，提供：
+- 重命名会话（弹窗输入新名称）
+- 删除会话（含确认弹窗）
+- 在聊天页标题栏和侧边栏中复用
+
+#### `components/NotificationPanel.vue`
+
+通知面板组件，提供：
+- 通知列表展示（智能体完成、审批、错误）
+- 未读计数标记
+- 点击通知跳转到对应会话
+- 通知标记已读
+
+#### `components/ChatInput.vue`（`components/chat/`）
+
+聊天输入框组件，提供：
+- 多行文本输入
+- 提交按钮（输入为空时自动禁用）
+- Shift+Enter 换行支持
+
+#### `components/chat/MarkdownRenderer.ts`
+
+Markdown 渲染组件，基于 `markstream-vue`：
+- 流式内容渲染（打字机效果）
 - 代码高亮（Shiki）
-- 安全 HTML 渲染
+- 支持流式和最终两种渲染模式
 
 ## 核心 Composables
 
@@ -125,16 +156,19 @@ Markdown 渲染组件，基于 `@comark/vue`：
 
 **主要方法：**
 ```typescript
-sendMessage(content: string)  // 发送消息
-stopGeneration()              // 停止生成（待实现）
-clearMessages()               // 清空消息
+sendMessage(text, options?)  // 发送消息（支持 onComplete 回调）
+reconnect(options?)          // 重新连接（恢复未完成的消息）
+stop()                       // 停止生成（调用后端停止 API）
+clearMessages()              // 清空消息
+patchPendingUserMessage()    // 恢复未完成的用户消息
 ```
 
 **响应式状态：**
 ```typescript
 messages: Ref<Message[]>      // 消息列表
-status: Ref<StreamStatus>     // 流状态
+status: Ref<ChatStatus>       // 流状态（ready/streaming/error）
 error: Ref<Error | null>      // 错误信息
+streamingPhase: Ref<StreamingPhase> // 流阶段（idle/waiting/reasoning/message）
 ```
 
 ### `useSessions.ts`
@@ -146,10 +180,18 @@ error: Ref<Error | null>      // 错误信息
 
 **主要方法：**
 ```typescript
-createSession(name?: string)           // 创建会话
-renameSession(id: string, name: string) // 重命名会话
-deleteSession(id: string)              // 删除会话
-loadSessions()                         // 加载会话列表
+createSession()              // 创建会话（使用当前 businessKey）
+updateSession(id, data)      // 更新会话
+deleteSession(id)            // 删除会话（自动清除输入缓存）
+fetchSessions()              // 加载会话列表
+setBusinessKey(key)          // 设置业务键（自动刷新列表）
+```
+
+**响应式状态：**
+```typescript
+sessions: Ref<Session[]>         // 会话列表
+businessKey: Ref<string>         // 当前业务键
+groupedSessions: ComputedRef     // 按时间分组的会话列表
 ```
 
 ### `useTheme.ts`
@@ -185,10 +227,36 @@ cachedText: Ref<string>   // 当前缓存的文本
 
 快捷键管理，当前支持：
 - `Cmd/Ctrl + O` - 新建会话
+- `Cmd/Ctrl + K` - 搜索会话
+- `Cmd/Ctrl + ,` - 打开设置
+
+快捷键通过配置系统定义，用户可在设置中自定义绑定。
 
 ### `settings/`
 
 配置管理模块，提供类型安全的配置项定义和注册机制。
+
+### `useNotification.ts`
+
+通知系统，提供：
+- 三种通知类型：智能体完成、审批请求、错误
+- 多消息聚合（同一会话的通知合并显示）
+- 音效提示（Web Audio API，可配置开关）
+- 通知面板交互（标记已读、跳转会话）
+
+### `useBackendStatus.ts`
+
+后端连接状态检测，提供：
+- 定期轮询 `/api/version` 检测后端可达性
+- 三种状态：checking / connected / disconnected
+- 30 秒轮询间隔
+- 连接断开时阻止消息发送并提示用户
+
+### `useApprovalState.ts`
+
+审批状态管理，提供：
+- 全局审批状态 Map（requestId → status）
+- 防止重复审批操作
 
 ## 路由系统
 

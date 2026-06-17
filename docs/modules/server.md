@@ -90,6 +90,12 @@ Nitro 作为 Vite 插件运行，路由文件位于 `server/routes/api/`，由 N
 
 返回：`{ messages: Message[], status: 'running' | 'idle' }`
 
+### POST /api/chats/:id/stop
+
+停止正在进行的生成。
+
+返回：`{ stopped: boolean }`
+
 ## 审批
 
 ### POST /api/approval/approve
@@ -103,7 +109,7 @@ Nitro 作为 Vite 插件运行，路由文件位于 `server/routes/api/`，由 N
 | `request_id` | string | 是 | 审批请求 ID |
 | `session_id` | string | 是 | 会话 ID |
 | `user_id` | string | 否 | 用户 ID |
-| `reason` | string | 否 | 批准原因 |
+| `reason` | string | 否 | 拒绝原因 |
 
 ### POST /api/approval/deny
 
@@ -130,6 +136,14 @@ Nitro 作为 Vite 插件运行，路由文件位于 `server/routes/api/`，由 N
 批量导入设置。
 
 请求体：`{ settings: Record<string, any> }` — 逐条 upsert，返回 `{ success: true, imported: number }`。
+
+## 版本检测
+
+### GET /api/version
+
+代理到 QwenPaw 后端的版本接口，用于检测后端连接状态。
+
+返回：`{ success: boolean, version: string | null, error: string | null }`
 
 ## 数据流
 

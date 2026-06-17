@@ -126,12 +126,7 @@ Content-Type: application/json
 }
 ```
 
-**响应：**
-```json
-{
-  "success": true
-}
-```
+**响应：** 更新后的 `Session` 对象。
 
 ### 删除会话
 
@@ -139,12 +134,7 @@ Content-Type: application/json
 DELETE /api/chats/:id
 ```
 
-**响应：**
-```json
-{
-  "success": true
-}
-```
+**响应：** 被删除的 `Session` 对象。
 
 ### 获取 QwenPaw 后端会话列表
 
@@ -170,29 +160,32 @@ GET /api/chats/:id/history
 ```typescript
 export const useSessions = createSharedComposable(() => {
   const sessions = ref<Session[]>([])
-  
+  const businessKey = ref<string>(
+    typeof window !== 'undefined'
+      ? localStorage.getItem('qwenpaw_business_key') || 'default'
+      : 'default'
+  )
+
   // 获取会话列表
-  async function fetchSessions(businessKey?: string) {
-    const url = businessKey 
-      ? `/api/chats?business_key=${encodeURIComponent(businessKey)}`
-      : '/api/chats'
+  async function fetchSessions() {
+    const url = `/api/chats?business_key=${encodeURIComponent(businessKey.value)}`
     sessions.value = await $fetch<Session[]>(url).catch(() => [])
   }
   
   // 创建会话
-  async function createSession(businessKey?: string): Promise<Session> {
+  async function createSession(): Promise<Session> {
     const session = await $fetch<Session>('/api/chats', {
       method: 'POST',
-      body: { business_key: businessKey || 'default' }
+      body: { business_key: businessKey.value }
     })
-    await fetchSessions(businessKey)
+    await fetchSessions()
     return session
   }
   
   // 更新会话
   async function updateSession(id: string, data: Partial<Session>) {
     await $fetch(`/api/chats/${id}`, { method: 'PUT', body: data })
-    // 本地更新
+    // 本地乐观更新
   }
   
   // 删除会话
@@ -202,13 +195,20 @@ export const useSessions = createSharedComposable(() => {
     
     // 清除该会话的输入缓存
     try {
-      localStorage.removeItem(`pending_msg_${id}`)
+      localStorage.removeItem(`pending_msg_${businessKey.value}_${id}`)
     } catch (err) {
       console.warn('[InputCache] 清除缓存失败:', err)
     }
   }
+
+  // 设置业务键（自动刷新列表）
+  function setBusinessKey(key: string) {
+    businessKey.value = key || 'default'
+    localStorage.setItem('qwenpaw_business_key', businessKey.value)
+    fetchSessions()
+  }
   
-  return { sessions, fetchSessions, createSession, updateSession, deleteSession }
+  return { sessions, businessKey, groupedSessions, setBusinessKey, fetchSessions, createSession, updateSession, deleteSession }
 })
 ```
 
@@ -246,14 +246,15 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const businessKey = query.business_key as string
   
+  const db = useDrizzle()
   let whereCondition
   if (businessKey) {
-    whereCondition = eq(sessions.businessKey, businessKey)
+    whereCondition = eq(tables.sessions.businessKey, businessKey)
   }
   
-  return db.select().from(sessions)
+  return db.select().from(tables.sessions)
     .where(whereCondition)
-    .orderBy(desc(sessions.updatedAt))
+    .orderBy(desc(tables.sessions.updatedAt))
 })
 ```
 
@@ -262,8 +263,9 @@ export default defineEventHandler(async (event) => {
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const id = generateId()
+  const db = useDrizzle()
   
-  await db.insert(sessions).values({
+  await db.insert(tables.sessions).values({
     id,
     businessKey: body.business_key || 'default',
     name: '新会话'
@@ -337,12 +339,15 @@ export async function deleteSessionFromBackend(sessionId: string) {
 ### 获取当前业务键
 
 ```typescript
-// 从 URL 参数获取
+// 通过 composable 获取（推荐）
+const { businessKey, setBusinessKey } = useSessions()
+
+// 从 URL 参数获取（嵌入场景）
 const urlParams = new URLSearchParams(window.location.search)
-const businessKey = urlParams.get('business_key') || 'default'
+const key = urlParams.get('business_key') || 'default'
 
 // 从全局配置获取
-const businessKey = window.__QWENPAW_CONFIG__?.businessKey || 'default'
+const key = window.__QWENPAW_CONFIG__?.businessKey || 'default'
 ```
 
 ### 创建会话并导航
@@ -383,4 +388,5 @@ if (confirm('确定删除此会话？')) {
 3. **乐观更新** - 删除操作先更新本地状态，再请求后端
 4. **错误处理** - API 请求失败时返回空数组，不影响页面渲染
 5. **时间格式** - 数据库存储时间戳，API 返回 ISO 8601 格式
-6. **缓存清理** - 删除会话时自动清除 `localStorage` 中的输入缓存（`pending_msg_${id}`）
+6. **缓存清理** - 删除会话时自动清除 `localStorage` 中的输入缓存（`pending_msg_${businessKey}_${id}`）
+7. **业务键持久化** - businessKey 存储在 localStorage，切换后自动刷新会话列表

@@ -15,7 +15,7 @@
 
 - [架构设计文档](../architecture.md)
 - [功能清单](../features.md)
-- [文档管理规范设计文档](../superpowers/specs/2026-05-22-documentation-management-design.md)
+- [贡献指南](../CONTRIBUTING.md)
 
 ## 使用方法
 

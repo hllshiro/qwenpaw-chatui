@@ -117,16 +117,14 @@ POST /api/approval/approve
 Content-Type: application/json
 
 {
-  "requestId": "req-xxx"
+  "request_id": "req-xxx",
+  "session_id": "session-xxx",
+  "user_id": "optional-user-id",
+  "reason": "optional-reason"
 }
 ```
 
-**响应：**
-```json
-{
-  "success": true
-}
-```
+**响应：** QwenPaw 后端返回的 JSON。
 
 ### 拒绝请求
 
@@ -135,56 +133,62 @@ POST /api/approval/deny
 Content-Type: application/json
 
 {
-  "requestId": "req-xxx"
+  "request_id": "req-xxx",
+  "session_id": "session-xxx",
+  "user_id": "optional-user-id",
+  "reason": "拒绝原因"
 }
 ```
 
-**响应：**
-```json
-{
-  "success": true
-}
-```
+**响应：** QwenPaw 后端返回的 JSON。
 
 ## 服务端实现
 
 ### approve.post.ts
 
 ```typescript
-import { config } from '../../../config'
+import { config } from '@server/config'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { requestId } = body
-  
-  // 转发到 QwenPaw 后端
   const backendUrl = config.qwenpawBackendUrl
-  await ofetch(`${backendUrl}/api/approval/approve`, {
+  const { request_id, session_id, user_id, reason } = body || {}
+
+  if (!request_id || !session_id) {
+    throw new HTTPError({ statusCode: 400, statusMessage: 'Missing request_id or session_id' })
+  }
+
+  const response = await fetch(`${backendUrl}/api/approval/approve`, {
     method: 'POST',
-    body: { request_id: requestId }
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ request_id, session_id, user_id: user_id || null, reason: reason || null })
   })
-  
-  return { success: true }
+
+  return response.json()
 })
 ```
 
 ### deny.post.ts
 
 ```typescript
-import { config } from '../../../config'
+import { config } from '@server/config'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { requestId } = body
-  
-  // 转发到 QwenPaw 后端
   const backendUrl = config.qwenpawBackendUrl
-  await ofetch(`${backendUrl}/api/approval/deny`, {
+  const { request_id, session_id, user_id, reason } = body || {}
+
+  if (!request_id || !session_id) {
+    throw new HTTPError({ statusCode: 400, statusMessage: 'Missing request_id or session_id' })
+  }
+
+  const response = await fetch(`${backendUrl}/api/approval/deny`, {
     method: 'POST',
-    body: { request_id: requestId }
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ request_id, session_id, user_id: user_id || null, reason: reason || null })
   })
-  
-  return { success: true }
+
+  return response.json()
 })
 ```
 

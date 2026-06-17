@@ -247,16 +247,30 @@ export default defineEventHandler(async (event) => {
 ### qwenpaw.ts 客户端
 
 ```typescript
-import { config } from '../../../config'
+import { config } from '@server/config'
 
-export async function sendMessage(sessionId: string, content: string) {
-  const backendUrl = config.qwenpawBackendUrl
-  
-  return fetch(`${backendUrl}/api/chat`, {
+export async function callQwenPawChat(backendUrl, params) {
+  const url = `${backendUrl}/api/console/chat`
+  const body = {
+    input: [{ role: 'user', content: [{ type: 'text', text: params.content }] }],
+    session_id: params.session_id || '',
+    user_id: params.business_key || 'default',
+    channel: 'console',
+    stream: true
+  }
+
+  return fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'user', content }] })
+    body: JSON.stringify(body)
   })
+}
+
+export async function stopQwenPawChat(backendUrl, chatId) {
+  const url = `${backendUrl}/api/console/chat/stop?chat_id=${encodeURIComponent(chatId)}`
+  const response = await fetch(url, { method: 'POST' })
+  const result = await response.json().catch(() => ({ stopped: false }))
+  return result.stopped === true
 }
 ```
 
@@ -279,10 +293,11 @@ interface ChatMessage {
 ```typescript
 interface MessageBlock {
   id: string
-  type: 'reasoning' | 'text' | 'toolCall' | 'approval'
+  type: 'reasoning' | 'text' | 'toolCall' | 'approval' | 'stopped'
   text?: string
   toolCall?: ToolCall
   approval?: ApprovalData
+  stopped?: StoppedData
 }
 ```
 

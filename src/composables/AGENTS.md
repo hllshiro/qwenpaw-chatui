@@ -10,11 +10,15 @@ Vue 3 组合式函数，封装业务逻辑和状态管理。
 
 ```
 composables/
-├── useChat.ts          # SSE 流式对话核心（507行）
+├── useChat.ts          # SSE 流式对话核心（592行）
 ├── useSessions.ts      # 会话 CRUD + 分组
 ├── useTheme.ts         # 主题管理
 ├── useI18n.ts          # 国际化
 ├── useShortcuts.ts     # 快捷键绑定
+├── useNotification.ts  # 通知系统（音效、聚合）
+├── useBackendStatus.ts # 后端连接状态检测
+├── useApprovalState.ts # 审批状态管理
+├── useInputCache.ts    # 输入缓存（localStorage）
 └── settings/           # 配置注册系统
     ├── index.ts        # 共享 composable（createSharedComposable）
     ├── registry.ts     # 注册表（Map 存储）

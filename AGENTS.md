@@ -31,13 +31,20 @@ src/              — Vue 3 前端（页面、组合式函数、组件）
 server/           — Nitro 服务端路由（作为 Vite 插件运行）
 server/routes/api/ — REST API 端点（Nitro 自动注册）
 server/utils/qwenpaw.ts — 调用 QwenPaw 后端 API
-server/utils/drizzle.ts — 数据库单例（重新导出 sql, eq, and, or, asc, desc）
+server/utils/drizzle.ts — 数据库单例（useDrizzle()，重新导出 tables, sql, eq, and, or, asc, desc）
 server/database/schema.ts — Drizzle 数据库模式（sessions + settings 表）
 server/config.ts — 服务端配置（读取环境变量）
 server/plugins/migrations.ts — 启动时自动执行数据库迁移
 ```
 
 前端 → Nitro 服务端 → QwenPaw 后端（`localhost:8088`）。SSE 流式响应通过 Nitro 代理转发。
+
+## 路径别名
+
+- `@/*` → `src/*`（Vite + tsconfig）
+- `@server/*` → `server/*`（Vite + tsconfig）
+- `~/*` → `./*`（tsconfig）
+- `#build/ui/*` → `node_modules/.nuxt-ui/ui/*`（tsconfig）
 
 ## 环境变量
 
@@ -49,7 +56,7 @@ server/plugins/migrations.ts — 启动时自动执行数据库迁移
 
 ## 关键注意事项
 
-- **自动导入**：`auto-imports.d.ts` 和 `components.d.ts` 是自动生成的——不要手动编辑。
+- **自动导入**：`auto-imports.d.ts` 和 `components.d.ts` 是自动生成的——不要手动编辑。Nuxt UI composables（`useToast`、`defineShortcuts` 等）和 VueUse 函数已全局自动导入，无需手动 import。
 - **Nitro 插件**：服务器启动时 `server/plugins/migrations.ts` 会创建数据库目录并执行迁移。
 - **会话消息**：存储在 QwenPaw 服务端，而非本地 SQLite——本地数据库仅存储会话元数据。
 - **ESLint 范围**：仅检查 `src/`，`server/` 目录不在检查范围内。
@@ -61,7 +68,7 @@ server/plugins/migrations.ts — 启动时自动执行数据库迁移
 
 ## 国际化
 
-翻译键命名规范：`common.*`、`settings.*`、`chat.*`、`components.*`。日期格式化使用 `dayjs` + `formatDate` 工具函数。翻译文件位于 `src/locales/`，按模块分 JSON 文件。
+翻译文件位于 `src/locales/`，按模块分 JSON 文件。翻译键命名规范：`common.*`、`settings.*`、`chat.*`、`components.*`。日期格式化使用 `dayjs` + `formatDate` 工具函数。
 
 ## SSE 流式协议
 
@@ -79,7 +86,7 @@ server/plugins/migrations.ts — 启动时自动执行数据库迁移
 
 ## 工具守卫审批
 
-后端可以暂停响应并请求审批。当 `message(message)` 事件的 `metadata.message_type === 'tool_guard_approval'` 时，助手消息会获得一个 `approval` 对象，包含 `requestId`、`toolName`、`severity`、`findingsSummary` 和 `toolParams`。界面会渲染批准/拒绝按钮，调用 `/api/approval/approve` 和 `/api/approval/deny`。
+后端可以暂停响应并请求审批。当 `message(message)` 事件的 `metadata.message_type === 'tool_guard_approval'` 时，助手消息会获得 `approval` 对象（`requestId`、`toolName`、`severity`、`findingsSummary`、`toolParams`）。界面渲染批准/拒绝按钮，调用 `/api/approval/approve` 和 `/api/approval/deny`。
 
 ## QwenPaw 后端参考
 
@@ -93,31 +100,15 @@ QwenPaw 后端源码位于 `docs/QwenPaw`（从 `https://github.com/agentscope-a
 
 ## CHANGELOG 编写规范
 
-遵循 [Keep a Changelog](https://keepachangelog.com/) 格式，分类：Added / Changed / Fixed / Removed。
-
-**风格要求：**
-- 从用户角度描述，说明影响而非技术实现
-- 使用简洁动词开头：新增、优化、修复、移除
-- 避免具体技术细节（如"添加手型光标"→"优化交互体验"）
-- 一行一条，控制在 20 字以内
-
-**示例：**
-- ✅ 优化设置界面控件交互体验
-- ✅ 修复缓存清除后主题设置丢失的问题
-- ❌ 开关和下拉菜单添加手型光标，禁用状态显示正确样式
-- ❌ 修复清除浏览器缓存后主题设置（明暗模式）丢失的问题
+遵循 [Keep a Changelog](https://keepachangelog.com/) 格式，分类：Added / Changed / Fixed / Removed。从用户角度描述，使用简洁动词开头（新增、优化、修复、移除），避免技术细节，一行一条控制在 20 字以内。
 
 ## Commit 规范
 
 ```
 <type>(<scope>): <简洁描述>
-
-[可选正文]
 ```
-
 **type:** feat / fix / refactor / style / docs / chore
-**scope:** 模块或功能范围（如 settings、chat、sidebar）
-**描述：** 与 CHANGELOG 风格一致，简洁概括，不超过 50 字符
+**scope:** 模块或功能范围（如 settings、chat、sidebar），描述不超过 50 字符。
 
 ## 子目录 AGENTS.md
 
