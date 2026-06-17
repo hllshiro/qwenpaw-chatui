@@ -33,20 +33,13 @@ const sidebarResizable = ref(true)
 const settingsOpen = ref(false)
 const searchOpen = ref(false)
 const sessionListOpen = ref(false)
-let sessionListTimeout: ReturnType<typeof setTimeout> | null = null
+const isSessionMenuDropdownOpen = ref(false)
 
-function openSessionList() {
-  if (sessionListTimeout) {
-    clearTimeout(sessionListTimeout)
-    sessionListTimeout = null
+function onSessionListUpdate(open: boolean) {
+  if (!open && isSessionMenuDropdownOpen.value) {
+    return
   }
-  sessionListOpen.value = true
-}
-
-function closeSessionList() {
-  sessionListTimeout = setTimeout(() => {
-    sessionListOpen.value = false
-  }, 150) // 150ms 延迟，给用户时间移动到菜单
+  sessionListOpen.value = open
 }
 
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
@@ -293,8 +286,9 @@ async function collapseSidebar() {
             </UTooltip>
             
             <UPopover
-              v-model:open="sessionListOpen"
+              :open="sessionListOpen"
               :popper="{ placement: 'right-start' }"
+              @update:open="onSessionListUpdate"
             >
               <UTooltip :text="t('chat.sessions')">
                 <UButton
@@ -303,16 +297,12 @@ async function collapseSidebar() {
                   :variant="isChatSession ? 'soft' : 'ghost'"
                   size="sm"
                   class="cursor-pointer"
-                  @mouseenter="openSessionList"
-                  @mouseleave="closeSessionList"
                 />
               </UTooltip>
               
               <template #content>
                 <div
                   class="w-80 max-h-96 overflow-y-auto p-2"
-                  @mouseenter="openSessionList"
-                  @mouseleave="closeSessionList"
                 >
                   <div class="text-sm font-medium text-muted mb-2 px-2">
                     {{ t('chat.sessions') }}
@@ -326,7 +316,10 @@ async function collapseSidebar() {
                     }"
                   >
                     <template #chat-trailing="{ item }">
-                      <SessionMenu :session="{ id: (item as { id: string }).id, name: (item as { label: string }).label }">
+                      <SessionMenu
+                        :session="{ id: (item as { id: string }).id, name: (item as { label: string }).label }"
+                        @update:dropdown-open="isSessionMenuDropdownOpen = $event"
+                      >
                         <UButton
                           icon="i-lucide-ellipsis"
                           color="neutral"

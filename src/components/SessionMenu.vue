@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { useSessions } from '@/composables/useSessions'
@@ -8,6 +8,12 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 const props = defineProps<{
   session: { id: string; name: string } | null
 }>()
+
+const emit = defineEmits<{
+  'update:dropdownOpen': [value: boolean]
+}>()
+
+const dropdownOpen = ref(false)
 
 const { t } = useI18n()
 const router = useRouter()
@@ -79,11 +85,14 @@ async function confirmDelete() {
 function cancelDelete() {
   deletingId.value = null
 }
+
+watch(dropdownOpen, v => emit('update:dropdownOpen', v))
 </script>
 
 <template>
   <UDropdownMenu
     v-if="session"
+    v-model:open="dropdownOpen"
     :items="chatActions"
     :content="{ align: 'end' }"
     :modal="false"
@@ -109,10 +118,12 @@ function cancelDelete() {
         :label="t('common.cancel')"
         color="neutral"
         variant="ghost"
+        class="cursor-pointer"
         @click="cancelRename"
       />
       <UButton
         :label="t('common.confirm')"
+        class="cursor-pointer"
         @click="confirmRename"
       />
     </template>
@@ -132,11 +143,13 @@ function cancelDelete() {
         :label="t('common.cancel')"
         color="neutral"
         variant="ghost"
+        class="cursor-pointer"
         @click="cancelDelete"
       />
       <UButton
         :label="t('common.delete')"
         color="error"
+        class="cursor-pointer"
         @click="confirmDelete"
       />
     </template>
