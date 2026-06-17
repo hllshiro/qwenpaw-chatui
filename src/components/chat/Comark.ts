@@ -1,4 +1,5 @@
 import { defineComarkComponent } from '@comark/vue'
+import { defineComarkPlugin } from '@comark/vue/parse'
 import highlight from '@comark/vue/plugins/highlight'
 import html from '@shikijs/langs/html'
 import css from '@shikijs/langs/css'
@@ -19,9 +20,21 @@ import xml from '@shikijs/langs/xml'
 import toml from '@shikijs/langs/toml'
 import graphql from '@shikijs/langs/graphql'
 
+// Plugin to prevent --- at the start from being parsed as frontmatter
+// AI output never contains frontmatter, so we convert leading --- to - - - (horizontal rule)
+const noFrontmatter = defineComarkPlugin(() => ({
+  name: 'no-frontmatter',
+  pre(state: { markdown: string }) {
+    if (state.markdown.startsWith('---')) {
+      state.markdown = '- - -' + state.markdown.slice(3)
+    }
+  }
+}))
+
 export default defineComarkComponent({
   name: 'ChatComark',
   plugins: [
+    noFrontmatter(),
     highlight({
       languages: [html, css, python, sql, go, rust, java, c, cpp, ruby, php, swift, kotlin, diff, dockerfile, xml, toml, graphql]
     })
