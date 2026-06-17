@@ -26,11 +26,11 @@
     "checkingConnection": "正在检查连接...",
     "retryConnection": "重试连接",
     "expandSidebar": "展开侧边栏",
-    "fontSmaller": "缩小字号",
     "fontReset": "重置字号",
-    "fontLarger": "放大字号",
+    "fontSmaller": "字号减小",
+    "fontLarger": "字号增大",
     "expand": "展开",
-    "collapse": "折叠",
+    "collapse": "收起",
     "more": "更多",
     "preview": "预览"
   }
