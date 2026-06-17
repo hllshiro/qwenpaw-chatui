@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 优化搜索和新建会话按钮布局
 - 优化设置界面控件交互体验
 - 会话页标题栏新增会话菜单，支持重命名和删除
+- 替换 Markdown 渲染引擎为 markstream-vue，优化流式渲染体验
 
 ### Fixed
 
