@@ -26,9 +26,6 @@ export default defineConfig({
       ],
     },
   },
-  optimizeDeps: {
-    exclude: ["monaco-editor"],
-  },
   plugins: [
     vueRouter({
       dts: "src/route-map.d.ts",
