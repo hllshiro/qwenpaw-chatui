@@ -44,9 +44,12 @@ importers:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@libsql/client@0.17.3)(@opentelemetry/api@1.9.0)(pg@8.20.0)
+      katex:
+        specifier: ^0.17.0
+        version: 0.17.0
       markstream-vue:
         specifier: 1.0.3-beta.2
-        version: 1.0.3-beta.2(stream-markdown@0.0.16(shiki@4.0.2)(vue@3.5.34(typescript@6.0.3)))(vue-i18n@11.4.4(vue@3.5.34(typescript@6.0.3)))(vue@3.5.34(typescript@6.0.3))
+        version: 1.0.3-beta.2(katex@0.17.0)(stream-markdown@0.0.16(shiki@4.0.2)(vue@3.5.34(typescript@6.0.3)))(vue-i18n@11.4.4(vue@3.5.34(typescript@6.0.3)))(vue@3.5.34(typescript@6.0.3))
       nitro:
         specifier: 3.0.260522-beta
         version: 3.0.260522-beta(@libsql/client@0.17.3)(chokidar@5.0.0)(dotenv@17.3.1)(drizzle-orm@0.45.2(@libsql/client@0.17.3)(@opentelemetry/api@1.9.0)(pg@8.20.0))(giget@2.0.0)(jiti@2.6.1)(lru-cache@11.2.7)(vite@7.3.3(@types/node@24.12.3)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.9.0))
@@ -2048,6 +2051,10 @@ packages:
   comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
 
+  commander@8.3.0:
+    resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
+    engines: {node: '>= 12'}
+
   confbox@0.1.8:
     resolution: {integrity: sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w==}
 
@@ -2700,6 +2707,10 @@ packages:
   json5@2.2.3:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
+    hasBin: true
+
+  katex@0.17.0:
+    resolution: {integrity: sha512-Vdw0ATsQ9V+LuegM/BTwQqV/6cTl5lbGcIrU+BCgLxyf6bo38ybOr372tuSIxir3CN720flu1meYR6XzNMwQnw==}
     hasBin: true
 
   keyv@4.5.4:
@@ -5896,6 +5907,8 @@ snapshots:
 
   comma-separated-tokens@2.0.3: {}
 
+  commander@8.3.0: {}
+
   confbox@0.1.8: {}
 
   confbox@0.2.4: {}
@@ -6478,6 +6491,10 @@ snapshots:
 
   json5@2.2.3: {}
 
+  katex@0.17.0:
+    dependencies:
+      commander: 8.3.0
+
   keyv@4.5.4:
     dependencies:
       json-buffer: 3.0.1
@@ -6654,7 +6671,7 @@ snapshots:
 
   markstream-core@1.0.3: {}
 
-  markstream-vue@1.0.3-beta.2(stream-markdown@0.0.16(shiki@4.0.2)(vue@3.5.34(typescript@6.0.3)))(vue-i18n@11.4.4(vue@3.5.34(typescript@6.0.3)))(vue@3.5.34(typescript@6.0.3)):
+  markstream-vue@1.0.3-beta.2(katex@0.17.0)(stream-markdown@0.0.16(shiki@4.0.2)(vue@3.5.34(typescript@6.0.3)))(vue-i18n@11.4.4(vue@3.5.34(typescript@6.0.3)))(vue@3.5.34(typescript@6.0.3)):
     dependencies:
       '@chenglou/pretext': 0.0.5
       '@floating-ui/dom': 1.7.6
@@ -6662,6 +6679,7 @@ snapshots:
       stream-markdown-parser: 1.0.5
       vue: 3.5.34(typescript@6.0.3)
     optionalDependencies:
+      katex: 0.17.0
       stream-markdown: 0.0.16(shiki@4.0.2)(vue@3.5.34(typescript@6.0.3))
       vue-i18n: 11.4.4(vue@3.5.34(typescript@6.0.3))
 
