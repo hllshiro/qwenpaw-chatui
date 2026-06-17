@@ -1,4 +1,6 @@
 import './assets/css/main.css'
+import 'markstream-vue/index.css'
+import 'katex/dist/katex.min.css'
 
 import { createApp } from 'vue'
 import { createHead } from '@unhead/vue/client'
