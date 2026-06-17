@@ -114,6 +114,9 @@ importers:
       vite:
         specifier: ^7.3.3
         version: 7.3.3(@types/node@24.12.3)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.9.0)
+      vite-plugin-monaco-editor-esm:
+        specifier: ^2.0.2
+        version: 2.0.2(monaco-editor@0.55.1)
       vite-plugin-vue-devtools:
         specifier: ^8.1.2
         version: 8.1.2(@nuxt/kit@4.4.2)(vite@7.3.3(@types/node@24.12.3)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.9.0))(vue@3.5.34(typescript@6.0.3))
@@ -4201,6 +4204,11 @@ packages:
     peerDependenciesMeta:
       '@nuxt/kit':
         optional: true
+
+  vite-plugin-monaco-editor-esm@2.0.2:
+    resolution: {integrity: sha512-XVkOpL/r0rw1NpbO30vUwG4S0THkC9KB1vjjV8olGd49h4/EQsKl3DrxB6KRDwyZNC9mKiiZgk2L6njUYj3oKQ==}
+    peerDependencies:
+      monaco-editor: '>=0.33.0'
 
   vite-plugin-vue-devtools@8.1.2:
     resolution: {integrity: sha512-gt5h1CNryR9Hy0tvhSbqY3j0F7aj0pGxBxWLa1lXSiZVkhdWDf0vbCOZyjh8ivFGE6FDHTGy3zkcZGlMZdVHig==}
@@ -8458,6 +8466,10 @@ snapshots:
       '@nuxt/kit': 4.4.2
     transitivePeerDependencies:
       - supports-color
+
+  vite-plugin-monaco-editor-esm@2.0.2(monaco-editor@0.55.1):
+    dependencies:
+      monaco-editor: 0.55.1
 
   vite-plugin-vue-devtools@8.1.2(@nuxt/kit@4.4.2)(vite@7.3.3(@types/node@24.12.3)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)(yaml@2.9.0))(vue@3.5.34(typescript@6.0.3)):
     dependencies:

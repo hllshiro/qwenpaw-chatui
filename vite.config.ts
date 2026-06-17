@@ -5,6 +5,7 @@ import vueRouter from 'vue-router/vite'
 import vueLayouts from 'vite-plugin-vue-layouts'
 import vueDevtools from 'vite-plugin-vue-devtools'
 import ui from '@nuxt/ui/vite'
+import monaco from 'vite-plugin-monaco-editor-esm'
 import { fileURLToPath } from 'node:url'
 
 // https://vitejs.dev/config/
@@ -41,6 +42,9 @@ export default defineConfig({
           neutral: 'zinc'
         }
       }
+    }),
+    monaco({
+      languageWorkers: ['editorWorkerService', 'json', 'css', 'html', 'typescript']
     }),
     nitro({
       serverDir: './server',
