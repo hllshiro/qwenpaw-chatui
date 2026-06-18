@@ -40,3 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 修复重命名和删除弹窗中按钮缺少鼠标指针效果的问题
 
 ## [Unreleased]
+
+### Changed
+
+- 优化消息气泡宽度约束，改善不同屏幕下的显示效果
