@@ -37,11 +37,6 @@ html.dark .shiki span {
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
-/* User message code block min-width */
-[data-role="user"] .markstream-vue pre {
-  min-width: min(480px, 90vw);
-}
-
 /* Table auto width for all messages */
 .markstream-vue .table-node {
   width: fit-content;

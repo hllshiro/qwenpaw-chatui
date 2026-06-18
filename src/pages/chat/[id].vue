@@ -592,7 +592,7 @@ const chatStatus = computed(() => {
           :ui="{ root: 'pt-[calc(var(--ui-header-height)+1px)] px-4 sm:px-8' }"
           :user="{
             variant: getValue('appearance.theme.userVariant') || 'soft',
-            ui: { content: 'min-w-[45%] max-w-[90%] text-sm', actions: 'cursor-pointer' },
+            ui: { content: 'max-w-[90%] text-sm', actions: 'cursor-pointer' },
             actions: [
               {
                 icon: 'i-lucide-copy',
@@ -604,7 +604,7 @@ const chatStatus = computed(() => {
           }"
           :assistant="{
             variant: getValue('appearance.theme.assistantVariant') || 'soft',
-            ui: { content: 'min-w-[45%] max-w-[90%] text-sm', actions: 'cursor-pointer' },
+            ui: { content: 'max-w-[90%] text-sm', actions: 'cursor-pointer' },
             actions: [
               {
                 icon: 'i-lucide-copy',
