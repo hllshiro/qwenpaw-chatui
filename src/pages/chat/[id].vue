@@ -635,9 +635,11 @@ const chatStatus = computed(() => {
               v-if="message.role === 'user'"
               class="text-sm leading-relaxed"
             >
-              <div class="whitespace-pre-wrap break-words">
-                {{ (message as any).parts[0]?.text }}
-              </div>
+              <ChatMarkdownRenderer
+                :markdown="(message as any).parts[0]?.text || ''"
+                :streaming="false"
+                class="prose dark:prose-invert prose-sm max-w-none"
+              />
             </div>
 
             <template v-else>
