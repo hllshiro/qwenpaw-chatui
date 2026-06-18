@@ -45,3 +45,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - 优化消息气泡宽度约束，改善不同屏幕下的显示效果
 - 优化消息中表格的宽度自适应显示
+- 优化代码块和数学块的宽度显示
+- 优化消息段落间距

@@ -37,11 +37,19 @@ html.dark .shiki span {
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
-/* Table auto width for all messages */
-.markstream-vue .table-node {
-  width: fit-content;
-  max-width: 100%;
-  table-layout: auto;
+/* Block elements behave like tables to fill container */
+.markstream-vue .node-slot[data-node-type="code_block"],
+.markstream-vue .node-slot[data-node-type="table"],
+.markstream-vue .node-slot[data-node-type="math_block"] {
+  display: table;
+  table-layout: fixed;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Reduce paragraph spacing */
+.markstream-vue .paragraph-node {
+  margin: 0 !important;
 }
 
 /* ChatMessage actions hover behavior */
