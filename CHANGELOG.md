@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.0] - 2026-06-18
 
 ### Added
 
@@ -38,3 +38,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 修复会话页面顶部消息边框被遮挡的问题
 - 修复折叠侧边栏会话菜单点击后弹出层自动关闭的问题
 - 修复重命名和删除弹窗中按钮缺少鼠标指针效果的问题
+
+## [Unreleased]

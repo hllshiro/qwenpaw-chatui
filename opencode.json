@@ -1,4 +1,5 @@
 {
+  "$schema": "https://opencode.ai/config.json",
   "command": {
     "release": {
       "description": "发布新版本（自动分析变更、推荐版本号、更新 CHANGELOG、创建 git tag）",
