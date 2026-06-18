@@ -42,6 +42,13 @@ html.dark .shiki span {
   min-width: min(480px, 90vw);
 }
 
+/* Table auto width for all messages */
+.markstream-vue .table-node {
+  width: fit-content;
+  max-width: 100%;
+  table-layout: auto;
+}
+
 /* ChatMessage actions hover behavior */
 [data-slot="root"] {
   &[data-role="user"],
