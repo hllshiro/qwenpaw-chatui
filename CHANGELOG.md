@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- 移除外链字体请求，改用系统字体回退
+
 ## [1.1.2] - 2026-07-03
 
 ### Fixed
