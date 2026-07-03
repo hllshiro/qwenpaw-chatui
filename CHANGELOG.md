@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-07-03
+
 ### Fixed
 
 - 修复打包产物运行时图标资源加载失败的问题
