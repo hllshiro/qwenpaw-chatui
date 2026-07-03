@@ -43,6 +43,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.115",
     "@types/node": "^24.12.3",
     "@vitejs/plugin-vue": "^6.0.6",
     "drizzle-kit": "^0.31.10",

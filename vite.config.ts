@@ -26,6 +26,22 @@ export default defineConfig({
       ],
     },
   },
+  build: {
+    rollupOptions: {
+      treeshake: {
+        moduleSideEffects(id) {
+          if (
+            id.includes("@iconify/vue") ||
+            id.includes("@iconify-json/lucide") ||
+            id.includes("icons.ts")
+          ) {
+            return true;
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   plugins: [
     vueRouter({
       dts: "src/route-map.d.ts",

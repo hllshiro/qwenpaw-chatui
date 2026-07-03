@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- 修复打包产物运行时图标资源加载失败的问题
+
 ## [1.1.0] - 2026-06-18
 
 ### Added
