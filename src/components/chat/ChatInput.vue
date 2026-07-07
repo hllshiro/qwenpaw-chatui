@@ -200,6 +200,7 @@ function handleDrop(e: DragEvent) {
               :disabled="isSubmitDisabled"
               class="cursor-pointer"
               @click="handleButtonClick"
+              @stop="handleStop"
             />
           </div>
         </slot>

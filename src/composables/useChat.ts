@@ -583,7 +583,12 @@ export function useChat(sessionId: string) {
 
   function stop() {
     state.stopRequested = true
-    
+
+    if (state.abortController) {
+      state.abortController.abort()
+      state.abortController = null
+    }
+
     fetch(`/api/chats/${sessionId}/stop`, { method: 'POST' })
       .catch(err => console.error('[Chat] Failed to stop backend:', err))
   }

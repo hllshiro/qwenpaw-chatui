@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- 修复消息生成过程中停止按钮点击无响应的问题
 - 移除外链字体请求，改用系统字体回退
 - 修复首页附件按钮点击无响应的问题
 - 修复附件上传完成后发送按钮仍禁用的问题
