@@ -297,8 +297,11 @@ function parseContentParts(content: unknown): ContentPart[] {
 
  
 function isSystemFilepathText(text: string, parts: ContentPart[], currentIndex: number): boolean {
-  if (currentIndex > 0 && parts[currentIndex - 1].type === 'file') {
-    return true
+  if (currentIndex > 0) {
+    const prevType = parts[currentIndex - 1].type
+    if (prevType === 'file' || prevType === 'image' || prevType === 'video') {
+      return true
+    }
   }
   if (text.includes('用户上传文件') || text.includes('已经下载到')) {
     return true
