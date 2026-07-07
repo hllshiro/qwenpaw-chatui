@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - 优化附件预览卡片样式，统一尺寸和布局
+- 优化附件卡片，显示文件类型图标和清理后文件名
 
 ### Fixed
 

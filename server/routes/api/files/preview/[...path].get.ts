@@ -8,7 +8,7 @@ export default defineHandler(async (event) => {
     throw new HTTPError({ statusCode: 400, statusMessage: 'Missing path' })
   }
 
-  if (path.includes('..') || path.includes('/')) {
+  if (path.includes('..')) {
     throw new HTTPError({ statusCode: 400, statusMessage: 'Invalid path' })
   }
 

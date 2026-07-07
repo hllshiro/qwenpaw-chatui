@@ -296,6 +296,18 @@ function parseContentParts(content: unknown): ContentPart[] {
 }
 
  
+function cleanFileName(url: string): string {
+  const name = url.split('/').pop() || url
+  const underscoreIndex = name.indexOf('_')
+  return underscoreIndex >= 0 ? name.slice(underscoreIndex + 1) : name
+}
+
+function getFileIcon(type: string): string {
+  if (type === 'video') return 'i-lucide-video'
+  if (type === 'audio') return 'i-lucide-music'
+  return 'i-lucide-file'
+}
+
 function isSystemFilepathText(text: string, parts: ContentPart[], currentIndex: number): boolean {
   if (currentIndex > 0) {
     const prevType = parts[currentIndex - 1].type
@@ -759,28 +771,33 @@ const chatStatus = computed(() => {
               <div
                 v-for="block in (message as any).blocks?.filter((b: any) => b.type === 'attachment')"
                 :key="block.id"
-                class="mb-2"
+                class="mb-2 inline-block mr-2"
               >
                 <div
-                  v-if="block.attachment?.type === 'image'"
-                  class="max-w-xs"
+                  class="attachment-card relative rounded-lg border border-default overflow-hidden"
+                  style="width: 140px; height: 56px;"
                 >
-                  <img
-                    :src="`/api/files/preview/${block.attachment.url}`"
-                    :alt="block.attachment.name"
-                    class="rounded-lg max-h-40 object-cover cursor-pointer"
-                    @error="($event.target as HTMLImageElement).style.display = 'none'"
-                  >
-                </div>
-                <div
-                  v-else
-                  class="flex items-center gap-2 text-sm text-muted bg-muted/50 rounded-lg px-3 py-2"
-                >
-                  <UIcon
-                    name="i-lucide-file"
-                    class="w-4 h-4"
-                  />
-                  <span>{{ block.attachment?.name || block.attachment?.url }}</span>
+                  <template v-if="block.attachment?.type === 'image'">
+                    <img
+                      :src="`/api/files/preview/${block.attachment.url.replace(/^\//, '')}`"
+                      :alt="cleanFileName(block.attachment.url)"
+                      class="w-full h-full object-cover"
+                      @error="($event.target as HTMLImageElement).style.display = 'none'"
+                    >
+                  </template>
+                  <template v-else>
+                    <div class="flex items-center gap-2.5 h-full px-3">
+                      <UIcon
+                        :name="getFileIcon(block.attachment?.type)"
+                        class="w-7 h-7 shrink-0 text-muted"
+                      />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium truncate leading-tight">
+                          {{ cleanFileName(block.attachment?.url || '') }}
+                        </p>
+                      </div>
+                    </div>
+                  </template>
                 </div>
               </div>
               <ChatMarkdownRenderer
