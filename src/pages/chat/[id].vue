@@ -69,6 +69,23 @@ onMounted(async () => {
       return;
     }
 
+    // 检查是否有从首页传递的待处理附件
+    const pendingAttachmentsKey = `qwenpaw_pending_attachments_${sessionId}`;
+    const pendingAttachmentsData = sessionStorage.getItem(pendingAttachmentsKey);
+    if (pendingAttachmentsData) {
+      try {
+        const { text, attachments } = JSON.parse(pendingAttachmentsData);
+        sessionStorage.removeItem(pendingAttachmentsKey);
+        if (window.history.replaceState) {
+          window.history.replaceState({}, "", `/chat/${sessionId}`);
+        }
+        await sendMessage({ text, attachments }, { onComplete: syncBackendTitle });
+        return;
+      } catch (e) {
+        console.error("[ChatPage] Failed to parse pending attachments:", e);
+      }
+    }
+
     const generating = history?.status === "running";
 
     if (history?.messages?.length > 0) {

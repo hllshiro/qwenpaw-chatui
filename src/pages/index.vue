@@ -21,6 +21,8 @@ const {
   addFiles,
   removeFile,
   retryFile,
+  getReadyAttachments,
+  clearAll,
 } = useFileUpload({
   maxFiles: Number(getValue("advanced.upload.maxFiles")) || 5,
   maxSizeMB: Number(getValue("advanced.upload.maxSizeMB")) || 20,
@@ -31,7 +33,18 @@ const loading = ref(false);
 async function onSubmit(text: string) {
   loading.value = true;
   try {
+    const readyAttachments = getReadyAttachments();
     const session = await createSession();
+    
+    // 将附件信息存储到 sessionStorage，供聊天页面读取
+    if (readyAttachments.length > 0) {
+      sessionStorage.setItem(
+        `qwenpaw_pending_attachments_${session.id}`,
+        JSON.stringify({ text, attachments: readyAttachments })
+      );
+      clearAll();
+    }
+    
     router.push({ path: `/chat/${session.id}`, query: { msg: text } });
   } catch (err) {
     console.error("[Home] Error:", err);

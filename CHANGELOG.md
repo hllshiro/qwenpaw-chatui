@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 修复有附件无文本时无法发送的问题
 - 修复附件上传进度条不更新的问题
 - 修复附件上传成功后缩略图显示异常的问题
+- 修复首页附件跳转后丢失的问题
 
 ## [1.1.2] - 2026-07-03
 

@@ -258,13 +258,15 @@ export function useChat(sessionId: string) {
     state.stopRequested = false
     
     try {
+      const requestBody = {
+        messages: [{ role: 'user', content: messageText }],
+        ...(attachments?.length ? { attachments } : {})
+      }
+
       const response = await fetch(`/api/chats/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: messageText }],
-          ...(attachments?.length ? { attachments } : {})
-        }),
+        body: JSON.stringify(requestBody),
         signal: state.abortController.signal
       })
 
