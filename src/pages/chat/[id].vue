@@ -272,6 +272,16 @@ function extractContent(content: any): string {
   return "";
 }
 
+function parseContentParts(content: unknown): Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }> {
+  if (typeof content === 'string') {
+    return [{ type: 'text', text: content }]
+  }
+  if (!Array.isArray(content)) {
+    return [{ type: 'text', text: String(content || '') }]
+  }
+  return content as Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>
+}
+
 const sessionName = computed(() => {
   const session = sessions.value.find((s) => s.id === sessionId);
   return session?.name || t("chat.newSession");
