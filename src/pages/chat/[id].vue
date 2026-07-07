@@ -296,10 +296,11 @@ function parseContentParts(content: unknown): ContentPart[] {
 }
 
  
-function isSystemFilepathText(_text: string, parts: ContentPart[], currentIndex: number): boolean {
-  // 根据用户描述：file后面的content为系统添加
-  // 检查前一个部分是否为文件类型
+function isSystemFilepathText(text: string, parts: ContentPart[], currentIndex: number): boolean {
   if (currentIndex > 0 && parts[currentIndex - 1].type === 'file') {
+    return true
+  }
+  if (text.includes('用户上传文件') || text.includes('已经下载到')) {
     return true
   }
   return false
