@@ -76,6 +76,13 @@
         "exportDescription": "导出所有配置为 JSON 文件",
         "import": "配置导入",
         "importDescription": "从 JSON 文件导入配置"
+      },
+      "upload": {
+        "label": "文件上传",
+        "maxFiles": "最大附件数",
+        "maxFilesDescription": "单次消息最多附带的文件数量",
+        "maxSizeMB": "单文件大小限制 (MB)",
+        "maxSizeMBDescription": "单个文件的最大体积，后端可动态覆盖"
       }
     },
     "debug": {

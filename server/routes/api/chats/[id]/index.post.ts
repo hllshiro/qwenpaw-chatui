@@ -1,6 +1,6 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam, readBody } from 'nitro/h3'
-import { callQwenPawChat } from '@server/utils/qwenpaw'
+import { callQwenPawChat, type ContentPart } from '@server/utils/qwenpaw'
 import { useDrizzle, tables, eq } from '@server/utils/drizzle'
 import { config } from '@server/config'
 
@@ -24,15 +24,39 @@ export default defineHandler(async (event) => {
   }
 
   const lastMessage = body.messages?.at(-1)
-  let content = ''
+  let textContent = ''
   if (lastMessage?.parts) {
     for (const part of lastMessage.parts) {
-      if (part.type === 'text') content += part.text
+      if (part.type === 'text') textContent += part.text
     }
   } else if (lastMessage?.content) {
-    content = lastMessage.content
+    textContent = lastMessage.content
   } else if (typeof lastMessage === 'string') {
-    content = lastMessage
+    textContent = lastMessage
+  }
+
+  // 构建 content 数组
+  let content: string | ContentPart[]
+  const attachments = body.attachments as Array<{
+    type: string
+    image_url?: string
+    file_url?: string
+    file_name?: string
+    data?: string
+    video_url?: string
+  }> | undefined
+
+  if (attachments?.length) {
+    const parts: ContentPart[] = []
+    if (textContent.trim()) {
+      parts.push({ type: 'text', text: textContent })
+    }
+    for (const att of attachments) {
+      parts.push(att as ContentPart)
+    }
+    content = parts
+  } else {
+    content = textContent
   }
 
   let qwenpawResponse: Response

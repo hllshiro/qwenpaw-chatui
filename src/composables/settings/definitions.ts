@@ -16,6 +16,7 @@ registerGroup({ key: 'theme', label: '主题', labelKey: 'settings.appearance.th
 registerGroup({ key: 'typography', label: '字体', labelKey: 'settings.appearance.typography.label', category: 'appearance' })
 registerGroup({ key: 'language', label: '语言', labelKey: 'settings.appearance.language.label', category: 'appearance' })
 registerGroup({ key: 'backup', label: '数据备份', labelKey: 'settings.advanced.backup.label', category: 'advanced' })
+registerGroup({ key: 'upload', label: '文件上传', labelKey: 'settings.advanced.upload.label', category: 'advanced' })
 registerGroup({ key: 'notifications', label: '通知测试', labelKey: 'settings.debug.notifications.label', category: 'debug' })
 
 // === 注册配置项 - 通用 - 行为 ===
@@ -340,4 +341,45 @@ registerSetting({
   group: 'notifications',
   advanced: true,
   icon: 'i-lucide-shield-check',
+})
+
+// === 注册配置项 - 高级 - 文件上传 ===
+registerSetting({
+  key: 'advanced.upload.maxFiles',
+  label: '最大附件数',
+  labelKey: 'settings.advanced.upload.maxFiles',
+  description: '单次消息最多附带的文件数量',
+  descriptionKey: 'settings.advanced.upload.maxFilesDescription',
+  type: 'input',
+  defaultValue: '5',
+  category: 'advanced',
+  group: 'upload',
+  advanced: true,
+  icon: 'i-lucide-paperclip',
+  placeholder: '5',
+  validate: (v: string) => {
+    const num = Number(v)
+    if (isNaN(num) || num < 1 || num > 20) return '请输入 1-20 之间的数字'
+    return true
+  }
+})
+
+registerSetting({
+  key: 'advanced.upload.maxSizeMB',
+  label: '单文件大小限制 (MB)',
+  labelKey: 'settings.advanced.upload.maxSizeMB',
+  description: '单个文件的最大体积，后端可动态覆盖',
+  descriptionKey: 'settings.advanced.upload.maxSizeMBDescription',
+  type: 'input',
+  defaultValue: '20',
+  category: 'advanced',
+  group: 'upload',
+  advanced: true,
+  icon: 'i-lucide-hard-drive',
+  placeholder: '20',
+  validate: (v: string) => {
+    const num = Number(v)
+    if (isNaN(num) || num < 1 || num > 100) return '请输入 1-100 之间的数字'
+    return true
+  }
 })

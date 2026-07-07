@@ -26,11 +26,19 @@ export interface StoppedData {
 
 export interface MessageBlock {
   id: string
-  type: 'reasoning' | 'text' | 'toolCall' | 'approval' | 'stopped'
+  type: 'reasoning' | 'text' | 'toolCall' | 'approval' | 'stopped' | 'attachment'
   text?: string
   toolCall?: ToolCall
   approval?: ApprovalData
   stopped?: StoppedData
+  attachment?: AttachmentBlock
+}
+
+export interface AttachmentBlock {
+  type: 'image' | 'file' | 'audio' | 'video'
+  url: string
+  name: string
+  size?: number
 }
 
 export interface ChatMessage {
@@ -39,6 +47,18 @@ export interface ChatMessage {
   content: string
   blocks: MessageBlock[]
   timestamp: number
+}
+
+export interface SendMessagePayload {
+  text: string
+  attachments?: Array<{
+    type: 'image' | 'file' | 'audio' | 'video'
+    image_url?: string
+    file_url?: string
+    file_name?: string
+    data?: string
+    video_url?: string
+  }>
 }
 
 export type ChatStatus = 'ready' | 'streaming' | 'error'
@@ -148,9 +168,15 @@ export function useChat(sessionId: string) {
     return msg.blocks.find(b => b.id === msgId)
   }
 
-  function sendMessage(text: string, options?: { onComplete?: () => void }): Promise<void> {
+  function sendMessage(textOrPayload: string | SendMessagePayload, options?: { onComplete?: () => void }): Promise<void> {
     return new Promise((resolve) => {
-      if (!text.trim() || state.status === 'streaming') {
+      const payload: SendMessagePayload = typeof textOrPayload === 'string'
+        ? { text: textOrPayload }
+        : textOrPayload
+
+      const text = payload.text
+
+      if ((!text.trim() && !payload.attachments?.length) || state.status === 'streaming') {
         resolve()
         return
       }
@@ -172,6 +198,22 @@ export function useChat(sessionId: string) {
       }
       messages.value.push(userMsg)
 
+      if (payload.attachments?.length) {
+        for (const att of payload.attachments) {
+          const blockId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          const block: MessageBlock = {
+            id: blockId,
+            type: 'attachment',
+            attachment: {
+              type: att.type,
+              url: att.image_url || att.file_url || att.data || att.video_url || '',
+              name: att.file_name || '',
+            }
+          }
+          userMsg.blocks.push(block)
+        }
+      }
+
       const assistantId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       messages.value.push({
         id: assistantId,
@@ -190,7 +232,7 @@ export function useChat(sessionId: string) {
 
       savePendingMessage(sessionId, text)
 
-      doFetch(text, options?.onComplete, resolve)
+      doFetch(text, options?.onComplete, resolve, payload.attachments)
     })
   }
 
@@ -211,7 +253,7 @@ export function useChat(sessionId: string) {
     })
   }
 
-  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void) {
+  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments']) {
     state.abortController = new AbortController()
     state.stopRequested = false
     
@@ -220,7 +262,8 @@ export function useChat(sessionId: string) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: messageText }]
+          messages: [{ role: 'user', content: messageText }],
+          ...(attachments?.length ? { attachments } : {})
         }),
         signal: state.abortController.signal
       })

@@ -5,6 +5,7 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSessions } from "@/composables/useSessions";
 import { useSettings } from "@/composables/settings";
+import { useFileUpload } from "@/composables/useFileUpload";
 import {
   useChat,
   type ChatMessage,
@@ -19,6 +20,21 @@ const { t } = useI18n();
 const { updateSession, sessions, businessKey } = useSessions();
 
 const sessionId = route.params.id as string;
+
+const { getValue } = useSettings();
+
+const {
+  attachments,
+  isUploading,
+  addFiles,
+  removeFile,
+  retryFile,
+  clearAll,
+  getReadyAttachments,
+} = useFileUpload({
+  maxFiles: Number(getValue("advanced.upload.maxFiles")) || 5,
+  maxSizeMB: Number(getValue("advanced.upload.maxSizeMB")) || 20,
+});
 
 const sessionData = ref<any>(null);
 const loading = ref(true);
@@ -268,7 +284,6 @@ function syncBackendTitle() {
     });
 }
 
-const { getValue } = useSettings();
 const brandIcon = computed(
   () => getValue("appearance.brand.icon") || "i-lucide-sparkles",
 );
@@ -482,7 +497,16 @@ function applyDefaultExpandSettings() {
 }
 
 function handleSubmit(text: string) {
-  sendMessage(text, { onComplete: syncBackendTitle });
+  const readyAttachments = getReadyAttachments();
+  if (readyAttachments.length > 0) {
+    sendMessage(
+      { text, attachments: readyAttachments },
+      { onComplete: syncBackendTitle }
+    );
+    clearAll();
+  } else {
+    sendMessage(text, { onComplete: syncBackendTitle });
+  }
 }
 
 const approvalLoadingIds = ref(new Set<string>());
@@ -635,6 +659,34 @@ const chatStatus = computed(() => {
               v-if="message.role === 'user'"
               class="text-sm leading-relaxed"
             >
+              <!-- 用户消息中的附件 -->
+              <div
+                v-for="block in (message as any).blocks?.filter((b: any) => b.type === 'attachment')"
+                :key="block.id"
+                class="mb-2"
+              >
+                <div
+                  v-if="block.attachment?.type === 'image'"
+                  class="max-w-xs"
+                >
+                  <img
+                    :src="`/api/files/preview/${block.attachment.url}`"
+                    :alt="block.attachment.name"
+                    class="rounded-lg max-h-40 object-cover cursor-pointer"
+                    @error="($event.target as HTMLImageElement).style.display = 'none'"
+                  >
+                </div>
+                <div
+                  v-else
+                  class="flex items-center gap-2 text-sm text-muted bg-muted/50 rounded-lg px-3 py-2"
+                >
+                  <UIcon
+                    name="i-lucide-file"
+                    class="w-4 h-4"
+                  />
+                  <span>{{ block.attachment?.name || block.attachment?.url }}</span>
+                </div>
+              </div>
               <ChatMarkdownRenderer
                 :markdown="(message as any).parts[0]?.text || ''"
                 :streaming="false"
@@ -917,8 +969,14 @@ const chatStatus = computed(() => {
             :status="status"
             :placeholder="t('chat.inputPlaceholder')"
             :ui="{ base: 'px-1.5', footer: 'justify-end' }"
+            :attachments="attachments"
+            :is-uploading="isUploading"
+            :max-files="Number(getValue('advanced.upload.maxFiles')) || 5"
             @submit="handleSubmit"
             @stop="stop"
+            @add-files="addFiles"
+            @remove-file="removeFile"
+            @retry-file="retryFile"
           />
         </div>
       </div>

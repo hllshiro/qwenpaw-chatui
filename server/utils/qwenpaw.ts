@@ -1,17 +1,31 @@
+export interface ContentPart {
+  type: 'text' | 'image' | 'file' | 'audio' | 'video'
+  text?: string
+  image_url?: string
+  file_url?: string
+  file_name?: string
+  data?: string
+  video_url?: string
+}
+
 export async function callQwenPawChat(
   backendUrl: string,
   params: {
-    content: string
+    content: string | ContentPart[]
     session_id?: string
     business_key?: string
   }
 ) {
   const url = `${backendUrl}/api/console/chat`
+  const contentParts = typeof params.content === 'string'
+    ? [{ type: 'text', text: params.content }]
+    : params.content
+
   const body = {
     input: [
       {
         role: 'user',
-        content: [{ type: 'text', text: params.content }]
+        content: contentParts
       }
     ],
     session_id: params.session_id || '',
