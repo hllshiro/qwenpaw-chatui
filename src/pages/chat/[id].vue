@@ -133,19 +133,20 @@ function loadHistoryMessages(historyMessages: any[]) {
   for (const msgs of turns) {
     const userMsg = msgs.find((m: any) => m.role === "user");
     if (userMsg) {
-      const content = extractContent(userMsg.content);
-      if (content) {
+      const parts = parseContentParts(userMsg.content)
+      const { textParts, attachmentBlocks } = processUserContentParts(parts)
+
+      const content = textParts.join('')
+      if (content || attachmentBlocks.length > 0) {
         messages.value.push({
-          id:
-            userMsg.id ||
-            `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: userMsg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           role: "user",
           content,
-          blocks: [],
+          blocks: attachmentBlocks,
           timestamp: userMsg.created_at
             ? new Date(userMsg.created_at).getTime()
             : Date.now(),
-        });
+        })
       }
     }
 
@@ -272,7 +273,7 @@ function extractContent(content: any): string {
   return "";
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function parseContentParts(content: unknown): Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }> {
   if (typeof content === 'string') {
     return [{ type: 'text', text: content }]
@@ -293,7 +294,7 @@ function isSystemFilepathText(text: string, parts: Array<{ type: string; text?: 
   return false
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function processUserContentParts(parts: Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>): {
   textParts: string[]
   attachmentBlocks: MessageBlock[]
