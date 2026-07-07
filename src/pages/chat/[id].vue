@@ -15,6 +15,17 @@ import { useApprovalState } from "@/composables/useApprovalState";
 import Navbar from "@/components/Navbar.vue";
 import ChatMarkdownRenderer from "@/components/chat/MarkdownRenderer";
 
+type ContentPart = {
+  type: string
+  text?: string
+  file_url?: string
+  filename?: string
+  file_name?: string
+  image_url?: string
+  data?: string
+  video_url?: string
+}
+
 const route = useRoute<"/chat/[id]">();
 const { t } = useI18n();
 const { updateSession, sessions, businessKey } = useSessions();
@@ -274,18 +285,18 @@ function extractContent(content: any): string {
 }
 
  
-function parseContentParts(content: unknown): Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }> {
+function parseContentParts(content: unknown): ContentPart[] {
   if (typeof content === 'string') {
     return [{ type: 'text', text: content }]
   }
   if (!Array.isArray(content)) {
     return [{ type: 'text', text: String(content || '') }]
   }
-  return content as Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>
+  return content as ContentPart[]
 }
 
  
-function isSystemFilepathText(text: string, parts: Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>, currentIndex: number): boolean {
+function isSystemFilepathText(_text: string, parts: ContentPart[], currentIndex: number): boolean {
   // 根据用户描述：file后面的content为系统添加
   // 检查前一个部分是否为文件类型
   if (currentIndex > 0 && parts[currentIndex - 1].type === 'file') {
@@ -295,7 +306,9 @@ function isSystemFilepathText(text: string, parts: Array<{ type: string; text?: 
 }
 
  
-function processUserContentParts(parts: Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>): {
+let attachmentCounter = 0
+
+function processUserContentParts(parts: ContentPart[]): {
   textParts: string[]
   attachmentBlocks: MessageBlock[]
 } {
@@ -314,7 +327,8 @@ function processUserContentParts(parts: Array<{ type: string; text?: string; fil
       textParts.push(part.text)
     } else if (part.type === 'file' || part.type === 'image' ||
                part.type === 'audio' || part.type === 'video') {
-      const blockId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      attachmentCounter++
+      const blockId = `att-${attachmentCounter}-${Date.now()}`
       const block: MessageBlock = {
         id: blockId,
         type: 'attachment',
