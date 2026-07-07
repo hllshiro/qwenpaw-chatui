@@ -272,6 +272,7 @@ function extractContent(content: any): string {
   return "";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function parseContentParts(content: unknown): Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }> {
   if (typeof content === 'string') {
     return [{ type: 'text', text: content }]
@@ -280,6 +281,16 @@ function parseContentParts(content: unknown): Array<{ type: string; text?: strin
     return [{ type: 'text', text: String(content || '') }]
   }
   return content as Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function isSystemFilepathText(text: string, parts: Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>, currentIndex: number): boolean {
+  // 根据用户描述：file后面的content为系统添加
+  // 检查前一个部分是否为文件类型
+  if (currentIndex > 0 && parts[currentIndex - 1].type === 'file') {
+    return true
+  }
+  return false
 }
 
 const sessionName = computed(() => {
