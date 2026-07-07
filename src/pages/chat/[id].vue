@@ -283,7 +283,7 @@ function parseContentParts(content: unknown): Array<{ type: string; text?: strin
   return content as Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function isSystemFilepathText(text: string, parts: Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>, currentIndex: number): boolean {
   // 根据用户描述：file后面的content为系统添加
   // 检查前一个部分是否为文件类型
@@ -291,6 +291,45 @@ function isSystemFilepathText(text: string, parts: Array<{ type: string; text?: 
     return true
   }
   return false
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function processUserContentParts(parts: Array<{ type: string; text?: string; file_url?: string; filename?: string; file_name?: string; image_url?: string; data?: string; video_url?: string }>): {
+  textParts: string[]
+  attachmentBlocks: MessageBlock[]
+} {
+  const textParts: string[] = []
+  const attachmentBlocks: MessageBlock[] = []
+
+  let i = 0
+  while (i < parts.length) {
+    const part = parts[i]
+
+    if (part.type === 'text' && part.text) {
+      if (isSystemFilepathText(part.text, parts, i)) {
+        i++
+        continue
+      }
+      textParts.push(part.text)
+    } else if (part.type === 'file' || part.type === 'image' ||
+               part.type === 'audio' || part.type === 'video') {
+      const blockId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      const block: MessageBlock = {
+        id: blockId,
+        type: 'attachment',
+        attachment: {
+          type: part.type as 'image' | 'file' | 'audio' | 'video',
+          url: part.file_url || part.image_url || part.data || part.video_url || '',
+          name: part.filename || part.file_name || ''
+        }
+      }
+      attachmentBlocks.push(block)
+    }
+
+    i++
+  }
+
+  return { textParts, attachmentBlocks }
 }
 
 const sessionName = computed(() => {
