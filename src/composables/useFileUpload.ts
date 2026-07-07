@@ -30,15 +30,6 @@ function getAttachmentType(mime: string): 'image' | 'file' | 'audio' | 'video' {
   return 'file'
 }
 
-function extractFilename(url: string): string {
-  let pathname = url
-  try {
-    pathname = new URL(url).pathname
-  } catch { /* not a full URL, use as-is */ }
-  const parts = pathname.split('/')
-  return parts[parts.length - 1] || url
-}
-
 export function useFileUpload(options: {
   maxFiles?: number
   maxSizeMB?: number
@@ -129,46 +120,66 @@ export function useFileUpload(options: {
       }
 
       attachments.value.push(attachment)
-      uploadFile(attachment)
+      uploadFile(attachment.id)
     }
   }
 
-  async function uploadFile(att: PendingAttachment) {
-    try {
-      const formData = new FormData()
-      formData.append('file', att.file)
+  function uploadFile(id: string) {
+    const att = attachments.value.find(a => a.id === id)
+    if (!att) return
 
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 30000)
+    const formData = new FormData()
+    formData.append('file', att.file)
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal
-      }).finally(() => clearTimeout(timeout))
+    const xhr = new XMLHttpRequest()
+    const timeout = setTimeout(() => xhr.abort(), 30000)
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`)
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        att.progress = Math.round((e.loaded / e.total) * 100)
       }
+    })
 
-      const data = await response.json()
-      const oldPreviewUrl = att.previewUrl
-      att.status = 'ready'
-      att.progress = 100
-      att.url = extractFilename(data.url)
-      att.previewUrl = `/api/files/preview/${encodeURIComponent(att.url)}`
+    xhr.addEventListener('load', () => {
+      clearTimeout(timeout)
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText)
+          const oldPreviewUrl = att.previewUrl
+          att.status = 'ready'
+          att.progress = 100
+          att.url = data.url
+          if (att.url) {
+            att.previewUrl = `/api/files/preview/${encodeURIComponent(att.url)}`
+          }
 
-      if (oldPreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(oldPreviewUrl)
-      }
-    } catch (err) {
-      att.status = 'error'
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        att.error = t('chat.attachment.uploadFailed') + '（超时）'
+          if (oldPreviewUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(oldPreviewUrl)
+          }
+        } catch {
+          att.status = 'error'
+          att.error = t('chat.attachment.uploadFailed')
+        }
       } else {
-        att.error = err instanceof Error ? err.message : String(err)
+        att.status = 'error'
+        att.error = t('chat.attachment.uploadFailed') + `（${xhr.status}）`
       }
-    }
+    })
+
+    xhr.addEventListener('error', () => {
+      clearTimeout(timeout)
+      att.status = 'error'
+      att.error = t('chat.attachment.uploadFailed')
+    })
+
+    xhr.addEventListener('abort', () => {
+      clearTimeout(timeout)
+      att.status = 'error'
+      att.error = t('chat.attachment.uploadFailed') + '（超时）'
+    })
+
+    xhr.open('POST', '/api/upload')
+    xhr.send(formData)
   }
 
   function removeFile(id: string) {
@@ -188,7 +199,7 @@ export function useFileUpload(options: {
       att.status = 'uploading'
       att.progress = 0
       att.error = undefined
-      uploadFile(att)
+      uploadFile(att.id)
     }
   }
 

@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 附件预览栏显示上传状态、错误信息和重试按钮
 - 设置页面新增文件上传配置（最大附件数、大小限制）
 
+### Changed
+
+- 优化附件预览卡片样式，统一尺寸和布局
+
 ### Fixed
 
 - 移除外链字体请求，改用系统字体回退
@@ -20,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - 修复附件上传完成后发送按钮仍禁用的问题
 - 修复附件上传状态卡住无法操作的问题
 - 修复有附件无文本时无法发送的问题
+- 修复附件上传进度条不更新的问题
+- 修复附件上传成功后缩略图显示异常的问题
 
 ## [1.1.2] - 2026-07-03
 
