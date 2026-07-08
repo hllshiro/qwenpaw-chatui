@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-08
+
 ### Changed
 
 - 重构附件预览组件，复用 AttachmentPreview 渲染消息附件
