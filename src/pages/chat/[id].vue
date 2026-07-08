@@ -118,14 +118,19 @@ onMounted(async () => {
 });
 
 function loadHistoryMessages(historyMessages: any[]) {
+  const showSystem = getValue("advanced.system.showSystemMessages");
+
   const turns: any[][] = [];
   let i = 0;
   while (i < historyMessages.length) {
     if (historyMessages[i].role === "user") {
       turns.push([historyMessages[i++]]);
+    } else if (historyMessages[i].role === "system") {
+      // System 消息单独作为一轮
+      turns.push([historyMessages[i++]]);
     } else {
       const group: any[] = [];
-      while (i < historyMessages.length && historyMessages[i].role !== "user") {
+      while (i < historyMessages.length && historyMessages[i].role !== "user" && historyMessages[i].role !== "system") {
         group.push(historyMessages[i++]);
       }
       if (group.length) turns.push(group);
@@ -133,6 +138,24 @@ function loadHistoryMessages(historyMessages: any[]) {
   }
 
   for (const msgs of turns) {
+    // 处理 system 消息
+    const systemMsg = msgs.find((m: any) => m.role === "system");
+    if (systemMsg && showSystem) {
+      const text = extractContent(systemMsg.content);
+      if (text) {
+        messages.value.push({
+          id: systemMsg.id || `system-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role: "system",
+          content: text,
+          blocks: [],
+          timestamp: systemMsg.created_at
+            ? new Date(systemMsg.created_at).getTime()
+            : Date.now(),
+        });
+      }
+      continue;
+    }
+
     const userMsg = msgs.find((m: any) => m.role === "user");
     if (userMsg) {
       const parts = parseContentParts(userMsg.content)
@@ -389,6 +412,7 @@ const { updateApprovalStatus, getApprovalStatus, approvalStates } =
   useApprovalState();
 const expandedReasoning = ref(new Set<string>());
 const expandedToolCalls = ref(new Set<string>());
+const expandedSystemMessages = ref(new Set<string>());
 const manuallyCollapsed = ref(new Set<string>());
 const autoExpandedBlock = ref<{
   id: string;
@@ -412,6 +436,14 @@ function toggleToolCall(callId: string) {
   } else {
     expandedToolCalls.value.add(callId);
     manuallyCollapsed.value.delete(callId);
+  }
+}
+
+function toggleSystemMessage(msgId: string) {
+  if (expandedSystemMessages.value.has(msgId)) {
+    expandedSystemMessages.value.delete(msgId);
+  } else {
+    expandedSystemMessages.value.add(msgId);
   }
 }
 
@@ -743,6 +775,11 @@ const chatStatus = computed(() => {
                 name="i-lucide-user"
                 class="h-8 w-8 text-muted"
               />
+              <UIcon
+                v-else-if="message.role === 'system'"
+                name="i-lucide-settings"
+                class="h-8 w-8 text-muted"
+              />
               <BrandIcon
                 v-else
                 :icon="brandIcon"
@@ -752,8 +789,43 @@ const chatStatus = computed(() => {
           </template>
 
           <template #content="{ message }">
+            <!-- System 消息：可折叠区域 -->
             <div
-              v-if="message.role === 'user'"
+              v-if="message.role === 'system'"
+              class="text-xs text-muted"
+            >
+              <div class="bg-muted/30 rounded overflow-hidden">
+                <div
+                  class="flex items-center gap-2 px-3 py-1.5 cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                  @click="toggleSystemMessage(message.id)"
+                >
+                  <UIcon
+                    name="i-lucide-terminal"
+                    class="size-3 text-primary"
+                  />
+                  <span>{{ t("chat.systemMessage") }}</span>
+                  <UIcon
+                    :name="
+                      expandedSystemMessages.has(message.id)
+                        ? 'i-lucide-chevron-down'
+                        : 'i-lucide-chevron-right'
+                    "
+                    class="size-3 ml-auto"
+                  />
+                </div>
+                <div
+                  v-if="expandedSystemMessages.has(message.id)"
+                  class="px-3 pb-2 border-t border-muted"
+                >
+                  <div class="mt-1 whitespace-pre-wrap leading-relaxed">
+                    {{ (message as any).content }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-else-if="message.role === 'user'"
               class="text-sm leading-relaxed"
             >
               <!-- 用户消息中的附件 -->

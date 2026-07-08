@@ -89,7 +89,9 @@
         "systemPrompt": "System Prompt",
         "systemPromptDescription": "If not empty, append system prompt to the first user message in each new session",
         "emphasisInstruction": "Emphasis Instruction",
-        "emphasisInstructionDescription": "When enabled, append system instruction to every user message"
+        "emphasisInstructionDescription": "When enabled, append system instruction to every user message",
+        "showSystemMessages": "Show System Messages",
+        "showSystemMessagesDescription": "When enabled, show system messages in chat interface (collapsible)"
       }
     },
     "debug": {

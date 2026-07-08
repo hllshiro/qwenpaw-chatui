@@ -414,3 +414,17 @@ registerSetting({
   advanced: true,
   icon: 'i-lucide-alert-triangle',
 })
+
+registerSetting({
+  key: 'advanced.system.showSystemMessages',
+  label: '显示系统消息',
+  labelKey: 'settings.advanced.system.showSystemMessages',
+  description: '开启后，在聊天界面中显示系统消息（可折叠）',
+  descriptionKey: 'settings.advanced.system.showSystemMessagesDescription',
+  type: 'switch',
+  defaultValue: false,
+  category: 'advanced',
+  group: 'system',
+  advanced: true,
+  icon: 'i-lucide-eye',
+})
