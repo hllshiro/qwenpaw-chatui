@@ -2,6 +2,7 @@ import { ref, computed, triggerRef, reactive } from 'vue'
 import { useBackendStatus } from './useBackendStatus'
 import { useNotification } from './useNotification'
 import { useSessions, type Session } from './useSessions'
+import { useSettings } from './settings'
 
 export interface ToolCall {
   id: string
@@ -269,10 +270,26 @@ export function useChat(sessionId: string) {
   async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments']) {
     state.abortController = new AbortController()
     state.stopRequested = false
-    
+
+    const settings = useSettings()
+    const systemPrompt = settings.getValue('advanced.system.systemPrompt') as string
+    const emphasisInstruction = settings.getValue('advanced.system.emphasisInstruction') as boolean
+
     try {
+      const messagesArray: Array<{ role: string; content: string }> = []
+
+      if (systemPrompt?.trim() && messages.value.length === 0) {
+        messagesArray.push({ role: 'system', content: systemPrompt.trim() })
+      }
+
+      if (emphasisInstruction && systemPrompt?.trim()) {
+        messagesArray.push({ role: 'system', content: systemPrompt.trim() })
+      }
+
+      messagesArray.push({ role: 'user', content: messageText })
+
       const requestBody = {
-        messages: [{ role: 'user', content: messageText }],
+        messages: messagesArray,
         ...(attachments?.length ? { attachments } : {})
       }
 

@@ -23,17 +23,35 @@ export default defineHandler(async (event) => {
     throw new HTTPError({ statusCode: 404, statusMessage: 'Session not found' })
   }
 
-  const lastMessage = body.messages?.at(-1)
-  let textContent = ''
-  if (lastMessage?.parts) {
-    for (const part of lastMessage.parts) {
-      if (part.type === 'text') textContent += part.text
+  // 提取 system 消息和用户消息
+  let systemContent = ''
+  let userContent = ''
+
+  if (body.messages?.length) {
+    for (const msg of body.messages) {
+      const role = msg.role || 'user'
+      let textContent = ''
+
+      if (msg.parts) {
+        for (const part of msg.parts) {
+          if (part.type === 'text') textContent += part.text
+        }
+      } else if (msg.content) {
+        textContent = typeof msg.content === 'string' ? msg.content : ''
+      }
+
+      if (role === 'system') {
+        systemContent += (systemContent ? '\n\n' : '') + textContent
+      } else {
+        userContent += textContent
+      }
     }
-  } else if (lastMessage?.content) {
-    textContent = lastMessage.content
-  } else if (typeof lastMessage === 'string') {
-    textContent = lastMessage
   }
+
+  // 合并 system 和 user 内容
+  const textContent = systemContent
+    ? `[System Prompt]\n${systemContent}\n\n[User Message]\n${userContent}`
+    : userContent
 
   // 构建 content 数组
   let content: string | ContentPart[]

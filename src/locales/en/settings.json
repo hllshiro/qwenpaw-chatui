@@ -83,6 +83,13 @@
         "maxFilesDescription": "Maximum number of files per message",
         "maxSizeMB": "Max file size (MB)",
         "maxSizeMBDescription": "Maximum size per file, can be overridden by backend"
+      },
+      "system": {
+        "label": "System",
+        "systemPrompt": "System Prompt",
+        "systemPromptDescription": "If not empty, append system prompt to the first user message in each new session",
+        "emphasisInstruction": "Emphasis Instruction",
+        "emphasisInstructionDescription": "When enabled, append system instruction to every user message"
       }
     },
     "debug": {

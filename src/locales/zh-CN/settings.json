@@ -83,6 +83,13 @@
         "maxFilesDescription": "单次消息最多附带的文件数量",
         "maxSizeMB": "单文件大小限制 (MB)",
         "maxSizeMBDescription": "单个文件的最大体积，后端可动态覆盖"
+      },
+      "system": {
+        "label": "系统",
+        "systemPrompt": "系统提示词",
+        "systemPromptDescription": "如果非空，在每个新会话的首条用户消息中追加系统提示",
+        "emphasisInstruction": "强调指令",
+        "emphasisInstructionDescription": "开启后，在用户的每条消息中都追加系统指令"
       }
     },
     "debug": {
