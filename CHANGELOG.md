@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-08
+
 ### Added
 
 - 聊天输入框新增文件附件功能，支持点击、粘贴、拖拽上传
