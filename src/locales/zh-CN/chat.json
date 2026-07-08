@@ -36,6 +36,8 @@
       "uploadFailed": "上传失败",
       "retry": "重试",
       "remove": "移除",
+      "preview": "预览",
+      "download": "下载",
       "fileTooLarge": "文件 {name} 超过大小限制 ({limit}MB)",
       "maxFilesReached": "最多添加 {max} 个文件",
       "duplicateFile": "文件 {name} 已添加",

@@ -36,6 +36,8 @@
       "uploadFailed": "Upload failed",
       "retry": "Retry",
       "remove": "Remove",
+      "preview": "Preview",
+      "download": "Download",
       "fileTooLarge": "File {name} exceeds size limit ({limit}MB)",
       "maxFilesReached": "Maximum {max} files allowed",
       "duplicateFile": "File {name} already added",

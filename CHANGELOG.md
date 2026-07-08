@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - 重构附件预览组件，复用 AttachmentPreview 渲染消息附件
+- 附件卡片悬停时显示预览/下载按钮，图片支持 lightbox 预览
 
 ## [1.2.0] - 2026-07-08
 
