@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- 修复附件文件名未过滤 UUID 前缀的问题
+- 修复 mp4 视频附件不显示文件名的问题
+
+### Changed
+
+- 预览和下载附件时使用清理后的文件名
+
 ## [1.2.1] - 2026-07-08
 
 ### Changed

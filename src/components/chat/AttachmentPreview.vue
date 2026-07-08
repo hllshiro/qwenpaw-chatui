@@ -77,14 +77,15 @@ const { visibleRef, imgsRef, indexRef, show } = useEasyLightbox({
 
 function handleAction() {
   if (!actionUrl.value) return
+  const cleanName = cleanFileName(displayName.value)
   if (isImage.value) {
-    imgsRef.value = [{ src: actionUrl.value, title: displayName.value }]
+    imgsRef.value = [{ src: actionUrl.value, title: cleanName }]
     indexRef.value = 0
     show()
   } else {
     const a = document.createElement('a')
     a.href = actionUrl.value
-    a.download = displayName.value
+    a.download = cleanName
     a.click()
   }
 }
@@ -92,8 +93,16 @@ function handleAction() {
 function cleanFileName(name: string): string {
   const cleanName = name.split('?')[0]
   const underscoreIndex = cleanName.indexOf('_')
-  if (underscoreIndex > 0 && /^\d+$/.test(cleanName.slice(0, underscoreIndex))) {
-    return cleanName.slice(underscoreIndex + 1)
+  if (underscoreIndex > 0) {
+    const prefix = cleanName.slice(0, underscoreIndex)
+    // 过滤数字前缀（如 12345_file.txt）
+    if (/^\d+$/.test(prefix)) {
+      return cleanName.slice(underscoreIndex + 1)
+    }
+    // 过滤UUID前缀（32位hex，如 a1b2c3d4e5f6..._file.txt）
+    if (/^[0-9a-f]{32}$/i.test(prefix)) {
+      return cleanName.slice(underscoreIndex + 1)
+    }
   }
   return cleanName
 }

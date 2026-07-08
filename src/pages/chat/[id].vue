@@ -326,13 +326,21 @@ function processUserContentParts(parts: ContentPart[], startCounter: number = 0)
                part.type === 'audio' || part.type === 'video') {
       localCounter++
       const blockId = `att-${localCounter}-${Date.now()}`
+      const url = part.file_url || part.image_url || part.audio_url || part.data || part.video_url || ''
+      let name = part.filename || part.file_name || ''
+      // 如果名称为空，从URL中提取文件名
+      if (!name && url) {
+        const urlPath = url.split('?')[0]
+        const segments = urlPath.split('/')
+        name = segments[segments.length - 1] || ''
+      }
       const block: MessageBlock = {
         id: blockId,
         type: 'attachment',
         attachment: {
           type: part.type as 'image' | 'file' | 'audio' | 'video',
-          url: part.file_url || part.image_url || part.audio_url || part.data || part.video_url || '',
-          name: part.filename || part.file_name || ''
+          url,
+          name
         }
       }
       attachmentBlocks.push(block)
