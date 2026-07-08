@@ -15,6 +15,7 @@ import { useApprovalState } from "@/composables/useApprovalState";
 import type { ContentPart } from "@/types/content";
 import Navbar from "@/components/Navbar.vue";
 import ChatMarkdownRenderer from "@/components/chat/MarkdownRenderer";
+import AttachmentPreview from "@/components/chat/AttachmentPreview.vue";
 
 const route = useRoute<"/chat/[id]">();
 const { t } = useI18n();
@@ -286,25 +287,6 @@ function parseContentParts(content: unknown): ContentPart[] {
 }
 
  
-function cleanFileName(url: string): string {
-  // 从 URL 中提取文件名
-  const name = url.split('/').pop() || url
-  // 移除可能的查询参数
-  const cleanName = name.split('?')[0]
-  // 尝试移除时间戳前缀（格式：timestamp_originalname）
-  const underscoreIndex = cleanName.indexOf('_')
-  if (underscoreIndex > 0 && /^\d+$/.test(cleanName.slice(0, underscoreIndex))) {
-    return cleanName.slice(underscoreIndex + 1)
-  }
-  return cleanName
-}
-
-function getFileIcon(type: string): string {
-  if (type === 'video') return 'i-lucide-video'
-  if (type === 'audio') return 'i-lucide-music'
-  return 'i-lucide-file'
-}
-
 function isSystemFilepathText(text: string, parts: ContentPart[], currentIndex: number): boolean {
   if (currentIndex > 0) {
     const prevType = parts[currentIndex - 1].type
@@ -767,38 +749,19 @@ const chatStatus = computed(() => {
               class="text-sm leading-relaxed"
             >
               <!-- 用户消息中的附件 -->
-              <div
+              <template
                 v-for="block in (message as any).blocks?.filter((b: any) => b.type === 'attachment')"
                 :key="block.id"
-                class="mb-2 inline-block mr-2"
               >
-                <div
-                  class="attachment-card relative rounded-lg border border-default overflow-hidden"
-                  style="width: 140px; height: 56px;"
-                >
-                  <template v-if="block.attachment?.type === 'image'">
-                    <img
-                      :src="`/api/files/preview/${block.attachment.url.replace(/^\//, '')}`"
-                      :alt="cleanFileName(block.attachment.url)"
-                      class="w-full h-full object-cover"
-                      @error="($event.target as HTMLImageElement).style.display = 'none'"
-                    >
-                  </template>
-                  <template v-else>
-                    <div class="flex items-center gap-2.5 h-full px-3">
-                      <UIcon
-                        :name="getFileIcon(block.attachment?.type)"
-                        class="w-7 h-7 shrink-0 text-muted"
-                      />
-                      <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium truncate leading-tight">
-                          {{ cleanFileName(block.attachment?.url || '') }}
-                        </p>
-                      </div>
-                    </div>
-                  </template>
-                </div>
-              </div>
+                <AttachmentPreview
+                  :message-attachment="{
+                    type: block.attachment?.type,
+                    url: block.attachment?.url || '',
+                    name: block.attachment?.name || ''
+                  }"
+                  class="inline-block mr-2 mb-2"
+                />
+              </template>
               <ChatMarkdownRenderer
                 :markdown="(message as any).parts[0]?.text || ''"
                 :streaming="false"

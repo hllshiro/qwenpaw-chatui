@@ -3,8 +3,15 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { PendingAttachment } from '@/composables/useFileUpload'
 
+export interface MessageAttachment {
+  type: 'image' | 'file' | 'audio' | 'video'
+  url: string
+  name: string
+}
+
 const props = defineProps<{
-  attachment: PendingAttachment
+  attachment?: PendingAttachment
+  messageAttachment?: MessageAttachment
   removable?: boolean
 }>()
 
@@ -15,9 +22,20 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const isImage = computed(() => props.attachment.fileType.startsWith('image/'))
-const isVideo = computed(() => props.attachment.fileType.startsWith('video/'))
-const isAudio = computed(() => props.attachment.fileType.startsWith('audio/'))
+const currentStatus = computed(() => props.attachment?.status ?? 'ready')
+
+const isImage = computed(() => {
+  if (props.attachment) return props.attachment.fileType.startsWith('image/')
+  return props.messageAttachment?.type === 'image'
+})
+const isVideo = computed(() => {
+  if (props.attachment) return props.attachment.fileType.startsWith('video/')
+  return props.messageAttachment?.type === 'video'
+})
+const isAudio = computed(() => {
+  if (props.attachment) return props.attachment.fileType.startsWith('audio/')
+  return props.messageAttachment?.type === 'audio'
+})
 
 const displayIcon = computed(() => {
   if (isVideo.value) return 'i-lucide-video'
@@ -25,7 +43,32 @@ const displayIcon = computed(() => {
   return 'i-lucide-file'
 })
 
+const displayName = computed(() => {
+  if (props.attachment) return props.attachment.fileName
+  return props.messageAttachment?.name || ''
+})
+
+const displayPreviewUrl = computed(() => {
+  if (props.attachment) return props.attachment.previewUrl
+  if (props.messageAttachment?.type === 'image' && props.messageAttachment?.url) {
+    return `/api/files/preview/${props.messageAttachment.url.replace(/^\//, '')}`
+  }
+  return undefined
+})
+
+const displayProgress = computed(() => props.attachment?.progress ?? 0)
+
+function cleanFileName(name: string): string {
+  const cleanName = name.split('?')[0]
+  const underscoreIndex = cleanName.indexOf('_')
+  if (underscoreIndex > 0 && /^\d+$/.test(cleanName.slice(0, underscoreIndex))) {
+    return cleanName.slice(underscoreIndex + 1)
+  }
+  return cleanName
+}
+
 const fileSizeText = computed(() => {
+  if (!props.attachment) return ''
   const bytes = props.attachment.fileSize
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -37,17 +80,18 @@ const fileSizeText = computed(() => {
   <div
     class="attachment-card relative rounded-lg border border-default overflow-hidden"
     :class="{
-      'border-error': attachment.status === 'error'
+      'border-error': currentStatus === 'error'
     }"
     style="width: 140px; height: 56px;"
   >
     <!-- 图片类型：缩略图 -->
     <template v-if="isImage">
       <img
-        v-if="attachment.previewUrl"
-        :src="attachment.previewUrl"
-        :alt="attachment.fileName"
+        v-if="displayPreviewUrl"
+        :src="displayPreviewUrl"
+        :alt="cleanFileName(displayName)"
         class="w-full h-full object-cover"
+        @error="($event.target as HTMLImageElement).style.display = 'none'"
       >
       <div
         v-else
@@ -69,9 +113,12 @@ const fileSizeText = computed(() => {
         />
         <div class="flex-1 min-w-0">
           <p class="text-xs font-medium truncate leading-tight">
-            {{ attachment.fileName }}
+            {{ cleanFileName(displayName) }}
           </p>
-          <p class="text-[11px] text-muted mt-0.5">
+          <p
+            v-if="fileSizeText"
+            class="text-[11px] text-muted mt-0.5"
+          >
             {{ fileSizeText }}
           </p>
         </div>
@@ -81,7 +128,7 @@ const fileSizeText = computed(() => {
     <!-- 悬停遮罩 -->
     <div class="hover-mask absolute inset-0 bg-black/30 opacity-0 transition-opacity z-10">
       <button
-        v-if="removable && attachment.status !== 'uploading'"
+        v-if="removable && attachment && currentStatus !== 'uploading'"
         class="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors cursor-pointer"
         @click.stop="emit('remove', attachment.id)"
       >
@@ -94,20 +141,20 @@ const fileSizeText = computed(() => {
 
     <!-- 上传中遮罩 -->
     <div
-      v-if="attachment.status === 'uploading'"
+      v-if="currentStatus === 'uploading'"
       class="absolute inset-0 bg-black/40 flex items-center justify-center z-20"
     >
       <div class="w-3/4 bg-white/30 rounded-full h-1.5 overflow-hidden">
         <div
           class="bg-white h-full rounded-full transition-all"
-          :style="{ width: `${attachment.progress}%` }"
+          :style="{ width: `${displayProgress}%` }"
         />
       </div>
     </div>
 
     <!-- 错误状态遮罩 -->
     <div
-      v-if="attachment.status === 'error'"
+      v-if="currentStatus === 'error'"
       class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1 z-20"
     >
       <span class="text-[10px] text-white">{{ t('chat.attachment.uploadFailed') }}</span>
@@ -115,7 +162,7 @@ const fileSizeText = computed(() => {
         size="xs"
         variant="solid"
         color="error"
-        @click.stop="emit('retry', attachment.id)"
+        @click.stop="emit('retry', attachment!.id)"
       >
         {{ t('chat.attachment.retry') }}
       </UButton>
