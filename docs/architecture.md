@@ -139,6 +139,20 @@ SSE 流响应
 Nitro 透传 → Vue 前端渲染
 ```
 
+### 文件上传流程
+
+```
+用户选择文件 → Vue 前端 (useFileUpload)
+    ↓
+POST /api/upload
+    ↓
+Nitro 服务端验证（文件类型、大小）
+    ↓
+存储到本地或返回 URL
+    ↓
+附件信息附加到消息
+```
+
 ### 会话管理流程
 
 ```
@@ -159,6 +173,9 @@ Nitro 透传 → Vue 前端渲染
 | Drizzle ORM | 类型安全，轻量级，支持 SQLite |
 | SSE | 原生浏览器支持，适合流式场景，无需额外依赖 |
 | Vite | 快速的开发构建工具，原生支持 Vue |
+| markstream-vue | 流式 Markdown 渲染，支持实时流式显示 |
+| Shiki | 代码高亮，支持 17 种语言 |
+| vue-i18n | 国际化支持，与 Vue 深度集成 |
 
 ## 目录结构
 
@@ -167,28 +184,47 @@ qwenpaw-chatui/
 ├── src/                          # 前端源码
 │   ├── assets/css/main.css       # 全局样式
 │   ├── components/               # UI 组件
-│   │   ├── chat/MarkdownRenderer.ts  # Markdown 渲染（markstream-vue）
+│   │   ├── BrandIcon.vue         # 品牌图标
+│   │   ├── IconPicker.vue        # 图标选择器
 │   │   ├── Navbar.vue            # 导航栏
 │   │   ├── NotificationPanel.vue # 通知面板
+│   │   ├── SearchModal.vue       # 搜索弹窗
 │   │   ├── SessionMenu.vue       # 会话菜单
+│   │   ├── SettingItem.vue       # 设置项组件
 │   │   ├── SettingsModal.vue     # 设置弹窗
-│   │   └── ...
+│   │   ├── ShortcutInput.vue     # 快捷键输入组件
+│   │   └── chat/                 # 聊天相关组件
+│   │       ├── AttachmentPreview.vue  # 附件预览
+│   │       ├── ChatInput.vue          # 聊天输入框
+│   │       └── MarkdownRenderer.ts    # Markdown 渲染器
 │   ├── composables/              # 组合式函数
-│   │   ├── useChat.ts            # 聊天逻辑核心
-│   │   ├── useSessions.ts        # 会话管理
-│   │   ├── useTheme.ts           # 主题管理
-│   │   ├── useNotification.ts    # 通知系统
+│   │   ├── useApprovalState.ts   # 工具守卫审批状态
 │   │   ├── useBackendStatus.ts   # 后端状态检测
+│   │   ├── useChat.ts            # 聊天逻辑核心
+│   │   ├── useFileUpload.ts      # 文件上传
+│   │   ├── useI18n.ts            # 国际化
+│   │   ├── useInputCache.ts      # 输入缓存
+│   │   ├── useNotification.ts    # 通知系统
+│   │   ├── useSessions.ts        # 会话管理
+│   │   ├── useShortcuts.ts       # 快捷键
+│   │   ├── useTheme.ts           # 主题管理
 │   │   └── settings/             # 配置管理
 │   ├── layouts/default.vue       # 默认布局
+│   ├── locales/                  # 国际化翻译
+│   │   ├── en/                   # 英文翻译
+│   │   ├── zh-CN/                # 中文翻译
+│   │   └── index.ts              # i18n 配置
 │   ├── pages/                    # 页面
 │   │   ├── index.vue             # 首页
 │   │   └── chat/[id].vue         # 聊天页
+│   ├── router/                   # 路由配置
+│   ├── types/                    # 类型定义
 │   └── utils/
 │       ├── ai.ts                 # AI 工具函数
 │       └── date.ts               # 日期工具函数
 │
 ├── server/                       # 服务端源码
+│   ├── config.ts                 # 服务端配置
 │   ├── database/
 │   │   ├── schema.ts             # 数据库 schema
 │   │   └── migrations/           # 迁移文件
@@ -197,6 +233,8 @@ qwenpaw-chatui/
 │   │   ├── chats*.ts             # 会话相关
 │   │   ├── approval*.ts          # 审批相关
 │   │   ├── settings*.ts          # 配置相关
+│   │   ├── upload*.ts            # 文件上传相关
+│   │   └── files/                # 文件预览相关
 │   └── utils/
 │       ├── drizzle.ts            # 数据库单例
 │       └── qwenpaw.ts            # QwenPaw 客户端
@@ -204,8 +242,10 @@ qwenpaw-chatui/
 ├── docs/                         # 项目文档
 │   ├── architecture.md           # 架构文档
 │   ├── features.md               # 功能清单
-│   └── modules/                  # 模块文档
+│   ├── modules/                  # 模块文档
+│   └── superpowers/              # 项目记忆
 │
+├── scripts/                      # 构建脚本
 ├── .env.example                  # 环境变量模板
 ├── drizzle.config.ts             # Drizzle 配置
 ├── vite.config.ts                # Vite 配置

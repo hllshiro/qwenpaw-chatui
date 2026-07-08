@@ -19,10 +19,12 @@
 src/
 ├── App.vue                       # 根组件
 ├── main.ts                       # 应用入口
+├── icons.ts                      # Iconify 图标注册
 ├── assets/css/main.css           # 全局样式
 ├── components/                   # UI 组件
 │   ├── chat/
 │   │   ├── ChatInput.vue         # 聊天输入框
+│   │   ├── AttachmentPreview.vue # 附件预览组件
 │   │   └── MarkdownRenderer.ts   # Markdown 渲染组件（markstream-vue）
 │   ├── BrandIcon.vue             # 品牌图标
 │   ├── IconPicker.vue            # 图标选择器
@@ -36,7 +38,9 @@ src/
 ├── composables/                  # 组合式函数
 │   ├── useApprovalState.ts       # 审批状态管理
 │   ├── useBackendStatus.ts       # 后端连接状态检测
-│   ├── useChat.ts                # 聊天核心逻辑（592行）
+│   ├── useChat.ts                # 聊天核心逻辑
+│   ├── useFileUpload.ts          # 文件上传管理
+│   ├── useI18n.ts                # 国际化
 │   ├── useInputCache.ts          # 输入缓存（localStorage 持久化）
 │   ├── useNotification.ts        # 通知系统（音效、聚合）
 │   ├── useSessions.ts            # 会话管理
@@ -49,9 +53,17 @@ src/
 │       └── types.ts              # 类型定义
 ├── layouts/
 │   └── default.vue               # 默认布局
+├── locales/                      # 国际化翻译
+│   ├── en/                       # 英文翻译
+│   ├── zh-CN/                    # 中文翻译
+│   └── index.ts                  # i18n 配置
 ├── pages/
 │   ├── index.vue                 # 首页
 │   └── chat/[id].vue             # 聊天页
+├── router/
+│   └── index.ts                  # 路由配置
+├── types/
+│   └── content.ts                # 内容类型定义
 └── utils/
     ├── ai.ts                     # AI 工具函数
     └── date.ts                   # 日期格式化工具
@@ -257,6 +269,29 @@ cachedText: Ref<string>   // 当前缓存的文本
 审批状态管理，提供：
 - 全局审批状态 Map（requestId → status）
 - 防止重复审批操作
+
+### `useFileUpload.ts`
+
+文件上传管理，提供：
+- 文件选择（点击、粘贴、拖拽）
+- 文件类型和大小验证
+- 上传进度跟踪
+- 附件预览管理
+
+**主要方法：**
+```typescript
+addFiles(files: File[])        // 添加文件
+removeFile(index: number)      // 移除文件
+clearFiles()                   // 清空文件列表
+uploadFiles()                  // 上传文件
+```
+
+**响应式状态：**
+```typescript
+files: Ref<FileItem[]>         // 文件列表
+uploading: Ref<boolean>        // 上传状态
+progress: Ref<number>          // 上传进度
+```
 
 ## 路由系统
 

@@ -6,12 +6,15 @@
 
 QwenPaw ChatUI 是一个功能完整的 AI 聊天前端应用，专为对接 [QwenPaw](https://github.com/agentscope-ai/QwenPaw) 后端而设计。采用 Vue 3 + Nitro 架构，提供流式对话、工具调用审批、会话管理等核心功能。
 
+**包名:** `star-agent-chatui`
+
 ### 核心特性
 
 - **流式对话** - SSE 实时推送，支持思考过程展示
 - **工具调用** - 完整的工具调用展示与审批流程
 - **会话管理** - 创建、重命名、删除会话，支持历史记录恢复
 - **配置管理** - 主题切换、暗色模式、自定义品牌
+- **文件上传** - 支持点击、粘贴、拖拽上传，附件预览与管理
 - **嵌入式支持** - 可通过 WebView 嵌入第三方应用
 - **响应式设计** - 适配桌面端和移动端
 
@@ -26,6 +29,8 @@ QwenPaw ChatUI 是一个功能完整的 AI 聊天前端应用，专为对接 [Qw
 | 数据库 | SQLite + Drizzle ORM |
 | 路由 | Vue Router |
 | 样式 | Tailwind CSS |
+| Markdown 渲染 | markstream-vue + Shiki |
+| 国际化 | vue-i18n |
 
 ## 快速开始
 
@@ -95,17 +100,23 @@ pnpm db:migrate       # 执行迁移
 ```
 qwenpaw-chatui/
 ├── src/                    # Vue 3 前端
-│   ├── components/         # 组件
-│   ├── composables/        # 组合式函数
-│   ├── layouts/            # 布局
-│   ├── locales/            # 国际化翻译
-│   ├── pages/              # 页面
+│   ├── components/         # UI 组件
+│   ├── composables/        # 组合式函数（业务逻辑）
+│   ├── layouts/            # 布局组件
+│   ├── locales/            # 国际化翻译（en, zh-CN）
+│   ├── pages/              # 页面组件（首页、聊天页）
+│   ├── router/             # 路由配置
+│   ├── types/              # 类型定义
 │   └── utils/              # 工具函数
 ├── server/                 # Nitro 服务端
+│   ├── config.ts           # 服务端配置
 │   ├── database/           # 数据库 schema 和迁移
+│   ├── plugins/            # Nitro 插件（自动迁移）
 │   ├── routes/api/         # API 路由
 │   └── utils/              # 服务端工具函数
 ├── docs/                   # 项目文档
+│   ├── modules/            # 模块文档
+│   └── superpowers/        # 项目记忆
 ├── scripts/                # 构建脚本
 └── public/                 # 静态资源
 ```
@@ -126,6 +137,7 @@ qwenpaw-chatui/
   - [配置管理](./docs/modules/settings.md)
   - [审批系统](./docs/modules/approval.md)
   - [国际化](./docs/modules/i18n.md)
+  - [文档管理](./docs/modules/documentation.md)
 
 ## 部署
 
@@ -148,8 +160,10 @@ node .output/server/index.mjs
 
 生产环境需要配置：
 
-- `QWENPAW_BACKEND_URL` - QwenPaw 后端地址
+- `QWENPAW_BACKEND_URL` - QwenPaw 后端地址（默认 `http://localhost:8088`）
 - `DATABASE_URL` - 数据库连接路径（可选，默认 `file:.data/qwenpaw.db`）
+- `PORT` - 服务端口（可选，默认 `3000`）
+- `VITE_BRAND_NAME` - 品牌名称（可选，默认 `QwenPaw`）
 
 ## 开发指南
 
@@ -161,6 +175,10 @@ node .output/server/index.mjs
 
 在 `server/routes/api/` 目录下创建文件，Nitro 会自动注册路由。
 
+### 添加新组件
+
+在 `src/components/` 目录下创建组件，支持自动导入。
+
 ### 数据库迁移
 
 修改 `server/database/schema.ts` 后执行：
@@ -169,6 +187,13 @@ node .output/server/index.mjs
 pnpm db:generate
 pnpm db:migrate
 ```
+
+### 文件上传配置
+
+文件上传相关配置在设置页面中管理：
+- 最大附件数量
+- 最大文件大小
+- 允许的文件类型
 
 ## 许可证
 

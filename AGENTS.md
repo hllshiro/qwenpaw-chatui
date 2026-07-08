@@ -1,30 +1,30 @@
 # AGENTS.md — qwenpaw-chatui
 
-## 项目简介
+Vue 3 聊天 UI，通过 Nitro 服务端代理连接 QwenPaw 后端（FastAPI）。使用 Nuxt UI 作为组件库（非 Nuxt 应用），Nitro 作为 Vite 插件处理服务端路由（非独立进程）。
 
-Vue 3 聊天 UI，通过 Nitro 服务端代理连接 QwenPaw 后端（FastAPI）。不是 Nuxt 应用——使用 Nuxt UI 作为组件库（通过 Vite）。Nitro 作为 Vite 插件处理服务端路由（非独立进程）。
+## 命令
 
-## 常用命令
+```bash
+pnpm dev          # drizzle-kit generate + vite dev（自动生成迁移）
+pnpm lint         # eslint src（仅 src/，不检查 server/）
+pnpm lint:fix     # eslint --fix src
+pnpm typecheck    # vue-tsc -p ./tsconfig.app.json
+pnpm build        # drizzle-kit generate + db:migrate + vite build
+pnpm db:generate  # drizzle-kit generate
+pnpm db:migrate   # drizzle-kit migrate
+pnpm package      # node scripts/package.mjs（含 Node.js 二进制的 tar.gz）
+```
 
-- `pnpm dev` — 自动生成迁移文件并启动 Vite 开发服务器
-- `pnpm lint` — ESLint 检查（仅 `src/`，不检查 `server/`）
-- `pnpm lint:fix` — ESLint 自动修复
-- `pnpm typecheck` — `vue-tsc -p ./tsconfig.app.json`
-- `pnpm build` — 自动生成迁移文件、执行数据库迁移，然后构建项目
-- `pnpm db:generate` — 手动生成迁移文件
-- `pnpm db:migrate` — 执行数据库迁移
-- `pnpm package` — 构建并打包为可分发的 tar.gz（含 Node.js 二进制）
-
-CI 执行顺序：lint → build → typecheck（`.github/workflows/ci.yml`）。
-CI 直接执行 `pnpm vite build`（跳过 `db:migrate`），因此 CI 不会捕获迁移相关问题。
+CI 执行顺序：lint → build（`pnpm vite build`）→ typecheck。CI 跳过 `db:migrate`，不会捕获迁移问题。
 
 ## 环境要求
 
-- Node.js 22（CI 固定版本；打包脚本需要 >=20.6）
+- Node.js 22
 - pnpm 10.33.4（`packageManager` 字段指定）
 - CI 需要 `NUXT_UI_PRO_LICENSE` secret
+- 复制 `.env.example` 为 `.env`
 
-## 项目架构
+## 架构
 
 ```
 src/              — Vue 3 前端（页面、组合式函数、组件）
@@ -45,14 +45,6 @@ server/plugins/migrations.ts — 启动时自动执行数据库迁移
 - `@server/*` → `server/*`（Vite + tsconfig）
 - `~/*` → `./*`（tsconfig）
 - `#build/ui/*` → `node_modules/.nuxt-ui/ui/*`（tsconfig）
-
-## 环境变量
-
-将 `.env.example` 复制为 `.env`。关键变量：
-- `QWENPAW_BACKEND_URL` — QwenPaw 后端地址（默认 `http://localhost:8088`）
-- `DATABASE_URL` — SQLite 数据库路径（默认 `file:.data/qwenpaw.db`）
-- `PORT` — 开发服务器端口（默认 `3000`）
-- `VITE_BRAND_NAME` — UI 品牌名称（默认 `QwenPaw`）
 
 ## 关键注意事项
 

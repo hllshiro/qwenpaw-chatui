@@ -145,6 +145,30 @@ Nitro 作为 Vite 插件运行，路由文件位于 `server/routes/api/`，由 N
 
 返回：`{ success: boolean, version: string | null, error: string | null }`
 
+## 文件上传
+
+### GET /api/upload-limit
+
+获取文件上传限制配置。
+
+返回：`{ maxFiles: number, maxFileSize: number, allowedTypes: string[] }`
+
+### POST /api/upload
+
+上传文件。
+
+请求体：`multipart/form-data`，包含 `file` 字段。
+
+返回：`{ success: boolean, url: string, filename: string, size: number, type: string }`
+
+### GET /api/files/preview/[...path]
+
+预览上传的文件。
+
+参数：`path` - 文件路径
+
+返回：文件内容（根据文件类型设置相应的 Content-Type）
+
 ## 数据流
 
 ```
