@@ -26,11 +26,19 @@ export interface StoppedData {
 
 export interface MessageBlock {
   id: string
-  type: 'reasoning' | 'text' | 'toolCall' | 'approval' | 'stopped'
+  type: 'reasoning' | 'text' | 'toolCall' | 'approval' | 'stopped' | 'attachment'
   text?: string
   toolCall?: ToolCall
   approval?: ApprovalData
   stopped?: StoppedData
+  attachment?: AttachmentBlock
+}
+
+export interface AttachmentBlock {
+  type: 'image' | 'file' | 'audio' | 'video'
+  url: string
+  name: string
+  size?: number
 }
 
 export interface ChatMessage {
@@ -41,22 +49,47 @@ export interface ChatMessage {
   timestamp: number
 }
 
+export interface SendMessagePayload {
+  text: string
+  attachments?: Array<{
+    type: 'image' | 'file' | 'audio' | 'video'
+    image_url?: string
+    file_url?: string
+    file_name?: string
+    audio_url?: string
+    video_url?: string
+  }>
+}
+
 export type ChatStatus = 'ready' | 'streaming' | 'error'
 export type StreamingPhase = 'idle' | 'waiting' | 'reasoning' | 'message'
 
 const STORAGE_PREFIX = 'qwenpaw_pending_msg_'
 
-function savePendingMessage(sessionId: string, text: string) {
+interface PendingMessage {
+  text: string
+  attachments?: SendMessagePayload['attachments']
+}
+
+function savePendingMessage(sessionId: string, text: string, attachments?: SendMessagePayload['attachments']) {
   try {
-    sessionStorage.setItem(`${STORAGE_PREFIX}${sessionId}`, text)
+    const data: PendingMessage = { text, attachments }
+    sessionStorage.setItem(`${STORAGE_PREFIX}${sessionId}`, JSON.stringify(data))
   } catch { /* quota exceeded */ }
 }
 
-function loadPendingMessage(sessionId: string): string {
+function loadPendingMessage(sessionId: string): PendingMessage {
   try {
-    return sessionStorage.getItem(`${STORAGE_PREFIX}${sessionId}`) || ''
+    const raw = sessionStorage.getItem(`${STORAGE_PREFIX}${sessionId}`)
+    if (!raw) return { text: '' }
+    try {
+      return JSON.parse(raw) as PendingMessage
+    } catch {
+      // 兼容旧格式（纯文本）
+      return { text: raw }
+    }
   } catch {
-    return ''
+    return { text: '' }
   }
 }
 
@@ -148,9 +181,15 @@ export function useChat(sessionId: string) {
     return msg.blocks.find(b => b.id === msgId)
   }
 
-  function sendMessage(text: string, options?: { onComplete?: () => void }): Promise<void> {
+  function sendMessage(textOrPayload: string | SendMessagePayload, options?: { onComplete?: () => void }): Promise<void> {
     return new Promise((resolve) => {
-      if (!text.trim() || state.status === 'streaming') {
+      const payload: SendMessagePayload = typeof textOrPayload === 'string'
+        ? { text: textOrPayload }
+        : textOrPayload
+
+      const text = payload.text
+
+      if ((!text.trim() && !payload.attachments?.length) || state.status === 'streaming') {
         resolve()
         return
       }
@@ -172,6 +211,22 @@ export function useChat(sessionId: string) {
       }
       messages.value.push(userMsg)
 
+      if (payload.attachments?.length) {
+        for (const att of payload.attachments) {
+          const blockId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          const block: MessageBlock = {
+            id: blockId,
+            type: 'attachment',
+            attachment: {
+              type: att.type,
+              url: att.image_url || att.file_url || att.audio_url || att.video_url || '',
+              name: att.file_name || '',
+            }
+          }
+          userMsg.blocks.push(block)
+        }
+      }
+
       const assistantId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
       messages.value.push({
         id: assistantId,
@@ -188,9 +243,9 @@ export function useChat(sessionId: string) {
       state.reasoningMsgIds.clear()
       state.messageMsgIds.clear()
 
-      savePendingMessage(sessionId, text)
+      savePendingMessage(sessionId, text, payload.attachments)
 
-      doFetch(text, options?.onComplete, resolve)
+      doFetch(text, options?.onComplete, resolve, payload.attachments)
     })
   }
 
@@ -211,17 +266,20 @@ export function useChat(sessionId: string) {
     })
   }
 
-  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void) {
+  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments']) {
     state.abortController = new AbortController()
     state.stopRequested = false
     
     try {
+      const requestBody = {
+        messages: [{ role: 'user', content: messageText }],
+        ...(attachments?.length ? { attachments } : {})
+      }
+
       const response = await fetch(`/api/chats/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: messageText }]
-        }),
+        body: JSON.stringify(requestBody),
         signal: state.abortController.signal
       })
 
@@ -538,7 +596,12 @@ export function useChat(sessionId: string) {
 
   function stop() {
     state.stopRequested = true
-    
+
+    if (state.abortController) {
+      state.abortController.abort()
+      state.abortController = null
+    }
+
     fetch(`/api/chats/${sessionId}/stop`, { method: 'POST' })
       .catch(err => console.error('[Chat] Failed to stop backend:', err))
   }
@@ -554,8 +617,8 @@ export function useChat(sessionId: string) {
       return
     }
 
-    const pendingText = loadPendingMessage(sessionId)
-    if (!pendingText) return
+    const pending = loadPendingMessage(sessionId)
+    if (!pending.text && !pending.attachments?.length) return
 
     const lastMsg = messages.value[messages.value.length - 1]
     if (lastMsg?.role === 'user' && lastMsg.content) {
@@ -563,14 +626,32 @@ export function useChat(sessionId: string) {
       return
     }
 
+    // 恢复待发送消息的附件 blocks
+    const attachmentBlocks: MessageBlock[] = []
+    if (pending.attachments?.length) {
+      for (const att of pending.attachments) {
+        const blockId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        attachmentBlocks.push({
+          id: blockId,
+          type: 'attachment',
+          attachment: {
+            type: att.type,
+            url: att.image_url || att.file_url || att.audio_url || att.video_url || '',
+            name: att.file_name || '',
+          }
+        })
+      }
+    }
+
     if (lastMsg?.role === 'user' && !lastMsg.content) {
-      lastMsg.content = pendingText
+      lastMsg.content = pending.text
+      lastMsg.blocks = attachmentBlocks
     } else {
       messages.value.push({
         id: `user-pending-${Date.now()}`,
         role: 'user',
-        content: pendingText,
-        blocks: [],
+        content: pending.text,
+        blocks: attachmentBlocks,
         timestamp: Date.now()
       })
     }

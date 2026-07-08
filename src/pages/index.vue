@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSessions } from "@/composables/useSessions";
 import { useSettings } from "@/composables/settings";
+import { useFileUpload } from "@/composables/useFileUpload";
 
 const router = useRouter();
 const { t } = useI18n();
@@ -14,12 +15,36 @@ const brandName = computed(
   () => getValue("appearance.brand.name") || "QwenPaw",
 );
 
+const {
+  attachments,
+  isUploading,
+  addFiles,
+  removeFile,
+  retryFile,
+  getReadyAttachments,
+  clearAll,
+} = useFileUpload({
+  maxFiles: Number(getValue("advanced.upload.maxFiles")) || 5,
+  maxSizeMB: Number(getValue("advanced.upload.maxSizeMB")) || 20,
+});
+
 const loading = ref(false);
 
 async function onSubmit(text: string) {
   loading.value = true;
   try {
+    const readyAttachments = getReadyAttachments();
     const session = await createSession();
+    
+    // 将附件信息存储到 sessionStorage，供聊天页面读取
+    if (readyAttachments.length > 0) {
+      sessionStorage.setItem(
+        `qwenpaw_pending_attachments_${session.id}`,
+        JSON.stringify({ text, attachments: readyAttachments })
+      );
+      clearAll();
+    }
+    
     router.push({ path: `/chat/${session.id}`, query: { msg: text } });
   } catch (err) {
     console.error("[Home] Error:", err);
@@ -54,9 +79,15 @@ async function onSubmit(text: string) {
         <ChatInput
           :business-key="businessKey"
           :status="loading ? 'streaming' : 'ready'"
+          :attachments="attachments"
+          :is-uploading="isUploading"
+          :max-files="Number(getValue('advanced.upload.maxFiles')) || 5"
           class="[view-transition-name:chat-prompt]"
           :ui="{ base: 'px-1.5', footer: 'justify-end' }"
           @submit="onSubmit"
+          @add-files="addFiles"
+          @remove-file="removeFile"
+          @retry-file="retryFile"
         />
       </UContainer>
     </template>

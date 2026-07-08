@@ -76,6 +76,13 @@
         "exportDescription": "Export all settings as JSON file",
         "import": "Import Configuration",
         "importDescription": "Import settings from JSON file"
+      },
+      "upload": {
+        "label": "File Upload",
+        "maxFiles": "Max attachments",
+        "maxFilesDescription": "Maximum number of files per message",
+        "maxSizeMB": "Max file size (MB)",
+        "maxSizeMBDescription": "Maximum size per file, can be overridden by backend"
       }
     },
     "debug": {

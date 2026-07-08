@@ -5,12 +5,14 @@ import { useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useSessions } from "@/composables/useSessions";
 import { useSettings } from "@/composables/settings";
+import { useFileUpload } from "@/composables/useFileUpload";
 import {
   useChat,
   type ChatMessage,
   type MessageBlock,
 } from "@/composables/useChat";
 import { useApprovalState } from "@/composables/useApprovalState";
+import type { ContentPart } from "@/types/content";
 import Navbar from "@/components/Navbar.vue";
 import ChatMarkdownRenderer from "@/components/chat/MarkdownRenderer";
 
@@ -19,6 +21,21 @@ const { t } = useI18n();
 const { updateSession, sessions, businessKey } = useSessions();
 
 const sessionId = route.params.id as string;
+
+const { getValue } = useSettings();
+
+const {
+  attachments,
+  isUploading,
+  addFiles,
+  removeFile,
+  retryFile,
+  clearAll,
+  getReadyAttachments,
+} = useFileUpload({
+  maxFiles: Number(getValue("advanced.upload.maxFiles")) || 5,
+  maxSizeMB: Number(getValue("advanced.upload.maxSizeMB")) || 20,
+});
 
 const sessionData = ref<any>(null);
 const loading = ref(true);
@@ -51,6 +68,23 @@ onMounted(async () => {
         syncBackendTitle();
       }
       return;
+    }
+
+    // 检查是否有从首页传递的待处理附件
+    const pendingAttachmentsKey = `qwenpaw_pending_attachments_${sessionId}`;
+    const pendingAttachmentsData = sessionStorage.getItem(pendingAttachmentsKey);
+    if (pendingAttachmentsData) {
+      try {
+        const { text, attachments } = JSON.parse(pendingAttachmentsData);
+        sessionStorage.removeItem(pendingAttachmentsKey);
+        if (window.history.replaceState) {
+          window.history.replaceState({}, "", `/chat/${sessionId}`);
+        }
+        await sendMessage({ text, attachments }, { onComplete: syncBackendTitle });
+        return;
+      } catch (e) {
+        console.error("[ChatPage] Failed to parse pending attachments:", e);
+      }
     }
 
     const generating = history?.status === "running";
@@ -100,19 +134,20 @@ function loadHistoryMessages(historyMessages: any[]) {
   for (const msgs of turns) {
     const userMsg = msgs.find((m: any) => m.role === "user");
     if (userMsg) {
-      const content = extractContent(userMsg.content);
-      if (content) {
+      const parts = parseContentParts(userMsg.content)
+      const { textParts, attachmentBlocks } = processUserContentParts(parts)
+
+      const content = textParts.join('')
+      if (content || attachmentBlocks.length > 0) {
         messages.value.push({
-          id:
-            userMsg.id ||
-            `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          id: userMsg.id || `history-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           role: "user",
           content,
-          blocks: [],
+          blocks: attachmentBlocks,
           timestamp: userMsg.created_at
             ? new Date(userMsg.created_at).getTime()
             : Date.now(),
-        });
+        })
       }
     }
 
@@ -239,6 +274,94 @@ function extractContent(content: any): string {
   return "";
 }
 
+ 
+function parseContentParts(content: unknown): ContentPart[] {
+  if (typeof content === 'string') {
+    return [{ type: 'text', text: content }]
+  }
+  if (!Array.isArray(content)) {
+    return [{ type: 'text', text: String(content || '') }]
+  }
+  return content as ContentPart[]
+}
+
+ 
+function cleanFileName(url: string): string {
+  // 从 URL 中提取文件名
+  const name = url.split('/').pop() || url
+  // 移除可能的查询参数
+  const cleanName = name.split('?')[0]
+  // 尝试移除时间戳前缀（格式：timestamp_originalname）
+  const underscoreIndex = cleanName.indexOf('_')
+  if (underscoreIndex > 0 && /^\d+$/.test(cleanName.slice(0, underscoreIndex))) {
+    return cleanName.slice(underscoreIndex + 1)
+  }
+  return cleanName
+}
+
+function getFileIcon(type: string): string {
+  if (type === 'video') return 'i-lucide-video'
+  if (type === 'audio') return 'i-lucide-music'
+  return 'i-lucide-file'
+}
+
+function isSystemFilepathText(text: string, parts: ContentPart[], currentIndex: number): boolean {
+  if (currentIndex > 0) {
+    const prevType = parts[currentIndex - 1].type
+    if (prevType === 'file' || prevType === 'image' || prevType === 'video') {
+      return true
+    }
+  }
+  // 使用 i18n 键值检测系统文件路径文本
+  const userUploadText = t('chat.systemFilepath.userUploadFile')
+  const downloadedToText = t('chat.systemFilepath.downloadedTo')
+  if (text.includes(userUploadText) || text.includes(downloadedToText)) {
+    return true
+  }
+  return false
+}
+
+ 
+function processUserContentParts(parts: ContentPart[], startCounter: number = 0): {
+  textParts: string[]
+  attachmentBlocks: MessageBlock[]
+} {
+  const textParts: string[] = []
+  const attachmentBlocks: MessageBlock[] = []
+  let localCounter = startCounter
+
+  let i = 0
+  while (i < parts.length) {
+    const part = parts[i]
+
+    if (part.type === 'text' && part.text) {
+      if (isSystemFilepathText(part.text, parts, i)) {
+        i++
+        continue
+      }
+      textParts.push(part.text)
+    } else if (part.type === 'file' || part.type === 'image' ||
+               part.type === 'audio' || part.type === 'video') {
+      localCounter++
+      const blockId = `att-${localCounter}-${Date.now()}`
+      const block: MessageBlock = {
+        id: blockId,
+        type: 'attachment',
+        attachment: {
+          type: part.type as 'image' | 'file' | 'audio' | 'video',
+          url: part.file_url || part.image_url || part.audio_url || part.data || part.video_url || '',
+          name: part.filename || part.file_name || ''
+        }
+      }
+      attachmentBlocks.push(block)
+    }
+
+    i++
+  }
+
+  return { textParts, attachmentBlocks }
+}
+
 const sessionName = computed(() => {
   const session = sessions.value.find((s) => s.id === sessionId);
   return session?.name || t("chat.newSession");
@@ -268,7 +391,6 @@ function syncBackendTitle() {
     });
 }
 
-const { getValue } = useSettings();
 const brandIcon = computed(
   () => getValue("appearance.brand.icon") || "i-lucide-sparkles",
 );
@@ -482,7 +604,16 @@ function applyDefaultExpandSettings() {
 }
 
 function handleSubmit(text: string) {
-  sendMessage(text, { onComplete: syncBackendTitle });
+  const readyAttachments = getReadyAttachments();
+  if (readyAttachments.length > 0) {
+    sendMessage(
+      { text, attachments: readyAttachments },
+      { onComplete: syncBackendTitle }
+    );
+    clearAll();
+  } else {
+    sendMessage(text, { onComplete: syncBackendTitle });
+  }
 }
 
 const approvalLoadingIds = ref(new Set<string>());
@@ -635,6 +766,39 @@ const chatStatus = computed(() => {
               v-if="message.role === 'user'"
               class="text-sm leading-relaxed"
             >
+              <!-- 用户消息中的附件 -->
+              <div
+                v-for="block in (message as any).blocks?.filter((b: any) => b.type === 'attachment')"
+                :key="block.id"
+                class="mb-2 inline-block mr-2"
+              >
+                <div
+                  class="attachment-card relative rounded-lg border border-default overflow-hidden"
+                  style="width: 140px; height: 56px;"
+                >
+                  <template v-if="block.attachment?.type === 'image'">
+                    <img
+                      :src="`/api/files/preview/${block.attachment.url.replace(/^\//, '')}`"
+                      :alt="cleanFileName(block.attachment.url)"
+                      class="w-full h-full object-cover"
+                      @error="($event.target as HTMLImageElement).style.display = 'none'"
+                    >
+                  </template>
+                  <template v-else>
+                    <div class="flex items-center gap-2.5 h-full px-3">
+                      <UIcon
+                        :name="getFileIcon(block.attachment?.type)"
+                        class="w-7 h-7 shrink-0 text-muted"
+                      />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium truncate leading-tight">
+                          {{ cleanFileName(block.attachment?.url || '') }}
+                        </p>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
               <ChatMarkdownRenderer
                 :markdown="(message as any).parts[0]?.text || ''"
                 :streaming="false"
@@ -917,8 +1081,14 @@ const chatStatus = computed(() => {
             :status="status"
             :placeholder="t('chat.inputPlaceholder')"
             :ui="{ base: 'px-1.5', footer: 'justify-end' }"
+            :attachments="attachments"
+            :is-uploading="isUploading"
+            :max-files="Number(getValue('advanced.upload.maxFiles')) || 5"
             @submit="handleSubmit"
             @stop="stop"
+            @add-files="addFiles"
+            @remove-file="removeFile"
+            @retry-file="retryFile"
           />
         </div>
       </div>

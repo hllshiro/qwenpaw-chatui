@@ -7,7 +7,6 @@ const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000 // 7天
 
 interface CacheData {
   text: string
-  files?: unknown[] // 预留文件上传
   timestamp: number
   businessKey: string
   sessionId: string

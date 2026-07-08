@@ -1,5 +1,9 @@
 {
   "chat": {
+    "systemFilepath": {
+      "userUploadFile": "用户上传文件",
+      "downloadedTo": "已经下载到"
+    },
     "welcome": "有什么可以帮你的？",
     "inputPlaceholder": "输入消息...",
     "send": "发送",
@@ -25,6 +29,17 @@
     "sessionActions": "会话操作",
     "sessions": "会话列表",
     "generationStopped": "生成已停止",
-    "scrollToBottom": "滚动到底部"
+    "scrollToBottom": "滚动到底部",
+    "attachment": {
+      "addFile": "添加文件",
+      "uploading": "上传中",
+      "uploadFailed": "上传失败",
+      "retry": "重试",
+      "remove": "移除",
+      "fileTooLarge": "文件 {name} 超过大小限制 ({limit}MB)",
+      "maxFilesReached": "最多添加 {max} 个文件",
+      "duplicateFile": "文件 {name} 已添加",
+      "dropHint": "拖放文件到此处"
+    }
   }
 }
