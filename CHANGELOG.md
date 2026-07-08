@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-07-08
+
 ### Fixed
 
 - 修复附件文件名未过滤 UUID 前缀的问题
