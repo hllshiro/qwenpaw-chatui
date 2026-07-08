@@ -1,5 +1,9 @@
 {
   "chat": {
+    "systemFilepath": {
+      "userUploadFile": "用户上传文件",
+      "downloadedTo": "已经下载到"
+    },
     "welcome": "有什么可以帮你的？",
     "inputPlaceholder": "输入消息...",
     "send": "发送",

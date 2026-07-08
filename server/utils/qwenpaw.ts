@@ -1,9 +1,15 @@
+/**
+ * 服务端 ContentPart 类型定义
+ * 与前端共享类型保持一致
+ */
 export interface ContentPart {
   type: 'text' | 'image' | 'file' | 'audio' | 'video'
   text?: string
   image_url?: string
   file_url?: string
   file_name?: string
+  filename?: string
+  audio_url?: string
   data?: string
   video_url?: string
 }

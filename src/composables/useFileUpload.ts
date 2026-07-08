@@ -19,7 +19,7 @@ export interface ReadyAttachment {
   image_url?: string
   file_url?: string
   file_name?: string
-  data?: string
+  audio_url?: string
   video_url?: string
 }
 
@@ -150,7 +150,9 @@ export function useFileUpload(options: {
           att.progress = 100
           att.url = data.url
           if (att.url) {
-            att.previewUrl = `/api/files/preview/${encodeURIComponent(att.url)}`
+            // 分段编码路径，保留 / 分隔符
+            const encodedPath = att.url.split('/').map(encodeURIComponent).join('/')
+            att.previewUrl = `/api/files/preview/${encodedPath}`
           }
 
           if (oldPreviewUrl?.startsWith('blob:')) {
@@ -221,7 +223,8 @@ export function useFileUpload(options: {
           return { type, image_url: a.url! }
         }
         if (type === 'audio') {
-          return { type, data: a.url! }
+          // 音频使用 audio_url 字段，与其他类型保持一致
+          return { type, audio_url: a.url! }
         }
         if (type === 'video') {
           return { type, video_url: a.url! }

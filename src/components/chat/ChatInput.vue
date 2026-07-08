@@ -94,9 +94,8 @@ function handleStop() {
 function handleButtonClick() {
   if (effectiveStatus.value === "ready") {
     handleSubmit();
-  } else {
-    handleStop();
   }
+  // 流式状态下由 UChatPromptSubmit 内部的 @stop 事件处理
 }
 
 function handleInput(event: Event) {

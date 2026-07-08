@@ -13,7 +13,8 @@ export default defineHandler(async (event) => {
   }
 
   const backendUrl = config.qwenpawBackendUrl
-  const previewUrl = `${backendUrl}/api/files/preview/${encodeURIComponent(path)}`
+  // path 已经是解码后的路径，直接使用（后端会自行处理编码）
+  const previewUrl = `${backendUrl}/api/files/preview/${path}`
 
   let response: Response
   try {

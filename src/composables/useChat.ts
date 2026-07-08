@@ -56,7 +56,7 @@ export interface SendMessagePayload {
     image_url?: string
     file_url?: string
     file_name?: string
-    data?: string
+    audio_url?: string
     video_url?: string
   }>
 }
@@ -66,17 +66,30 @@ export type StreamingPhase = 'idle' | 'waiting' | 'reasoning' | 'message'
 
 const STORAGE_PREFIX = 'qwenpaw_pending_msg_'
 
-function savePendingMessage(sessionId: string, text: string) {
+interface PendingMessage {
+  text: string
+  attachments?: SendMessagePayload['attachments']
+}
+
+function savePendingMessage(sessionId: string, text: string, attachments?: SendMessagePayload['attachments']) {
   try {
-    sessionStorage.setItem(`${STORAGE_PREFIX}${sessionId}`, text)
+    const data: PendingMessage = { text, attachments }
+    sessionStorage.setItem(`${STORAGE_PREFIX}${sessionId}`, JSON.stringify(data))
   } catch { /* quota exceeded */ }
 }
 
-function loadPendingMessage(sessionId: string): string {
+function loadPendingMessage(sessionId: string): PendingMessage {
   try {
-    return sessionStorage.getItem(`${STORAGE_PREFIX}${sessionId}`) || ''
+    const raw = sessionStorage.getItem(`${STORAGE_PREFIX}${sessionId}`)
+    if (!raw) return { text: '' }
+    try {
+      return JSON.parse(raw) as PendingMessage
+    } catch {
+      // 兼容旧格式（纯文本）
+      return { text: raw }
+    }
   } catch {
-    return ''
+    return { text: '' }
   }
 }
 
@@ -206,7 +219,7 @@ export function useChat(sessionId: string) {
             type: 'attachment',
             attachment: {
               type: att.type,
-              url: att.image_url || att.file_url || att.data || att.video_url || '',
+              url: att.image_url || att.file_url || att.audio_url || att.video_url || '',
               name: att.file_name || '',
             }
           }
@@ -230,7 +243,7 @@ export function useChat(sessionId: string) {
       state.reasoningMsgIds.clear()
       state.messageMsgIds.clear()
 
-      savePendingMessage(sessionId, text)
+      savePendingMessage(sessionId, text, payload.attachments)
 
       doFetch(text, options?.onComplete, resolve, payload.attachments)
     })
@@ -604,8 +617,8 @@ export function useChat(sessionId: string) {
       return
     }
 
-    const pendingText = loadPendingMessage(sessionId)
-    if (!pendingText) return
+    const pending = loadPendingMessage(sessionId)
+    if (!pending.text && !pending.attachments?.length) return
 
     const lastMsg = messages.value[messages.value.length - 1]
     if (lastMsg?.role === 'user' && lastMsg.content) {
@@ -613,14 +626,32 @@ export function useChat(sessionId: string) {
       return
     }
 
+    // 恢复待发送消息的附件 blocks
+    const attachmentBlocks: MessageBlock[] = []
+    if (pending.attachments?.length) {
+      for (const att of pending.attachments) {
+        const blockId = `att-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+        attachmentBlocks.push({
+          id: blockId,
+          type: 'attachment',
+          attachment: {
+            type: att.type,
+            url: att.image_url || att.file_url || att.audio_url || att.video_url || '',
+            name: att.file_name || '',
+          }
+        })
+      }
+    }
+
     if (lastMsg?.role === 'user' && !lastMsg.content) {
-      lastMsg.content = pendingText
+      lastMsg.content = pending.text
+      lastMsg.blocks = attachmentBlocks
     } else {
       messages.value.push({
         id: `user-pending-${Date.now()}`,
         role: 'user',
-        content: pendingText,
-        blocks: [],
+        content: pending.text,
+        blocks: attachmentBlocks,
         timestamp: Date.now()
       })
     }

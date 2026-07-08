@@ -12,19 +12,9 @@ import {
   type MessageBlock,
 } from "@/composables/useChat";
 import { useApprovalState } from "@/composables/useApprovalState";
+import type { ContentPart } from "@/types/content";
 import Navbar from "@/components/Navbar.vue";
 import ChatMarkdownRenderer from "@/components/chat/MarkdownRenderer";
-
-type ContentPart = {
-  type: string
-  text?: string
-  file_url?: string
-  filename?: string
-  file_name?: string
-  image_url?: string
-  data?: string
-  video_url?: string
-}
 
 const route = useRoute<"/chat/[id]">();
 const { t } = useI18n();
@@ -297,9 +287,16 @@ function parseContentParts(content: unknown): ContentPart[] {
 
  
 function cleanFileName(url: string): string {
+  // 从 URL 中提取文件名
   const name = url.split('/').pop() || url
-  const underscoreIndex = name.indexOf('_')
-  return underscoreIndex >= 0 ? name.slice(underscoreIndex + 1) : name
+  // 移除可能的查询参数
+  const cleanName = name.split('?')[0]
+  // 尝试移除时间戳前缀（格式：timestamp_originalname）
+  const underscoreIndex = cleanName.indexOf('_')
+  if (underscoreIndex > 0 && /^\d+$/.test(cleanName.slice(0, underscoreIndex))) {
+    return cleanName.slice(underscoreIndex + 1)
+  }
+  return cleanName
 }
 
 function getFileIcon(type: string): string {
@@ -315,21 +312,23 @@ function isSystemFilepathText(text: string, parts: ContentPart[], currentIndex: 
       return true
     }
   }
-  if (text.includes('用户上传文件') || text.includes('已经下载到')) {
+  // 使用 i18n 键值检测系统文件路径文本
+  const userUploadText = t('chat.systemFilepath.userUploadFile')
+  const downloadedToText = t('chat.systemFilepath.downloadedTo')
+  if (text.includes(userUploadText) || text.includes(downloadedToText)) {
     return true
   }
   return false
 }
 
  
-let attachmentCounter = 0
-
-function processUserContentParts(parts: ContentPart[]): {
+function processUserContentParts(parts: ContentPart[], startCounter: number = 0): {
   textParts: string[]
   attachmentBlocks: MessageBlock[]
 } {
   const textParts: string[] = []
   const attachmentBlocks: MessageBlock[] = []
+  let localCounter = startCounter
 
   let i = 0
   while (i < parts.length) {
@@ -343,14 +342,14 @@ function processUserContentParts(parts: ContentPart[]): {
       textParts.push(part.text)
     } else if (part.type === 'file' || part.type === 'image' ||
                part.type === 'audio' || part.type === 'video') {
-      attachmentCounter++
-      const blockId = `att-${attachmentCounter}-${Date.now()}`
+      localCounter++
+      const blockId = `att-${localCounter}-${Date.now()}`
       const block: MessageBlock = {
         id: blockId,
         type: 'attachment',
         attachment: {
           type: part.type as 'image' | 'file' | 'audio' | 'video',
-          url: part.file_url || part.image_url || part.data || part.video_url || '',
+          url: part.file_url || part.image_url || part.audio_url || part.data || part.video_url || '',
           name: part.filename || part.file_name || ''
         }
       }

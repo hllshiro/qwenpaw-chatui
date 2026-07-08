@@ -1,5 +1,9 @@
 {
   "chat": {
+    "systemFilepath": {
+      "userUploadFile": "User uploaded file",
+      "downloadedTo": "downloaded to"
+    },
     "welcome": "How can I help you?",
     "inputPlaceholder": "Type a message...",
     "send": "Send",

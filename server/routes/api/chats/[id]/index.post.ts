@@ -37,6 +37,7 @@ export default defineHandler(async (event) => {
 
   // 构建 content 数组
   let content: string | ContentPart[]
+  const validTypes = ['text', 'image', 'file', 'audio', 'video']
   const attachments = body.attachments as Array<{
     type: string
     image_url?: string
@@ -52,6 +53,13 @@ export default defineHandler(async (event) => {
       parts.push({ type: 'text', text: textContent })
     }
     for (const att of attachments) {
+      // 校验 type 字段是否合法
+      if (!att.type || !validTypes.includes(att.type)) {
+        throw new HTTPError({
+          statusCode: 400,
+          statusMessage: `Invalid attachment type: ${att.type}`
+        })
+      }
       parts.push(att as ContentPart)
     }
     content = parts
