@@ -79,3 +79,31 @@
 3. **清晰性**：易于理解，包含示例
 4. **及时性**：及时更新，反映当前状态
 5. **规范性**：遵循 Markdown 语法，使用一致的标题层级和列表格式
+
+## 发版流程
+
+发版前确认 `[Unreleased]` 中有足够的用户可感知变更。
+
+### 步骤
+
+1. **更新 CHANGELOG.md**
+   - 将 `[Unreleased]` 下的变更条目移动到新版本号标题下
+   - 格式：`## [x.y.z] - YYYY-MM-DD`
+   - 新增空的 `[Unreleased]` 区域
+
+2. **同步 package.json 版本号**
+   - `package.json` 中的 `version` 字段必须与 CHANGELOG 版本号一致
+
+3. **提交并打 tag**
+   ```
+   git add CHANGELOG.md package.json
+   git commit -m "docs(changelog): 发布 vX.Y.Z"
+   git tag vX.Y.Z
+   git push && git push --tags
+   ```
+
+### 版本号规则（Semantic Versioning）
+
+- **MAJOR**（主版本）：存在 BREAKING CHANGE 或重大功能变更
+- **MINOR**（次版本）：新增功能、较大优化
+- **PATCH**（补丁版本）：仅 Bug 修复、小幅优化
