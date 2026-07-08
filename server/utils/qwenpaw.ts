@@ -14,26 +14,30 @@ export interface ContentPart {
   video_url?: string
 }
 
+export interface MessageInput {
+  role: 'user' | 'assistant' | 'system' | 'tool'
+  content: string | ContentPart[]
+}
+
 export async function callQwenPawChat(
   backendUrl: string,
   params: {
-    content: string | ContentPart[]
+    messages: MessageInput[]
     session_id?: string
     business_key?: string
   }
 ) {
   const url = `${backendUrl}/api/console/chat`
-  const contentParts = typeof params.content === 'string'
-    ? [{ type: 'text', text: params.content }]
-    : params.content
+
+  const inputMessages = params.messages.map(msg => ({
+    role: msg.role,
+    content: typeof msg.content === 'string'
+      ? [{ type: 'text', text: msg.content }]
+      : msg.content
+  }))
 
   const body = {
-    input: [
-      {
-        role: 'user',
-        content: contentParts
-      }
-    ],
+    input: inputMessages,
     session_id: params.session_id || '',
     user_id: params.business_key || 'default',
     channel: 'console',

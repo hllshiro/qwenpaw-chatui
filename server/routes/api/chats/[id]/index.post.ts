@@ -1,6 +1,6 @@
 import { defineHandler, HTTPError } from 'nitro'
 import { getRouterParam, readBody } from 'nitro/h3'
-import { callQwenPawChat, type ContentPart } from '@server/utils/qwenpaw'
+import { callQwenPawChat, type ContentPart, type MessageInput } from '@server/utils/qwenpaw'
 import { useDrizzle, tables, eq } from '@server/utils/drizzle'
 import { config } from '@server/config'
 
@@ -23,9 +23,18 @@ export default defineHandler(async (event) => {
     throw new HTTPError({ statusCode: 404, statusMessage: 'Session not found' })
   }
 
-  // 提取 system 消息和用户消息
-  let systemContent = ''
-  let userContent = ''
+  const validTypes = ['text', 'image', 'file', 'audio', 'video']
+  const attachments = body.attachments as Array<{
+    type: string
+    image_url?: string
+    file_url?: string
+    file_name?: string
+    data?: string
+    video_url?: string
+  }> | undefined
+
+  // 构建消息数组，保留角色信息
+  const messages: MessageInput[] = []
 
   if (body.messages?.length) {
     for (const msg of body.messages) {
@@ -40,55 +49,32 @@ export default defineHandler(async (event) => {
         textContent = typeof msg.content === 'string' ? msg.content : ''
       }
 
-      if (role === 'system') {
-        systemContent += (systemContent ? '\n\n' : '') + textContent
+      // 对于用户消息，如果有附件则添加到内容中
+      if (role === 'user' && attachments?.length) {
+        const parts: ContentPart[] = []
+        if (textContent.trim()) {
+          parts.push({ type: 'text', text: textContent })
+        }
+        for (const att of attachments) {
+          if (!att.type || !validTypes.includes(att.type)) {
+            throw new HTTPError({
+              statusCode: 400,
+              statusMessage: `Invalid attachment type: ${att.type}`
+            })
+          }
+          parts.push(att as ContentPart)
+        }
+        messages.push({ role: 'user', content: parts })
       } else {
-        userContent += textContent
+        messages.push({ role, content: textContent })
       }
     }
-  }
-
-  // 合并 system 和 user 内容
-  const textContent = systemContent
-    ? `[System Prompt]\n${systemContent}\n\n[User Message]\n${userContent}`
-    : userContent
-
-  // 构建 content 数组
-  let content: string | ContentPart[]
-  const validTypes = ['text', 'image', 'file', 'audio', 'video']
-  const attachments = body.attachments as Array<{
-    type: string
-    image_url?: string
-    file_url?: string
-    file_name?: string
-    data?: string
-    video_url?: string
-  }> | undefined
-
-  if (attachments?.length) {
-    const parts: ContentPart[] = []
-    if (textContent.trim()) {
-      parts.push({ type: 'text', text: textContent })
-    }
-    for (const att of attachments) {
-      // 校验 type 字段是否合法
-      if (!att.type || !validTypes.includes(att.type)) {
-        throw new HTTPError({
-          statusCode: 400,
-          statusMessage: `Invalid attachment type: ${att.type}`
-        })
-      }
-      parts.push(att as ContentPart)
-    }
-    content = parts
-  } else {
-    content = textContent
   }
 
   let qwenpawResponse: Response
   try {
     qwenpawResponse = await callQwenPawChat(backendUrl, {
-      content,
+      messages,
       session_id: id,
       business_key: session.businessKey
     })
