@@ -278,11 +278,13 @@ export function useChat(sessionId: string) {
     try {
       const messagesArray: Array<{ role: string; content: string }> = []
 
-      if (systemPrompt?.trim() && messages.value.length === 0) {
-        messagesArray.push({ role: 'system', content: systemPrompt.trim() })
-      }
+      // 判断是否是第一个用户消息（不含 system 消息）
+      const userMessageCount = messages.value.filter(m => m.role === 'user').length
 
-      if (emphasisInstruction && systemPrompt?.trim()) {
+      // 添加 system 消息：
+      // - 强调指令开启：每轮都携带
+      // - 强调指令关闭：仅第一轮携带
+      if (systemPrompt?.trim() && (emphasisInstruction || userMessageCount <= 1)) {
         messagesArray.push({ role: 'system', content: systemPrompt.trim() })
       }
 
