@@ -55,34 +55,34 @@ function cancelDiscard() {
   showConfirmDiscard.value = false
 }
 
-const toolbarItems = [
+const toolbarItems = computed(() => [
   [
-    { kind: 'mark', mark: 'bold', icon: 'i-lucide-bold', tooltip: { text: '粗体' } },
-    { kind: 'mark', mark: 'italic', icon: 'i-lucide-italic', tooltip: { text: '斜体' } },
-    { kind: 'mark', mark: 'strike', icon: 'i-lucide-strikethrough', tooltip: { text: '删除线' } },
-    { kind: 'mark', mark: 'code', icon: 'i-lucide-code', tooltip: { text: '行内代码' } },
+    { kind: 'mark', mark: 'bold', icon: 'i-lucide-bold', tooltip: { text: t('settings.advanced.system.toolbar.bold') } },
+    { kind: 'mark', mark: 'italic', icon: 'i-lucide-italic', tooltip: { text: t('settings.advanced.system.toolbar.italic') } },
+    { kind: 'mark', mark: 'strike', icon: 'i-lucide-strikethrough', tooltip: { text: t('settings.advanced.system.toolbar.strike') } },
+    { kind: 'mark', mark: 'code', icon: 'i-lucide-code', tooltip: { text: t('settings.advanced.system.toolbar.code') } },
   ],
   [
     {
       items: [
-        { kind: 'heading', level: 1, icon: 'i-lucide-heading-1', label: '标题 1' },
-        { kind: 'heading', level: 2, icon: 'i-lucide-heading-2', label: '标题 2' },
-        { kind: 'heading', level: 3, icon: 'i-lucide-heading-3', label: '标题 3' },
+        { kind: 'heading', level: 1, icon: 'i-lucide-heading-1', label: t('settings.advanced.system.toolbar.heading1') },
+        { kind: 'heading', level: 2, icon: 'i-lucide-heading-2', label: t('settings.advanced.system.toolbar.heading2') },
+        { kind: 'heading', level: 3, icon: 'i-lucide-heading-3', label: t('settings.advanced.system.toolbar.heading3') },
       ],
       icon: 'i-lucide-heading',
-      tooltip: { text: '标题' },
+      tooltip: { text: t('settings.advanced.system.toolbar.heading') },
     },
-    { kind: 'bulletList', icon: 'i-lucide-list', tooltip: { text: '无序列表' } },
-    { kind: 'orderedList', icon: 'i-lucide-list-ordered', tooltip: { text: '有序列表' } },
-    { kind: 'blockquote', icon: 'i-lucide-text-quote', tooltip: { text: '引用' } },
-    { kind: 'codeBlock', icon: 'i-lucide-code-xml', tooltip: { text: '代码块' } },
-    { kind: 'horizontalRule', icon: 'i-lucide-minus', tooltip: { text: '分割线' } },
+    { kind: 'bulletList', icon: 'i-lucide-list', tooltip: { text: t('settings.advanced.system.toolbar.bulletList') } },
+    { kind: 'orderedList', icon: 'i-lucide-list-ordered', tooltip: { text: t('settings.advanced.system.toolbar.orderedList') } },
+    { kind: 'blockquote', icon: 'i-lucide-text-quote', tooltip: { text: t('settings.advanced.system.toolbar.blockquote') } },
+    { kind: 'codeBlock', icon: 'i-lucide-code-xml', tooltip: { text: t('settings.advanced.system.toolbar.codeBlock') } },
+    { kind: 'horizontalRule', icon: 'i-lucide-minus', tooltip: { text: t('settings.advanced.system.toolbar.horizontalRule') } },
   ],
   [
-    { kind: 'undo', icon: 'i-lucide-undo', tooltip: { text: '撤销' } },
-    { kind: 'redo', icon: 'i-lucide-redo', tooltip: { text: '重做' } },
+    { kind: 'undo', icon: 'i-lucide-undo', tooltip: { text: t('settings.advanced.system.toolbar.undo') } },
+    { kind: 'redo', icon: 'i-lucide-redo', tooltip: { text: t('settings.advanced.system.toolbar.redo') } },
   ],
-]
+])
 </script>
 
 <template>
