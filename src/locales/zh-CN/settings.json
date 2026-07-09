@@ -70,6 +70,14 @@
     },
     "advanced": {
       "label": "高级",
+      "sync": {
+        "label": "同步",
+        "syncAll": "同步所有会话",
+        "syncAllDescription": "从 QwenPaw 后端获取所有会话并关联到当前 Business Key",
+        "syncSuccess": "同步完成",
+        "syncSuccessDescription": "成功同步 {count} 个会话（共 {total} 个）",
+        "syncError": "同步失败"
+      },
       "backup": {
         "label": "数据备份",
         "export": "配置导出",

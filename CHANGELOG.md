@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- 新增高级设置中同步所有会话功能
+
 ## [1.3.1] - 2026-07-09
 
 ### Changed

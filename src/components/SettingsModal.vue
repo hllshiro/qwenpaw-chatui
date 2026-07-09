@@ -2,8 +2,10 @@
 import { ref, computed } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { $fetch } from 'ofetch'
 import { useSettings } from '@/composables/settings'
 import { useNotification } from '@/composables/useNotification'
+import { useSessions } from '@/composables/useSessions'
 
 const props = defineProps<{
   open: boolean
@@ -28,6 +30,7 @@ const {
 } = useSettings()
 
 const { add: addNotification } = useNotification()
+const { businessKey, fetchSessions } = useSessions()
 
 const isWide = useMediaQuery('(min-width: 640px)')
 const activeCategory = ref('general')
@@ -96,6 +99,8 @@ function handleAction(key: string) {
     handleExport()
   } else if (key === 'advanced.backup.import') {
     handleImport()
+  } else if (key === 'advanced.sync.syncAll') {
+    handleSyncAll()
   } else if (key === 'shortcuts.bindings.resetAll') {
     handleResetAllShortcuts()
   } else if (key === 'debug.notifications.agentComplete') {
@@ -148,6 +153,34 @@ function handleDebugApproval() {
     read: false,
     debug: true,
   })
+}
+
+async function handleSyncAll() {
+  try {
+    const result = await $fetch('/api/chats/sync', {
+      method: 'POST',
+      body: { business_key: businessKey.value },
+    })
+    if (result.error) {
+      useToast().add({
+        title: t('settings.advanced.sync.syncError'),
+        description: result.error,
+        color: 'error',
+      })
+      return
+    }
+    await fetchSessions()
+    useToast().add({
+      title: t('settings.advanced.sync.syncSuccess'),
+      description: t('settings.advanced.sync.syncSuccessDescription', { count: result.synced, total: result.total }),
+      color: 'success',
+    })
+  } catch {
+    useToast().add({
+      title: t('settings.advanced.sync.syncError'),
+      color: 'error',
+    })
+  }
 }
 
 async function handleResetAllShortcuts() {

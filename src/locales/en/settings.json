@@ -70,6 +70,14 @@
     },
     "advanced": {
       "label": "Advanced",
+      "sync": {
+        "label": "Sync",
+        "syncAll": "Sync All Sessions",
+        "syncAllDescription": "Fetch all sessions from QwenPaw backend and link to current Business Key",
+        "syncSuccess": "Sync Complete",
+        "syncSuccessDescription": "Synced {count} sessions (out of {total})",
+        "syncError": "Sync Failed"
+      },
       "backup": {
         "label": "Data Backup",
         "export": "Export Configuration",
