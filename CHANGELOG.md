@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- 修复仅附件无正文时按 Enter 键仍可提交的问题
 - 修复仅上传附件无正文时提交无响应的问题
 
 ### Changed

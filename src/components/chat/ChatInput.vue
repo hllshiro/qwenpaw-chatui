@@ -76,7 +76,7 @@ const isSubmitDisabled = computed(() => {
 });
 
 function handleSubmit() {
-  if (!input.value.trim() && props.attachments.length === 0) return;
+  if (!input.value.trim()) return;
   const text = input.value;
   input.value = "";
   clearInputCache();
