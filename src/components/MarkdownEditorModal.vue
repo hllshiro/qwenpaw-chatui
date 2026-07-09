@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const draft = ref('')
+const syncedModelValue = ref('')
 const toolbarReady = ref(false)
 const showConfirmDiscard = ref(false)
 const isDirty = computed(() => draft.value !== props.modelValue)
@@ -24,11 +25,17 @@ const isOpen = computed({
   set: (v) => emit('update:open', v),
 })
 
+// Update synced model value only when the modal opens, so Nuxt UI's
+// internal watch doesn't fire during user editing (avoids double markdown
+// serialization and re-parse on every keystroke).
 watch(() => props.open, (v) => {
   if (v) {
-    draft.value = props.modelValue || ''
+    const initial = props.modelValue || ''
+    syncedModelValue.value = initial
+    draft.value = initial
     nextTick(() => { toolbarReady.value = true })
   } else {
+    draft.value = ''
     toolbarReady.value = false
   }
 }, { immediate: true })
@@ -105,10 +112,12 @@ const toolbarItems = computed(() => [
       </div>
       <UEditor
         v-else
-        v-model="draft"
+        :model-value="syncedModelValue"
         content-type="markdown"
         :placeholder="t('settings.advanced.system.systemPromptPlaceholder')"
+        :ui="{ root: 'flex flex-col' }"
         class="min-h-[240px] max-h-[420px] overflow-y-auto"
+        @update:model-value="(v: string) => draft = v"
       >
         <template #default="{ editor }">
           <div :inert="!toolbarReady || undefined">
