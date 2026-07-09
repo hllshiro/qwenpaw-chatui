@@ -92,6 +92,7 @@
         "systemPromptPlaceholder": "输入系统提示词...",
         "editSystemPrompt": "编辑系统提示词",
         "unsavedChangesWarning": "有未保存的修改，确定放弃吗？",
+        "unsavedChangesTitle": "放弃修改",
         "toolbar": {
           "bold": "粗体",
           "italic": "斜体",

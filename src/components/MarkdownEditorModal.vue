@@ -17,12 +17,18 @@ const { t } = useI18n()
 const draft = ref('')
 const syncedModelValue = ref('')
 const toolbarReady = ref(false)
-const showConfirmDiscard = ref(false)
+const pendingClose = ref(false)
 const isDirty = computed(() => draft.value !== props.modelValue)
 
 const isOpen = computed({
   get: () => props.open,
-  set: (v) => emit('update:open', v),
+  set: (v) => {
+    if (!v && isDirty.value) {
+      pendingClose.value = true
+      return
+    }
+    emit('update:open', v)
+  },
 })
 
 // Update synced model value only when the modal opens, so Nuxt UI's
@@ -46,20 +52,16 @@ function handleSave() {
 }
 
 function handleCancel() {
-  if (isDirty.value) {
-    showConfirmDiscard.value = true
-    return
-  }
-  emit('update:open', false)
+  isOpen.value = false
 }
 
 function confirmDiscard() {
-  showConfirmDiscard.value = false
+  pendingClose.value = false
   emit('update:open', false)
 }
 
 function cancelDiscard() {
-  showConfirmDiscard.value = false
+  pendingClose.value = false
 }
 
 const toolbarItems = computed(() => [
@@ -104,14 +106,7 @@ const toolbarItems = computed(() => [
     </template>
 
     <template #body>
-      <div
-        v-if="showConfirmDiscard"
-        class="text-sm"
-      >
-        {{ t('settings.advanced.system.unsavedChangesWarning') }}
-      </div>
       <UEditor
-        v-else
         :model-value="syncedModelValue"
         content-type="markdown"
         :placeholder="t('settings.advanced.system.systemPromptPlaceholder')"
@@ -138,29 +133,45 @@ const toolbarItems = computed(() => [
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <template v-if="showConfirmDiscard">
-          <UButton
-            variant="outline"
-            :label="t('common.cancel')"
-            @click="cancelDiscard"
-          />
-          <UButton
-            color="error"
-            :label="t('common.confirm')"
-            @click="confirmDiscard"
-          />
-        </template>
-        <template v-else>
-          <UButton
-            variant="outline"
-            :label="t('common.cancel')"
-            @click="handleCancel"
-          />
-          <UButton
-            :label="t('common.save')"
-            @click="handleSave"
-          />
-        </template>
+        <UButton
+          variant="outline"
+          :label="t('common.cancel')"
+          @click="handleCancel"
+        />
+        <UButton
+          :label="t('common.save')"
+          @click="handleSave"
+        />
+      </div>
+    </template>
+  </UModal>
+
+  <!-- 未保存更改确认弹窗 -->
+  <UModal v-model:open="pendingClose">
+    <template #header>
+      <h3 class="text-base font-semibold">
+        {{ t('settings.advanced.system.unsavedChangesTitle') }}
+      </h3>
+    </template>
+
+    <template #body>
+      <div class="text-sm">
+        {{ t('settings.advanced.system.unsavedChangesWarning') }}
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton
+          variant="outline"
+          :label="t('common.cancel')"
+          @click="cancelDiscard"
+        />
+        <UButton
+          color="error"
+          :label="t('common.confirm')"
+          @click="confirmDiscard"
+        />
       </div>
     </template>
   </UModal>

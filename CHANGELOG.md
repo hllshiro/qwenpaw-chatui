@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - 优化 Markdown 编辑器交互体验和工具栏按钮视觉效果
+- 未保存修改确认提示改为独立弹窗
 
 ### Fixed
 

@@ -92,6 +92,7 @@
         "systemPromptPlaceholder": "Enter system prompt...",
         "editSystemPrompt": "Edit System Prompt",
         "unsavedChangesWarning": "You have unsaved changes. Discard them?",
+        "unsavedChangesTitle": "Discard Changes",
         "toolbar": {
           "bold": "Bold",
           "italic": "Italic",
