@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- 系统提示词编辑器取消时新增未保存确认提示
+
 ### Fixed
 
 - 修复仅上传附件无正文时提交无响应的问题

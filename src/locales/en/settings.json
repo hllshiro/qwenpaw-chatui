@@ -91,6 +91,7 @@
         "systemPromptEmptyHint": "Not set",
         "systemPromptPlaceholder": "Enter system prompt...",
         "editSystemPrompt": "Edit System Prompt",
+        "unsavedChangesWarning": "You have unsaved changes. Discard them?",
         "emphasisInstruction": "Emphasis Instruction",
         "emphasisInstructionDescription": "When enabled, append system instruction to every user message",
         "showSystemMessages": "Show System Messages",

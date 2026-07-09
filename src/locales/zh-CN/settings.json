@@ -91,6 +91,7 @@
         "systemPromptEmptyHint": "未设置",
         "systemPromptPlaceholder": "输入系统提示词...",
         "editSystemPrompt": "编辑系统提示词",
+        "unsavedChangesWarning": "有未保存的修改，确定放弃吗？",
         "emphasisInstruction": "强调指令",
         "emphasisInstructionDescription": "开启后，在用户的每条消息中都追加系统指令",
         "showSystemMessages": "显示系统消息",

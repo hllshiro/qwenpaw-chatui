@@ -16,6 +16,8 @@ const { t } = useI18n()
 
 const draft = ref('')
 const toolbarReady = ref(false)
+const showConfirmDiscard = ref(false)
+const isDirty = computed(() => draft.value !== props.modelValue)
 
 const isOpen = computed({
   get: () => props.open,
@@ -37,7 +39,20 @@ function handleSave() {
 }
 
 function handleCancel() {
+  if (isDirty.value) {
+    showConfirmDiscard.value = true
+    return
+  }
   emit('update:open', false)
+}
+
+function confirmDiscard() {
+  showConfirmDiscard.value = false
+  emit('update:open', false)
+}
+
+function cancelDiscard() {
+  showConfirmDiscard.value = false
 }
 
 const toolbarItems = [
@@ -82,7 +97,14 @@ const toolbarItems = [
     </template>
 
     <template #body>
+      <div
+        v-if="showConfirmDiscard"
+        class="text-sm"
+      >
+        {{ t('settings.advanced.system.unsavedChangesWarning') }}
+      </div>
       <UEditor
+        v-else
         v-model="draft"
         content-type="markdown"
         :placeholder="t('settings.advanced.system.systemPromptPlaceholder')"
@@ -102,15 +124,29 @@ const toolbarItems = [
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton
-          variant="outline"
-          :label="t('common.cancel')"
-          @click="handleCancel"
-        />
-        <UButton
-          :label="t('common.save')"
-          @click="handleSave"
-        />
+        <template v-if="showConfirmDiscard">
+          <UButton
+            variant="outline"
+            :label="t('common.cancel')"
+            @click="cancelDiscard"
+          />
+          <UButton
+            color="error"
+            :label="t('common.confirm')"
+            @click="confirmDiscard"
+          />
+        </template>
+        <template v-else>
+          <UButton
+            variant="outline"
+            :label="t('common.cancel')"
+            @click="handleCancel"
+          />
+          <UButton
+            :label="t('common.save')"
+            @click="handleSave"
+          />
+        </template>
       </div>
     </template>
   </UModal>
