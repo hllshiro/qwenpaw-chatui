@@ -115,8 +115,10 @@ const toolbarItems = computed(() => [
         :model-value="syncedModelValue"
         content-type="markdown"
         :placeholder="t('settings.advanced.system.systemPromptPlaceholder')"
-        :ui="{ root: 'flex flex-col' }"
-        class="min-h-[240px] max-h-[420px] overflow-y-auto"
+        :ui="{
+          root: 'flex flex-col',
+          content: 'flex-none !h-[300px] overflow-y-auto'
+        }"
         @update:model-value="(v: string) => draft = v"
       >
         <template #default="{ editor }">
@@ -124,6 +126,9 @@ const toolbarItems = computed(() => [
             <UEditorToolbar
               :editor="editor"
               :items="toolbarItems"
+              variant="ghost"
+              active-variant="solid"
+              active-color="primary"
               class="border-b border-default mb-2"
             />
           </div>
@@ -160,3 +165,28 @@ const toolbarItems = computed(() => [
     </template>
   </UModal>
 </template>
+
+<style scoped>
+/* ProseMirror 填满容器，保证空内容时整个区域可点击 */
+:deep(.tiptap.ProseMirror) {
+  min-height: 100%;
+}
+
+/* 工具栏按钮 hover：可见背景 + 微缩放 */
+:deep([role="toolbar"] button:not(:disabled)) {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+:deep([role="toolbar"] button:not(:disabled):hover) {
+  background-color: color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  transform: scale(1.05);
+}
+:deep([role="toolbar"] button:not(:disabled):active) {
+  transform: scale(0.95);
+}
+
+/* 工具栏按钮禁用：更强透明度和灰度 */
+:deep([role="toolbar"] button:disabled) {
+  opacity: 0.3;
+  filter: grayscale(0.5);
+}
+</style>

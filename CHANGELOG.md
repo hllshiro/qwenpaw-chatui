@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- 优化 Markdown 编辑器交互体验和工具栏按钮视觉效果
+
 ### Fixed
 
 - 修复 Markdown 编辑器编辑时内容反复解析的问题
