@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-09
+
 ### Added
 
 - 系统提示词编辑器取消时新增未保存确认提示
