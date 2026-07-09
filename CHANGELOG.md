@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- 修复仅上传附件无正文时提交无响应的问题
+
 ### Changed
 
 - 优化系统提示词编辑方式，改为 Markdown 编辑器弹窗
