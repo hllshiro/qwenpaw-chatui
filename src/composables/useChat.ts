@@ -263,11 +263,11 @@ export function useChat(sessionId: string) {
       state.reasoningMsgIds.clear()
       state.messageMsgIds.clear()
 
-      doFetch('', options?.onComplete, resolve)
+      doFetch('', options?.onComplete, resolve, undefined, true)
     })
   }
 
-  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments']) {
+  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments'], isReconnect = false) {
     state.abortController = new AbortController()
     state.stopRequested = false
 
@@ -279,12 +279,13 @@ export function useChat(sessionId: string) {
       const messagesArray: Array<{ role: string; content: string }> = []
 
       // 判断是否是第一个用户消息（不含 system 消息）
-      const userMessageCount = messages.value.filter(m => m.role === 'user').length
+      const isFirstUserMessage = messages.value.filter(m => m.role === 'user').length <= 1
 
       // 添加 system 消息：
       // - 强调指令开启：每轮都携带
       // - 强调指令关闭：仅第一轮携带
-      if (systemPrompt?.trim() && (emphasisInstruction || userMessageCount <= 1)) {
+      // - 重连时跳过，避免向已存在的会话重复注入 system prompt
+      if (!isReconnect && systemPrompt?.trim() && (emphasisInstruction || isFirstUserMessage)) {
         messagesArray.push({ role: 'system', content: systemPrompt.trim() })
       }
 
