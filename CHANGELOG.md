@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-09
+
 ### Changed
 
 - 优化 Markdown 编辑器交互体验和工具栏按钮视觉效果
