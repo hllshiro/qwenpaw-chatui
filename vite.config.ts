@@ -23,6 +23,8 @@ export default defineConfig({
         "**/.output/**",
         "**/.github/**",
         "**/*.log",
+        "**/opencode.json",
+        "**/mimocode.json",
       ],
     },
   },

@@ -83,6 +83,36 @@
         "maxFilesDescription": "单次消息最多附带的文件数量",
         "maxSizeMB": "单文件大小限制 (MB)",
         "maxSizeMBDescription": "单个文件的最大体积，后端可动态覆盖"
+      },
+      "system": {
+        "label": "系统",
+        "systemPrompt": "系统提示词",
+        "systemPromptDescription": "如果非空，在每个新会话的首条用户消息中追加系统提示",
+        "systemPromptEmptyHint": "未设置",
+        "systemPromptPlaceholder": "输入系统提示词...",
+        "editSystemPrompt": "编辑系统提示词",
+        "unsavedChangesWarning": "有未保存的修改，确定放弃吗？",
+        "toolbar": {
+          "bold": "粗体",
+          "italic": "斜体",
+          "strike": "删除线",
+          "code": "行内代码",
+          "heading": "标题",
+          "heading1": "标题 1",
+          "heading2": "标题 2",
+          "heading3": "标题 3",
+          "bulletList": "无序列表",
+          "orderedList": "有序列表",
+          "blockquote": "引用",
+          "codeBlock": "代码块",
+          "horizontalRule": "分割线",
+          "undo": "撤销",
+          "redo": "重做"
+        },
+        "emphasisInstruction": "强调指令",
+        "emphasisInstructionDescription": "开启后，在用户的每条消息中都追加系统指令",
+        "showSystemMessages": "显示系统消息",
+        "showSystemMessagesDescription": "开启后，在聊天界面中显示系统消息（可折叠）"
       }
     },
     "debug": {
@@ -99,6 +129,7 @@
     },
     "developerMode": "已启用开发者模式",
     "developerModeDescription": "高级配置选项已显示",
+    "edit": "编辑",
     "exportSuccess": "导出成功",
     "exportSuccessDescription": "配置已下载",
     "exportError": "导出失败",

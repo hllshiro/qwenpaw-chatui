@@ -10,6 +10,7 @@
     "stop": "Stop",
     "thinking": "Thinking...",
     "thinkingProcess": "Thinking Process",
+    "systemMessage": "System Message",
     "parameters": "Parameters",
     "result": "Result",
     "waitingApproval": "Waiting for Approval",

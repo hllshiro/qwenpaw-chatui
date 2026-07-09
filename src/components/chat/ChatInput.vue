@@ -68,19 +68,15 @@ const isStreaming = computed(() => effectiveStatus.value === "streaming");
 
 const isInputEmpty = computed(() => !input.value.trim());
 
-const hasReadyAttachments = computed(() =>
-  props.attachments.some(a => a.status === 'ready')
-);
-
 const isSubmitDisabled = computed(() => {
   if (isStreaming.value) return true;
   if (props.isUploading) return true;
   if (effectiveStatus.value !== "ready") return false;
-  return props.disabled || (isInputEmpty.value && !hasReadyAttachments.value);
+  return props.disabled || isInputEmpty.value;
 });
 
 function handleSubmit() {
-  if (!input.value.trim() && props.attachments.length === 0) return;
+  if (!input.value.trim()) return;
   const text = input.value;
   input.value = "";
   clearInputCache();

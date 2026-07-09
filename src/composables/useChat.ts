@@ -2,6 +2,7 @@ import { ref, computed, triggerRef, reactive } from 'vue'
 import { useBackendStatus } from './useBackendStatus'
 import { useNotification } from './useNotification'
 import { useSessions, type Session } from './useSessions'
+import { useSettings } from './settings'
 
 export interface ToolCall {
   id: string
@@ -262,17 +263,36 @@ export function useChat(sessionId: string) {
       state.reasoningMsgIds.clear()
       state.messageMsgIds.clear()
 
-      doFetch('', options?.onComplete, resolve)
+      doFetch('', options?.onComplete, resolve, undefined, true)
     })
   }
 
-  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments']) {
+  async function doFetch(messageText: string, onComplete?: () => void, onDone?: () => void, attachments?: SendMessagePayload['attachments'], isReconnect = false) {
     state.abortController = new AbortController()
     state.stopRequested = false
-    
+
+    const settings = useSettings()
+    const systemPrompt = settings.getValue('advanced.system.systemPrompt') as string
+    const emphasisInstruction = settings.getValue('advanced.system.emphasisInstruction') as boolean
+
     try {
+      const messagesArray: Array<{ role: string; content: string }> = []
+
+      // 判断是否是第一个用户消息（不含 system 消息）
+      const isFirstUserMessage = messages.value.filter(m => m.role === 'user').length <= 1
+
+      // 添加 system 消息：
+      // - 强调指令开启：每轮都携带
+      // - 强调指令关闭：仅第一轮携带
+      // - 重连时跳过，避免向已存在的会话重复注入 system prompt
+      if (!isReconnect && systemPrompt?.trim() && (emphasisInstruction || isFirstUserMessage)) {
+        messagesArray.push({ role: 'system', content: systemPrompt.trim() })
+      }
+
+      messagesArray.push({ role: 'user', content: messageText })
+
       const requestBody = {
-        messages: [{ role: 'user', content: messageText }],
+        messages: messagesArray,
         ...(attachments?.length ? { attachments } : {})
       }
 

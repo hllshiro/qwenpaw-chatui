@@ -34,6 +34,10 @@ const activeCategory = ref('general')
 const brandClickCount = ref(0)
 let brandClickTimer: ReturnType<typeof setTimeout> | null = null
 
+const markdownEditorOpen = ref(false)
+const markdownEditorValue = ref('')
+const markdownEditorKey = ref('')
+
 const brandName = computed(() => getValue('appearance.brand.name') || 'QwenPaw')
 const brandIcon = computed(() => getValue('appearance.brand.icon') || 'i-lucide-sparkles')
 
@@ -82,6 +86,12 @@ function isSettingDisabled(item: { key: string }): boolean {
 }
 
 function handleAction(key: string) {
+  if (key === 'advanced.system.systemPrompt') {
+    markdownEditorKey.value = key
+    markdownEditorValue.value = getValue(key) || ''
+    markdownEditorOpen.value = true
+    return
+  }
   if (key === 'advanced.backup.export') {
     handleExport()
   } else if (key === 'advanced.backup.import') {
@@ -309,4 +319,11 @@ function handleImport() {
       </div>
     </template>
   </UModal>
+
+  <MarkdownEditorModal
+    v-if="markdownEditorOpen"
+    v-model:open="markdownEditorOpen"
+    v-model:model-value="markdownEditorValue"
+    @update:model-value="(v: string) => setValue(markdownEditorKey, v)"
+  />
 </template>

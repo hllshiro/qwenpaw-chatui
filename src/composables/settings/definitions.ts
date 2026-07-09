@@ -17,6 +17,7 @@ registerGroup({ key: 'typography', label: '字体', labelKey: 'settings.appearan
 registerGroup({ key: 'language', label: '语言', labelKey: 'settings.appearance.language.label', category: 'appearance' })
 registerGroup({ key: 'backup', label: '数据备份', labelKey: 'settings.advanced.backup.label', category: 'advanced' })
 registerGroup({ key: 'upload', label: '文件上传', labelKey: 'settings.advanced.upload.label', category: 'advanced' })
+registerGroup({ key: 'system', label: '系统', labelKey: 'settings.advanced.system.label', category: 'advanced' })
 registerGroup({ key: 'notifications', label: '通知测试', labelKey: 'settings.debug.notifications.label', category: 'debug' })
 
 // === 注册配置项 - 通用 - 行为 ===
@@ -382,4 +383,47 @@ registerSetting({
     if (isNaN(num) || num < 1 || num > 100) return '请输入 1-100 之间的数字'
     return true
   }
+})
+
+// === 注册配置项 - 高级 - 系统 ===
+registerSetting({
+  key: 'advanced.system.systemPrompt',
+  label: '系统提示词',
+  labelKey: 'settings.advanced.system.systemPrompt',
+  description: '如果非空，在每个新会话的首条用户消息中追加系统提示',
+  descriptionKey: 'settings.advanced.system.systemPromptDescription',
+  type: 'markdown',
+  defaultValue: '',
+  category: 'advanced',
+  group: 'system',
+  advanced: true,
+  icon: 'i-lucide-message-square',
+})
+
+registerSetting({
+  key: 'advanced.system.emphasisInstruction',
+  label: '强调指令',
+  labelKey: 'settings.advanced.system.emphasisInstruction',
+  description: '开启后，在用户的每条消息中都追加系统指令',
+  descriptionKey: 'settings.advanced.system.emphasisInstructionDescription',
+  type: 'switch',
+  defaultValue: false,
+  category: 'advanced',
+  group: 'system',
+  advanced: true,
+  icon: 'i-lucide-alert-triangle',
+})
+
+registerSetting({
+  key: 'advanced.system.showSystemMessages',
+  label: '显示系统消息',
+  labelKey: 'settings.advanced.system.showSystemMessages',
+  description: '开启后，在聊天界面中显示系统消息（可折叠）',
+  descriptionKey: 'settings.advanced.system.showSystemMessagesDescription',
+  type: 'switch',
+  defaultValue: false,
+  category: 'advanced',
+  group: 'system',
+  advanced: true,
+  icon: 'i-lucide-eye',
 })

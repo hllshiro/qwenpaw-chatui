@@ -47,6 +47,7 @@ dist
 docs/QwenPaw
 
 # AI Agent references
+.mimocode
 .opencode
 .omo
 docs/superpowers

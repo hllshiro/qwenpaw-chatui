@@ -51,6 +51,22 @@ const emit = defineEmits<{
         @update:model-value="emit('update', $event)"
       />
 
+      <div
+        v-else-if="item.type === 'markdown'"
+        class="flex items-center gap-2"
+      >
+        <span class="w-36 text-xs text-muted truncate border border-default rounded px-2 py-1 bg-elevated/50">
+          {{ value || t('settings.advanced.system.systemPromptEmptyHint') }}
+        </span>
+        <UButton
+          size="xs"
+          variant="outline"
+          :label="t('settings.edit')"
+          :disabled="disabled"
+          @click="emit('action', item.key)"
+        />
+      </div>
+
       <UInput
         v-else-if="item.type === 'input'"
         :model-value="value"

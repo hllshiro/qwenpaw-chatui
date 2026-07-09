@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- 系统提示词编辑器取消时新增未保存确认提示
+
+### Fixed
+
+- 修复仅附件无正文时按 Enter 键仍可提交的问题
+- 修复仅上传附件无正文时提交无响应的问题
+
+### Changed
+
+- Markdown 编辑器工具栏提示文本支持国际化
+- 优化系统提示词编辑方式，改为 Markdown 编辑器弹窗
+
 ## [1.2.2] - 2026-07-08
 
 ### Fixed

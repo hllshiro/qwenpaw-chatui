@@ -83,6 +83,36 @@
         "maxFilesDescription": "Maximum number of files per message",
         "maxSizeMB": "Max file size (MB)",
         "maxSizeMBDescription": "Maximum size per file, can be overridden by backend"
+      },
+      "system": {
+        "label": "System",
+        "systemPrompt": "System Prompt",
+        "systemPromptDescription": "If not empty, append system prompt to the first user message in each new session",
+        "systemPromptEmptyHint": "Not set",
+        "systemPromptPlaceholder": "Enter system prompt...",
+        "editSystemPrompt": "Edit System Prompt",
+        "unsavedChangesWarning": "You have unsaved changes. Discard them?",
+        "toolbar": {
+          "bold": "Bold",
+          "italic": "Italic",
+          "strike": "Strikethrough",
+          "code": "Inline Code",
+          "heading": "Heading",
+          "heading1": "Heading 1",
+          "heading2": "Heading 2",
+          "heading3": "Heading 3",
+          "bulletList": "Bullet List",
+          "orderedList": "Ordered List",
+          "blockquote": "Blockquote",
+          "codeBlock": "Code Block",
+          "horizontalRule": "Horizontal Rule",
+          "undo": "Undo",
+          "redo": "Redo"
+        },
+        "emphasisInstruction": "Emphasis Instruction",
+        "emphasisInstructionDescription": "When enabled, append system instruction to every user message",
+        "showSystemMessages": "Show System Messages",
+        "showSystemMessagesDescription": "When enabled, show system messages in chat interface (collapsible)"
       }
     },
     "debug": {
@@ -99,6 +129,7 @@
     },
     "developerMode": "Developer Mode Enabled",
     "developerModeDescription": "Advanced configuration options are now visible",
+    "edit": "Edit",
     "exportSuccess": "Export Successful",
     "exportSuccessDescription": "Configuration has been downloaded",
     "exportError": "Export Failed",
