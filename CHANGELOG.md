@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- 优化系统提示词编辑方式，改为 Markdown 编辑器弹窗
+
 ## [1.2.2] - 2026-07-08
 
 ### Fixed

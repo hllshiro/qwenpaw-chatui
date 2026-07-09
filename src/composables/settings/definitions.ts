@@ -392,13 +392,12 @@ registerSetting({
   labelKey: 'settings.advanced.system.systemPrompt',
   description: '如果非空，在每个新会话的首条用户消息中追加系统提示',
   descriptionKey: 'settings.advanced.system.systemPromptDescription',
-  type: 'input',
+  type: 'markdown',
   defaultValue: '',
   category: 'advanced',
   group: 'system',
   advanced: true,
   icon: 'i-lucide-message-square',
-  placeholder: '输入系统提示词...',
 })
 
 registerSetting({
